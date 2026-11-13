@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marrow — read papers to the bone</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+:root{--bg:#faf7f2;--panel:#fffdf9;--ink:#221f1a;--muted:#7a7265;--line:#e6dfd3;--acc:#b4460f;--acc-bg:#fbeadd;--ok:#2f7d4f;--pdf:#ece6db}
+@media (prefers-color-scheme:dark){:root{--bg:#16140f;--panel:#1e1b15;--ink:#ebe5d9;--muted:#9a917f;--line:#34302a;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#0f0e0b}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3,h4{font-family:"Iowan Old Style",Georgia,serif;margin:.2em 0 .4em;line-height:1.25}
+a{color:var(--acc)}
+button,input,textarea{font:inherit;color:inherit}
+button{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.45em .9em;cursor:pointer;min-height:36px}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button:disabled{opacity:.5;cursor:wait}
+input,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55em .7em}
+textarea{min-height:110px;resize:vertical}
+:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.muted{color:var(--muted)} .row{display:flex;gap:.5em;flex-wrap:wrap;align-items:center}
+#app{display:grid;grid-template-columns:250px 1fr 440px;height:100%}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.logo{font:700 22px Georgia,serif;letter-spacing:-.5px} .logo span{color:var(--acc)}
+#list{display:flex;flex-direction:column;gap:4px}
+.item{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.item:hover{background:var(--bg)} .item.on{border-color:var(--acc);background:var(--acc-bg)}
+.item b{flex:1;font-weight:500;font-size:13.5px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.pct{font-size:11px;font-weight:700;color:var(--ok);min-width:30px;text-align:right}
+.x{border:0;background:none;padding:0 4px;min-height:0;color:var(--muted)}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+header{display:flex;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel);min-height:52px}
+header h3{flex:1;margin:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mob{display:none}
+#pdf{flex:1;overflow:auto;background:var(--pdf);padding:12px}
+.page{position:relative;margin:0 auto 12px;background:#fff;box-shadow:0 1px 6px #0003}
+.page canvas{display:block}
+#empty{max-width:640px;margin:6vh auto;padding:0 16px}
+#empty ol{padding-left:1.2em} #empty li{margin:.5em 0}
+#panel{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);flex:none}
+#tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:.7em .6em;white-space:nowrap;color:var(--muted)}
+#tabs button.on{color:var(--acc);border-color:var(--acc);font-weight:600}
+#status{padding:8px 14px;background:var(--acc-bg);font-size:13.5px;flex:none}
+#status:empty{display:none}
+#status::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:8px;animation:sp 1s linear infinite;vertical-align:-1px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#body{flex:1;overflow:auto;padding:14px}
+.box{border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--bg)}
+.box.done{border-left:4px solid var(--ok)}
+.box h4{margin:0 0 .3em;font-size:15.5px}
+.k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;margin:1em 0 .1em}
+.badge{font:700 12px system-ui;color:var(--ok);float:right}
+blockquote{margin:.3em 0;padding:.2em .8em;border-left:3px solid var(--acc);color:var(--muted);font-size:13.5px}
+.q{font:600 17px/1.4 Georgia,serif}
+.msg{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.msg.user{background:var(--acc-bg);border-color:transparent;margin-left:15%}
+code{background:var(--line);padding:0 .3em;border-radius:4px;font-size:.9em}
+#cy{height:420px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+#sel{position:fixed;z-index:20;display:none;background:var(--ink);border-radius:10px;padding:4px;gap:2px;box-shadow:0 4px 16px #0005}
+#sel button{background:none;border:0;color:var(--bg);min-height:34px}
+#sel button:hover{background:#fff3}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;display:none;z-index:30;max-width:90vw}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;width:min(520px,92vw);padding:18px}
+dialog::backdrop{background:#0008}
+progress{width:100%;height:6px;accent-color:var(--ok)}
+#tools{padding:6px 14px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:nowrap}
+#tools input{max-width:210px} #tools button{padding:.3em .7em;white-space:nowrap}
+.textLayer span.hl{background:#ffd60070;cursor:pointer} .textLayer span.hit{background:#ff7a0080}
+.tag{font:600 11px system-ui;background:var(--acc-bg);color:var(--acc);border-radius:99px;padding:1px 8px;cursor:pointer;white-space:nowrap}
+.warn{color:#b58900;font-size:12.5px}
+body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer-events:none} body.snip #snipBtn{background:var(--acc);color:#fff}
+#snipbox{position:absolute;border:2px dashed var(--acc);background:#b4460f22;pointer-events:none;z-index:5}
+@media (max-width:900px){
+  #app{grid-template-columns:1fr}
+  .mob{display:inline-block}
+  aside{position:fixed;inset:0 18% 0 0;z-index:15;transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 40px #0006}
+  body.menu aside{transform:none}
+  #panel{position:fixed;inset:52px 0 0 0;z-index:10;display:none;border:0}
+  body.study #panel{display:flex}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div class="logo">Mar<span>row</span></div>
+    <button class="pri" id="upBtn">+ Add PDF</button>
+    <input type="file" id="file" accept="application/pdf" multiple hidden>
+    <form id="arxiv" class="row" style="flex-wrap:nowrap"><input name="ax" placeholder="arXiv link or ID" aria-label="arXiv link or ID"><button>Get</button></form>
+    <button id="dueBtn">Review due cards</button>
+    <input id="search" type="search" placeholder="Search library" aria-label="Search library">
+    <div id="list"></div>
+    <div class="row" style="margin-top:auto"><button id="bakBtn">Backup</button><button id="resBtn">Restore</button><button id="bibBtn">.bib</button></div>
+    <input type="file" id="resFile" accept="application/json" hidden>
+    <small class="muted">Stored in this browser. Use Backup to protect or move your library. Drop PDFs anywhere.</small>
+  </aside>
+  <main>
+    <header>
+      <button class="mob" id="menuBtn" aria-label="Library">☰</button>
+      <h3 id="title">Marrow</h3>
+      <span id="mast" class="pct"></span>
+      <button class="mob" id="viewBtn">Paper ⇄ Study</button>
+    </header>
+    <div id="tools" class="row">
+      <input id="find" type="search" placeholder="Find in paper ⏎" aria-label="Find in paper"><small id="findn" class="muted"></small><span style="flex:1"></span>
+      <button id="zo" aria-label="Zoom out">−</button><button id="zi" aria-label="Zoom in">+</button><button id="snipBtn" title="Drag a box around a figure, table or equation to have it explained">Snip figure</button>
+    </div>
+    <div id="pdf"></div>
+  </main>
+  <section id="panel">
+    <div id="tabs"></div>
+    <div id="status"></div>
+    <div id="body"></div>
+  </section>
+</div>
+<div id="sel"><button data-s="explain">Explain</button><button data-s="note">Highlight</button><button data-s="card">Make card</button></div>
+<dialog id="rv"><div id="rvBody"></div><p style="text-align:right;margin:12px 0 0"><button id="rvClose">Close</button></p></dialog>
+<div id="toast" role="status"></div>
+
+<script type="module">
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// ponytail: tiny markdown (bold, code, bullets, page links). Swap in a real renderer + KaTeX if math-heavy answers matter.
+const md = s => esc(s).replace(/\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]/g, m => m.replace(/\n/g, ' ')) // keep display math on one line so KaTeX sees it whole
+  .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>')
+  .replace(/\bp\.\s?(\d+)/g, '<a href="#" data-page="$1">p.$1</a>').replace(/^\s*[-*] /gm, '• ').replace(/\n/g, '<br>');
+const list = a => (a || []).length ? '<ul>' + a.map(x => `<li>${md(x)}</li>`).join('') + '</ul>' : '<p class="muted">—</p>';
+let toastT;
+const toast = m => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 5000); };
+
+// ---------- storage (IndexedDB: paper records + raw PDFs kept apart so saves stay small) ----------
+const db = new Promise((ok, no) => {
+  const r = indexedDB.open('marrow', 1);
+  r.onupgradeneeded = () => { r.result.createObjectStore('papers', { keyPath: 'id' }); r.result.createObjectStore('pdfs'); };
+  r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error);
+});
+const idb = async (store, mode, fn) => { const d = await db; return new Promise((ok, no) => { const q = fn(d.transaction(store, mode).objectStore(store)); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); }); };
+const save = p => idb('papers', 'readwrite', s => s.put(p));
+
+// ---------- AI ----------
+async function ai(messages) {
+  const r = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages }) });
+  const j = await r.json();
+  if (!r.ok) throw new Error('AI is unavailable right now (' + j.error + '). Try again in a moment.');
+  return j.text;
+}
+async function aiJSON(system, user) {
+  const t = await ai([{ role: 'system', content: system + '\nReturn ONLY one valid JSON object. No markdown fences, no commentary.' }, { role: 'user', content: user }]);
+  try { return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); }
+  catch { throw new Error('The AI returned a malformed answer. Please try again.'); }
+}
+// ponytail: whole paper goes in the prompt, capped at ~40k tokens. Chunk + retrieve if books/theses need support.
+const fullText = p => p.pages.map((t, i) => `[p.${i + 1}] ${t}`).join('\n').slice(0, 150000);
+
+const SYS_ANALYZE = `You are an expert research mentor preparing a student to deeply master a paper. Read the paper (page markers look like [p.N]) and produce JSON:
+{"title":"paper title","authors":["Full Name"],"year":"YYYY","venue":"journal/conference or arXiv",
+"tldr":"2 plain sentences",
+"problem":"what gap or question it addresses and why it matters",
+"idea":"the core insight, stated so a smart outsider gets it",
+"method":"how they did it, concretely",
+"results":"the main findings with the key numbers",
+"limitations":"honest weaknesses, assumptions, what is not shown",
+"prerequisites":[{"term":"","explain":"one plain sentence"}],
+"sections":[{"title":"","page":1,"gist":"what to look for while reading this part","question":"a checkpoint question testing understanding (why/how), answerable from this part"}],
+"concepts":[{"name":"short noun phrase","def":"one sentence"}],
+"links":[{"from":"concept name","to":"concept name","label":"verb phrase"}],
+"cards":[{"q":"","a":"short answer","quote":"one sentence copied VERBATIM from the paper that proves the answer"}],
+"references":[{"title":"exact title as written in the paper's reference list","why":"why reading it helps understand this paper"}]}
+Rules: plain text only, no LaTeX. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in reading order, covering the whole paper, page = page where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
+
+// ---------- state ----------
+let papers = [], P = null, tab = 'brief', working = '', shown = false, mapAll = false, pdfDoc = null, io = null, cy = null;
+const TABS = [['brief', '1 · Brief'], ['read', '2 · Read'], ['teach', '3 · Teach'], ['cards', '4 · Cards'], ['map', 'Map'], ['notes', 'Notes'], ['ask', 'Ask']];
+const due = ps => ps.flatMap(p => p.cards.map((c, i) => ({ p, c, i }))).filter(x => (x.c.due || 0) <= Date.now()).sort((a, b) => (a.c.due || 0) - (b.c.due || 0));
+let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
+// Progress is three measured things, shown separately; the single number is just their weighted blend.
+const parts = p => {
+  const s = p.sections, c = p.cards;
+  return {
+    read: s.length ? Math.round(s.reduce((a, x) => a + (x.done ? x.score || 0 : 0), 0) / s.length) : 0,
+    teach: p.feynman?.score || 0,
+    keep: c.length ? Math.round(c.filter(x => x.ivl >= 1).length / c.length * 100) : 0,
+  };
+};
+const mastery = p => { const m = parts(p); return Math.round(m.read * .4 + m.teach * .35 + m.keep * .25); };
+const breakdown = p => { const m = parts(p); return `Checkpoints ${m.read}% · Teach-back ${m.teach}% · Cards retained ${m.keep}%`; };
+// Grounding: AI claims must point at a real sentence. Matching ignores spacing, punctuation, hyphenation and ligatures.
+const norm = s => String(s || '').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g, '');
+function findQuote(p, quote) { // -> page number containing the quote, or 0
+  const q = norm(quote); if (q.length < 20) return 0;
+  const head = q.slice(0, 60), tail = q.slice(-60);
+  return p.pages.findIndex(t => { const h = norm(t); return h.includes(head) && h.includes(tail); }) + 1;
+}
+const dl = (name, text, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); };
+// Spaced repetition (SM-2 style). g: 0 again, 1 good, 2 easy.
+function grade(c, g) {
+  c.ease = Math.max(1.3, (c.ease || 2.5) + [-.2, 0, .15][g]);
+  c.ivl = g === 0 ? 0 : c.ivl ? Math.round(c.ivl * c.ease * (g === 2 ? 1.3 : 1)) : (g === 2 ? 3 : 1);
+  c.due = Date.now() + c.ivl * 864e5;
+}
+if (location.hash === '#test') { // self-check: open /#test and look at the console
+  const c = {}; grade(c, 1); console.assert(c.ivl === 1, 'first good = 1 day'); grade(c, 1); console.assert(c.ivl === 3, 'second good grows');
+  grade(c, 0); console.assert(c.ivl === 0 && c.due <= Date.now(), 'again = due now'); console.assert(md('<b> p.3').includes('&lt;b&gt;') && md('p.3').includes('data-page="3"'), 'md escapes + links');
+  const fp = { pages: ['intro text', 'We ﬁnd that self-atten-\ntion layers are faster than recurrent layers.'] };
+  console.assert(findQuote(fp, 'we find that self-attention layers are faster than recurrent layers') === 2, 'quote found despite ligature/hyphenation');
+  console.assert(findQuote(fp, 'attention layers are slower than convolutional layers in all cases') === 0, 'invented quote rejected');
+  console.log('self-check done');
+}
+
+// Runs an AI job against the paper it started on, even if the user switches papers meanwhile.
+async function run(label, fn) {
+  const p = P; working = label; render();
+  try { await fn(p); } catch (e) { toast(e.message); }
+  working = ''; await save(p); render();
+}
+
+// ---------- library ----------
+async function addPdf(buf, name, arxiv) {
+  const id = crypto.randomUUID();
+  await idb('pdfs', 'readwrite', s => s.put(buf.slice(0), id)); // copy: pdf.js detaches the buffer it is given
+  const doc = await pdfjsLib.getDocument({ data: buf }).promise, pages = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const tc = await (await doc.getPage(i)).getTextContent();
+    pages.push(tc.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join('').replace(/[ \t]+/g, ' '));
+  }
+  const meta = await doc.getMetadata().catch(() => null);
+  const p = { id, title: meta?.info?.Title?.trim() || name.replace(/\.pdf$/i, ''), added: Date.now(), arxiv, tags: [], pages, brief: null, sections: [], concepts: [], links: [], cards: [], notes: [], chat: [] };
+  await save(p); papers.unshift(p); await openPaper(id);
+  if (pages.join('').length < 500) return toast('This PDF has no text layer (scanned?). AI features need selectable text.');
+  analyze();
+}
+async function openPaper(id) {
+  P = papers.find(p => p.id === id); tab = P.brief ? 'read' : 'brief'; shown = false;
+  findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = '';
+  document.body.classList.remove('menu'); render();
+  await renderPdf(await idb('pdfs', 'readonly', s => s.get(id)));
+}
+const analyze = () => run('Reading the paper for you — about a minute. Skim the abstract meanwhile.', async p => {
+  const known = [...new Set(papers.filter(x => x !== p).flatMap(x => x.concepts.map(c => c.name)))].slice(0, 150);
+  const j = await aiJSON(SYS_ANALYZE, fullText(p) + (known.length ? `\n\nEXISTING CONCEPT NAMES: ${known.join('; ')}` : ''));
+  if (!j.tldr || !Array.isArray(j.sections)) throw new Error('The AI returned an incomplete analysis. Please retry.');
+  p.brief = { tldr: j.tldr, problem: j.problem, idea: j.idea, method: j.method, results: j.results, limitations: j.limitations, prerequisites: j.prerequisites || [] };
+  if (j.title) p.title = j.title;
+  p.sections = j.sections; p.concepts = j.concepts || []; p.links = j.links || [];
+  p.meta = { authors: j.authors || [], year: j.year || '', venue: j.venue || '' };
+  const all = norm(p.pages.join(' '));
+  p.refs = (j.references || []).filter(r => norm(r.title).length > 10 && all.includes(norm(r.title).slice(0, 40))); // drop references the paper doesn't actually cite
+  p.cards = (j.cards || []).map(c => ({ q: c.q, a: c.a, quote: c.quote || '', src: findQuote(p, c.quote) }));
+});
+
+// ---------- PDF viewer (lazy pages, selectable text layer) ----------
+async function renderPdf(buf) {
+  const box = $('#pdf'); box.innerHTML = ''; io?.disconnect();
+  const doc = pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+  const first = await doc.getPage(1);
+  const scale = Math.min(box.clientWidth - 44, 900) * zoom / first.getViewport({ scale: 1 }).width;
+  const vp = first.getViewport({ scale });
+  io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && drawPage(doc, e.target, scale)), { root: box, rootMargin: '800px' });
+  for (let n = 1; n <= doc.numPages; n++) {
+    const d = document.createElement('div'); d.className = 'page'; d.dataset.n = n;
+    d.style.cssText = `width:${vp.width}px;height:${vp.height}px;--scale-factor:${scale}`;
+    box.append(d); io.observe(d);
+  }
+}
+async function drawPage(doc, d, scale) {
+  if (d.dataset.done) return; d.dataset.done = 1;
+  const page = await doc.getPage(+d.dataset.n), vp = page.getViewport({ scale }), r = devicePixelRatio || 1;
+  d.style.width = vp.width + 'px'; d.style.height = vp.height + 'px';
+  const c = document.createElement('canvas'), tl = document.createElement('div');
+  c.width = vp.width * r; c.height = vp.height * r; c.style.width = '100%'; tl.className = 'textLayer';
+  d.append(c, tl);
+  await page.render({ canvasContext: c.getContext('2d'), viewport: vp, transform: [r, 0, 0, r, 0, 0] }).promise;
+  await new pdfjsLib.TextLayer({ textContentSource: page.streamTextContent(), container: tl, viewport: vp }).render();
+  paint(d);
+}
+// Highlights are stored as text-span index ranges per page, so they survive zoom and reload.
+// ponytail: whole spans (line fragments) are painted, not exact characters. Split spans at range offsets if precision matters.
+const spansOf = d => [...d.querySelectorAll('.textLayer span:not(.markedContent)')];
+function paint(d) {
+  if (!P) return;
+  const sp = spansOf(d), n = +d.dataset.n;
+  sp.forEach(s => s.classList.remove('hl', 'hit'));
+  for (const h of P.notes) if (h.page === n && h.a != null) for (let i = h.a; i <= h.b; i++) sp[i]?.classList.add('hl');
+  if (findQ) sp.forEach(s => s.textContent.toLowerCase().includes(findQ) && s.classList.add('hit'));
+}
+const paintAll = () => document.querySelectorAll('.page[data-done]').forEach(paint);
+async function rezoom(k) {
+  if (!P) return;
+  zoom = Math.min(3, Math.max(.5, zoom * k));
+  const box = $('#pdf'), top = box.getBoundingClientRect().top, n = [...box.children].find(d => d.getBoundingClientRect().bottom > top)?.dataset.n;
+  await renderPdf(await idb('pdfs', 'readonly', s => s.get(P.id)));
+  document.querySelector(`.page[data-n="${n}"]`)?.scrollIntoView();
+}
+function gotoPage(n) { document.body.classList.remove('study'); document.querySelector(`.page[data-n="${n}"]`)?.scrollIntoView({ behavior: 'smooth' }); }
+
+// ---------- views ----------
+const EMPTY = `<div id="empty"><h1>Read papers to the bone.</h1>
+<p class="muted">Summaries make you feel like you understand. Marrow makes you actually understand — by having you do the four things that research on learning says work.</p>
+<ol><li><b>Brief.</b> Get the skeleton first: problem, idea, method, results, and the terms you need. Reading with a map is twice as fast.</li>
+<li><b>Read.</b> Go section by section. Each one tells you what to look for, then asks a checkpoint question you answer from memory.</li>
+<li><b>Teach.</b> Explain the paper in your own words. The AI finds the gaps and misconceptions you can't see yourself.</li>
+<li><b>Keep.</b> Flashcards on a spaced schedule and a concept map that links every paper you've read.</li></ol>
+<p>Select any text in a paper to explain it, save a note, or turn it into a card.</p>
+<p><button class="pri" onclick="document.getElementById('file').click()">+ Add your first PDF</button> <span class="muted">or paste an arXiv ID in the sidebar (try 1706.03762)</span></p></div>`;
+
+function cardsHTML(ps, all) {
+  const q = due(ps);
+  if (!q.length) return `<div class="box"><b>Nothing due.</b> <span class="muted">Cards come back right before you'd forget them.</span></div>`;
+  const { p, c, i } = q[0];
+  return `<div class="box"><small class="muted">${q.length} due${all ? ' · ' + esc(p.title) : ''}</small><p class="q">${esc(c.q)}</p>` +
+    (shown ? `<p>${md(c.a)}</p>` + (c.src ? `<blockquote>“${esc(c.quote)}” <a href="#" data-page="${+c.src}">p.${+c.src}</a></blockquote>`
+      : c.quote !== undefined ? `<p class="warn">⚠ Not verified against the paper’s text. Check it before you trust it.</p>` : '') + `<div class="row">${['Again', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-pid="${esc(p.id)}" data-i="${i}" data-g="${g}">${l}</button>`).join('')}</div>`
+      : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer</button>`) + `</div>`;
+}
+
+const VIEW = {
+  brief() {
+    const b = P.brief;
+    if (!b) return working ? '<p class="muted">Your briefing will appear here.</p>' : `<p>No briefing yet.</p><button class="pri" data-act="analyze">Analyze this paper</button>`;
+    return `<p class="muted">Read this first. Two minutes here saves twenty in the paper.</p><h2>${esc(P.title)}</h2>
+      <p class="muted">${esc([(P.meta?.authors || []).slice(0, 6).join(', '), P.meta?.year, P.meta?.venue].filter(Boolean).join(' · '))}</p>
+      <input data-k="tags" value="${esc((P.tags || []).join(', '))}" placeholder="Tags, comma separated (e.g. transformers, to-cite)" aria-label="Tags">
+      <p><b>${md(b.tldr)}</b></p>` +
+      [['The problem', b.problem], ['The core idea', b.idea], ['How they did it', b.method], ['What they found', b.results], ['Where it is weak', b.limitations]]
+        .map(([k, v]) => `<div class="k">${k}</div><div>${md(v)}</div>`).join('') +
+      `<div class="k">Know these before you start</div>` + b.prerequisites.map(x => `<p><b>${esc(x.term)}</b> — ${md(x.explain)}</p>`).join('') +
+      (P.refs?.length ? `<div class="k">Read these to go deeper</div>` + P.refs.map(r => `<p><a target="_blank" rel="noopener" href="https://scholar.google.com/scholar?q=${encodeURIComponent(r.title)}">${esc(r.title)}</a> — ${md(r.why)}</p>`).join('') : '') +
+      `<p><button class="pri" data-act="tab" data-t="read">Start reading →</button></p>`;
+  },
+  read() {
+    const s = P.sections;
+    if (!s.length) return VIEW.brief();
+    const next = s.findIndex(x => !x.done);
+    return `<progress value="${s.filter(x => x.done).length}" max="${s.length}"></progress><small class="muted">${breakdown(P)}</small>
+      <p class="muted">Read a section in the paper, then answer its checkpoint <b>from memory</b>. Struggling to recall is what makes it stick.</p>` +
+      s.map((x, i) => `<div class="box ${x.done ? 'done' : ''}">${x.done ? `<span class="badge">${x.score}%</span>` : ''}
+        <h4><a href="#" data-page="${+x.page}">${esc(x.title)}</a> <small class="muted">p.${+x.page}</small></h4>
+        <div class="muted">Look for: ${md(x.gist)}</div>
+        <details ${i === next ? 'open' : ''}><summary>Checkpoint</summary><p><b>${md(x.question)}</b></p>
+        <textarea data-k="sec" data-i="${i}" placeholder="Answer in your own words, without looking back…">${esc(x.answer)}</textarea>
+        <p><button class="pri" data-act="check" data-i="${i}" ${working ? 'disabled' : ''}>Check my understanding</button></p>
+        ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” <a href="#" data-page="${+x.evPage}">p.${+x.evPage}</a></blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the paper. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
+      (next < 0 ? `<p><button class="pri" data-act="tab" data-t="teach">All sections done — now teach it →</button></p>` : '');
+  },
+  teach() {
+    const f = P.feynman || {};
+    return `<h3>Teach it back</h3><p class="muted">Close the paper. Explain it to a smart friend who hasn't read it: what problem, what idea, how it works, what it showed, where it falls short. If you can't explain it simply, you don't understand it yet.</p>
+      <textarea data-k="teach" style="min-height:200px" placeholder="This paper is about…">${esc(f.text)}</textarea>
+      <p><button class="pri" data-act="teach" ${working ? 'disabled' : ''}>Find my gaps</button></p>` +
+      (f.score != null ? `<div class="box done"><span class="badge">${f.score}%</span><div class="k">You got right</div>${list(f.got_right)}<div class="k">You left out</div>${list(f.missing)}
+        <div class="k">Misconceptions</div>${list(f.misconceptions)}<div class="k">Do this next</div><div>${md(f.next)}</div></div>` : '');
+  },
+  cards() {
+    return cardsHTML([P]) + `<details><summary>All ${P.cards.length} cards</summary>` +
+      P.cards.map((c, i) => `<div class="box"><button class="x" style="float:right" data-act="delcard" data-i="${i}" aria-label="Delete card">✕</button><b>${esc(c.q)}</b><br>${md(c.a)}</div>`).join('') + `</details>
+      <p class="muted">Tip: select text in the paper → “Make card”.</p>`;
+  },
+  map() {
+    return `<label class="row"><input type="checkbox" style="width:auto" data-act="mapall" ${mapAll ? 'checked' : ''}> Whole library — see how your papers connect</label>
+      <div id="cy"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>`;
+  },
+  notes() {
+    return `<div class="row"><button data-act="addnote">+ Note</button><button data-act="export">Export Markdown (Obsidian)</button><button data-act="bib">Copy BibTeX</button></div><p></p>` +
+      (P.notes.length ? '' : '<p class="muted">Select text in the paper and tap “Note” to capture it here.</p>') +
+      P.notes.map((n, i) => `<div class="box"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">✕</button>
+        ${n.quote ? `<blockquote>${esc(n.quote)} <a href="#" data-page="${+n.page}">p.${+n.page}</a></blockquote>` : ''}
+        <textarea data-k="note" data-i="${i}" style="min-height:60px" placeholder="Your thought…">${esc(n.note)}</textarea></div>`).join('');
+  },
+  ask() {
+    return P.chat.map(m => `<div class="msg ${m.role}">${md(m.content)}</div>`).join('') +
+      (P.chat.length ? '' : `<p class="muted">Ask anything. Answers come from this paper and cite pages.</p><div class="row">` +
+        ['What is the single key insight?', 'What are the weakest points?', 'How would I reproduce this?', 'What should I read next?'].map(q => `<button data-act="ask" data-q="${q}">${q}</button>`).join('') + '</div>') +
+      `<form id="askf" class="row" style="flex-wrap:nowrap;margin-top:12px"><input name="q" placeholder="Ask the paper…" aria-label="Ask the paper" autocomplete="off"><button class="pri" ${working ? 'disabled' : ''}>Ask</button></form>`;
+  },
+};
+
+const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }, { left: '$', right: '$', display: false }] };
+function renderList() {
+  const f = $('#search').value.toLowerCase();
+  $('#list').innerHTML = papers.filter(p => [p.title, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f))
+    .map(p => `<div class="item ${p === P ? 'on' : ''}" data-id="${esc(p.id)}"><b>${esc(p.title)}${(p.tags || []).map(t => ` <span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`).join('')}</b><span class="pct" title="${esc(breakdown(p))}">${mastery(p)}%</span><button class="x" data-del="${esc(p.id)}" aria-label="Delete paper">✕</button></div>`).join('') || '<small class="muted">No papers found.</small>';
+  $('#dueBtn').textContent = `Review due cards (${due(papers).length})`;
+}
+function render() {
+  renderList();
+  if ($('#rv').open) $('#rvBody').innerHTML = `<h3>Review</h3>` + cardsHTML(papers, true);
+  $('#panel').style.visibility = P ? '' : 'hidden'; $('#tools').style.display = P ? '' : 'none';
+  if (!P) { $('#title').textContent = 'Marrow'; $('#mast').textContent = ''; $('#pdf').innerHTML = EMPTY; return; }
+  $('#title').textContent = P.title; $('#mast').textContent = mastery(P) + '% progress'; $('#mast').title = breakdown(P);
+  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button data-act="tab" data-t="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('');
+  $('#status').textContent = working;
+  $('#body').innerHTML = VIEW[tab]();
+  window.renderMathInElement?.($('#body'), MATH);
+  if (tab === 'map') drawMap();
+  if (tab === 'ask') $('#body').scrollTop = 1e9;
+}
+
+function drawMap() {
+  const ps = mapAll ? papers : [P], nodes = new Map(), edges = [], key = s => norm(String(s).replace(/\(.*?\)/g, '')).replace(/s$/, ''); // "Self-Attention", "self attention (SA)", "Self-attentions" merge
+  for (const p of ps) {
+    if (mapAll) nodes.set('paper:' + p.id, { id: 'paper:' + p.id, label: p.title.slice(0, 40), paper: p.id });
+    for (const c of p.concepts) {
+      const n = nodes.get(key(c.name)) || { id: key(c.name), label: c.name, def: c.def, in: [] };
+      n.in.push(p.title); nodes.set(n.id, n);
+      if (mapAll) edges.push({ source: 'paper:' + p.id, target: n.id });
+    }
+    for (const l of p.links) if (nodes.has(key(l.from)) && nodes.has(key(l.to))) edges.push({ source: key(l.from), target: key(l.to), label: l.label });
+  }
+  const css = v => getComputedStyle(document.body).getPropertyValue(v).trim();
+  cy = cytoscape({
+    container: $('#cy'), layout: { name: 'cose', animate: false, nodeRepulsion: 40000, idealEdgeLength: 90 },
+    elements: [...[...nodes.values()].map(data => ({ data })), ...edges.map(data => ({ data }))],
+    style: [
+      { selector: 'node', style: { label: 'data(label)', 'font-size': 10, color: css('--ink'), 'background-color': css('--acc'), width: 14, height: 14, 'text-wrap': 'wrap', 'text-max-width': 90, 'text-margin-y': -4 } },
+      { selector: 'node[paper]', style: { 'background-color': css('--ok'), shape: 'round-rectangle', width: 20, height: 20, 'font-weight': 'bold' } },
+      { selector: 'edge', style: { width: 1, 'line-color': css('--muted'), 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'target-arrow-color': css('--muted'), 'arrow-scale': .7, label: 'data(label)', 'font-size': 8, color: css('--muted'), 'text-rotation': 'autorotate' } },
+    ],
+  });
+  cy.on('tap', 'node', e => {
+    const d = e.target.data();
+    if (d.paper) return openPaper(d.paper);
+    $('#node').innerHTML = `<b>${esc(d.label)}</b><br>${md(d.def)}<br><small class="muted">In: ${esc([...new Set(d.in)].join(' · '))}</small>`;
+  });
+}
+
+function exportMd() {
+  const b = P.brief || {}, L = [`# ${P.title}`, '', `> ${b.tldr || ''}`, ''];
+  for (const [k, v] of [['Problem', b.problem], ['Core idea', b.idea], ['Method', b.method], ['Results', b.results], ['Limitations', b.limitations]]) if (v) L.push(`## ${k}`, v, '');
+  L.push('## Reading map'); for (const s of P.sections) L.push(`### ${s.title} (p.${s.page})`, `**Q:** ${s.question}`, s.answer ? `**My answer:** ${s.answer}` : '', s.model ? `**Strong answer:** ${s.model}` : '', '');
+  if (P.feynman?.text) L.push('## My explanation', P.feynman.text, '');
+  L.push('## Notes'); for (const n of P.notes) L.push(n.quote ? `> ${n.quote} (p.${n.page})` : '', n.note || '', '');
+  L.push('## Concepts'); for (const c of P.concepts) L.push(`- [[${c.name}]] — ${c.def}`);
+  L.push('', '## Flashcards'); for (const c of P.cards) L.push(`${c.q} :: ${c.a}`);
+  dl(P.title.replace(/[^\w ]+/g, '').slice(0, 60) + '.md', L.join('\n'), 'text/markdown');
+}
+const bib = p => {
+  const a = p.meta?.authors || [], y = p.meta?.year || '';
+  const k = norm((a[0] || 'paper').split(' ').pop() + y + (p.title.match(/[A-Za-z]{4,}/) || [''])[0]);
+  return `@article{${k},\n  title = {${p.title}},\n  author = {${a.join(' and ')}},\n  year = {${y}},\n  ` +
+    (p.arxiv ? `eprint = {${p.arxiv}},\n  archivePrefix = {arXiv}` : `journal = {${p.meta?.venue || ''}}`) + `\n}`;
+};
+// ponytail: backup is one JSON file with PDFs inlined as data URLs. Fine for dozens of papers; stream a zip if libraries get huge.
+async function backup() {
+  const out = [];
+  for (const p of papers) {
+    const buf = await idb('pdfs', 'readonly', s => s.get(p.id));
+    out.push({ ...p, pdf: await new Promise(ok => { const f = new FileReader(); f.onload = () => ok(f.result); f.readAsDataURL(new Blob([buf])); }) });
+  }
+  dl('marrow-backup.json', JSON.stringify(out), 'application/json');
+}
+async function restore(file) {
+  const arr = JSON.parse(await file.text()); let n = 0;
+  for (const { pdf, ...p } of Array.isArray(arr) ? arr : []) {
+    if (typeof p.id !== 'string' || !Array.isArray(p.pages) || !String(pdf).startsWith('data:')) continue;
+    const buf = await (await fetch(pdf)).arrayBuffer();
+    await idb('pdfs', 'readwrite', s => s.put(buf, p.id));
+    for (const k of ['sections', 'concepts', 'links', 'cards', 'notes', 'chat']) if (!Array.isArray(p[k])) p[k] = [];
+    await save(p); papers = [p, ...papers.filter(x => x.id !== p.id)]; n++;
+  }
+  if (P) P = papers.find(x => x.id === P.id) || null;
+  toast(`Restored ${n} paper${n === 1 ? '' : 's'}.`); render();
+}
+
+function ask(q, img) {
+  if (!q.trim() || working) return;
+  P.chat.push({ role: 'user', content: q }); tab = 'ask'; document.body.classList.add('study');
+  run(img ? 'Looking at the figure…' : 'Thinking…', async p => {
+    const hist = p.chat.slice(-8);
+    if (img) hist[hist.length - 1] = { role: 'user', content: [{ type: 'text', text: q }, { type: 'image_url', image_url: { url: img } }] };
+    const text = await ai([{ role: 'system', content: `You are a patient expert tutor helping someone master this paper. Answer from the paper; cite pages like (p.4). If the paper does not say, say so, then give your best general knowledge clearly labelled. Be concise and plain; define jargon; prefer intuition and concrete examples. Write any math as LaTeX inside $...$.\n\nPAPER:\n${fullText(p)}` }, ...hist]);
+    p.chat.push({ role: 'assistant', content: text });
+  });
+}
+
+// ---------- actions ----------
+const ACT = {
+  tab: el => { tab = el.dataset.t; shown = false; render(); },
+  analyze,
+  show: () => { shown = true; render(); },
+  grade: el => { const p = papers.find(x => x.id === el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; save(p); render(); },
+  delcard: el => { P.cards.splice(+el.dataset.i, 1); save(P); render(); },
+  delnote: el => { P.notes.splice(+el.dataset.i, 1); save(P); render(); paintAll(); },
+  bib: () => navigator.clipboard.writeText(bib(P)).then(() => toast('BibTeX copied.'), () => toast(bib(P))),
+  addnote: () => { P.notes.unshift({ note: '' }); save(P); render(); },
+  mapall: el => { mapAll = el.checked; render(); },
+  export: exportMd,
+  ask: el => ask(el.dataset.q),
+  check: el => {
+    const i = +el.dataset.i, s = P.sections[i];
+    if (!(s.answer || '').trim()) return toast('Write your answer first — even a rough one. The attempt is the point.');
+    run('Checking your answer…', async p => {
+      const ctx = p.pages.slice(Math.max(0, s.page - 1), p.sections[i + 1]?.page ?? s.page + 2).join('\n').slice(0, 30000);
+      const j = await aiJSON(`You are a rigorous but encouraging tutor. Grade the student's answer against the paper excerpt. JSON: {"score":0-100,"feedback":"2-4 sentences addressed to the student: what is right, what is wrong or missing","model":"a strong 2-3 sentence answer","evidence":"one sentence copied VERBATIM from the excerpt that supports the strong answer"}. Score understanding, not wording. Plain text, no LaTeX.`,
+        `EXCERPT:\n${ctx}\n\nQUESTION: ${s.question}\n\nSTUDENT ANSWER: ${s.answer}`);
+      Object.assign(s, { score: Math.round(+j.score || 0), feedback: j.feedback, model: j.model, evidence: j.evidence || '', evPage: findQuote(p, j.evidence), done: true });
+    });
+  },
+  teach: () => {
+    if ((P.feynman?.text || '').trim().length < 80) return toast('Give it a real go — at least a few sentences.');
+    run('Comparing your explanation with the paper…', async p => {
+      const j = await aiJSON(`You are a rigorous tutor using the Feynman technique. Compare the student's explanation of the paper with the paper itself. JSON: {"score":0-100,"got_right":["..."],"missing":["important ideas they left out"],"misconceptions":["things they said that are wrong, with the correction"],"next":"one concrete thing to re-read (with page) or do next"}. Be specific and honest; empty arrays are fine.`,
+        `PAPER:\n${fullText(p)}\n\nSTUDENT EXPLANATION:\n${p.feynman.text}`);
+      Object.assign(p.feynman, j, { score: Math.round(+j.score || 0) });
+    });
+  },
+};
+function onClick(e) {
+  const pg = e.target.closest('[data-page]'); if (pg) { e.preventDefault(); return gotoPage(pg.dataset.page); }
+  const a = e.target.closest('[data-act]'); if (a && !(a.tagName === 'INPUT' && e.type !== 'change')) ACT[a.dataset.act](a);
+}
+$('#panel').onclick = $('#rv').onclick = onClick;
+// Only the sidebar is refreshed here: re-rendering the panel on blur would swallow the click that caused the blur.
+$('#panel').onchange = e => { if (e.target.dataset.act) onClick(e); else { save(P); renderList(); } };
+$('#panel').oninput = e => { // keep typed text in the model so re-renders never lose it
+  const { k, i } = e.target.dataset, v = e.target.value;
+  if (k === 'sec') P.sections[i].answer = v; else if (k === 'note') P.notes[i].note = v; else if (k === 'teach') (P.feynman ||= {}).text = v;
+  else if (k === 'tags') P.tags = [...new Set(v.split(',').map(t => t.trim().toLowerCase()).filter(Boolean))];
+};
+$('#panel').onsubmit = e => { e.preventDefault(); ask(e.target.q.value); };
+
+$('#list').onclick = async e => {
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    const p = papers.find(x => x.id === del.dataset.del);
+    if (!confirm(`Delete “${p.title}” and all its notes and cards?`)) return;
+    await idb('papers', 'readwrite', s => s.delete(p.id)); await idb('pdfs', 'readwrite', s => s.delete(p.id));
+    papers = papers.filter(x => x !== p); if (P === p) P = null; return render();
+  }
+  const tg = e.target.closest('[data-tag]'); if (tg) { $('#search').value = tg.dataset.tag; return renderList(); }
+  const it = e.target.closest('[data-id]'); if (it) openPaper(it.dataset.id);
+};
+$('#search').oninput = renderList;
+$('#bakBtn').onclick = () => backup().catch(e => toast('Backup failed: ' + e.message));
+$('#resBtn').onclick = () => $('#resFile').click();
+$('#resFile').onchange = e => e.target.files[0] && restore(e.target.files[0]).catch(err => toast('Not a valid Marrow backup: ' + err.message));
+$('#bibBtn').onclick = () => papers.length ? dl('marrow-library.bib', papers.map(bib).join('\n\n'), 'text/plain') : toast('No papers yet.');
+
+// ---------- reader tools: find, zoom, figure snip ----------
+$('#find').onkeydown = e => {
+  if (e.key !== 'Enter' || !P) return;
+  const q = e.target.value.trim().toLowerCase();
+  if (q !== findQ) { findQ = q; findI = 0; findHits = q ? P.pages.flatMap((t, i) => t.toLowerCase().includes(q) ? [i + 1] : []) : []; paintAll(); }
+  else findI = (findI + 1) % Math.max(1, findHits.length);
+  $('#findn').textContent = !q ? '' : findHits.length ? `p.${findHits[findI]} · ${findI + 1}/${findHits.length} pages` : 'no matches';
+  if (findHits.length) gotoPage(findHits[findI]);
+};
+$('#zi').onclick = () => rezoom(1.2);
+$('#zo').onclick = () => rezoom(1 / 1.2);
+$('#snipBtn').onclick = () => document.body.classList.toggle('snip') && toast('Drag a box around a figure, table or equation.');
+$('#pdf').onclick = e => { if (e.target.closest('.hl')) { tab = 'notes'; document.body.classList.add('study'); render(); } };
+$('#pdf').onpointerdown = e => {
+  const d = e.target.closest('.page'); if (!d || !document.body.classList.contains('snip')) return;
+  e.preventDefault(); const r = d.getBoundingClientRect(), box = document.createElement('div');
+  box.id = 'snipbox'; d.append(box); try { d.setPointerCapture(e.pointerId); } catch {}
+  snip = { d, box, x: e.clientX - r.left, y: e.clientY - r.top };
+};
+$('#pdf').onpointermove = e => {
+  if (!snip) return;
+  const r = snip.d.getBoundingClientRect(); snip.x2 = e.clientX - r.left; snip.y2 = e.clientY - r.top;
+  snip.box.style.cssText = `left:${Math.min(snip.x, snip.x2)}px;top:${Math.min(snip.y, snip.y2)}px;width:${Math.abs(snip.x2 - snip.x)}px;height:${Math.abs(snip.y2 - snip.y)}px`;
+};
+$('#pdf').onpointerup = () => {
+  if (!snip) return;
+  const { d, box, x, y, x2, y2 } = snip, c = d.querySelector('canvas'), w = Math.abs(x2 - x), h = Math.abs(y2 - y);
+  snip = null; box.remove(); document.body.classList.remove('snip');
+  if (!c || !(w > 20 && h > 20)) return;
+  const k = c.width / d.clientWidth, o = document.createElement('canvas'); o.width = w * k; o.height = h * k;
+  o.getContext('2d').drawImage(c, Math.min(x, x2) * k, Math.min(y, y2) * k, w * k, h * k, 0, 0, w * k, h * k);
+  ask(`Explain this figure, table or equation from p.${d.dataset.n}: what it shows, how to read it, and why it matters for the paper's argument.`, o.toDataURL('image/jpeg', .85));
+};
+$('#upBtn').onclick = () => $('#file').click();
+const addFiles = async files => { for (const f of files) if (f.type === 'application/pdf') await addPdf(await f.arrayBuffer(), f.name).catch(e => toast('Could not read ' + f.name + ': ' + e.message)); };
+$('#file').onchange = e => addFiles(e.target.files);
+document.ondragover = e => e.preventDefault();
+document.ondrop = e => { e.preventDefault(); addFiles(e.dataTransfer.files); };
+$('#arxiv').onsubmit = async e => {
+  e.preventDefault(); const v = e.target.elements.ax.value.trim(); if (!v) return;
+  toast('Fetching from arXiv…');
+  try {
+    const r = await fetch('/api/arxiv?id=' + encodeURIComponent(v));
+    if (!r.ok) throw new Error((await r.json()).error);
+    await addPdf(await r.arrayBuffer(), 'arXiv ' + v, v.match(/\d{4}\.\d{4,5}/)?.[0]); e.target.reset();
+  } catch (err) { toast('arXiv: ' + err.message); }
+};
+$('#dueBtn').onclick = () => { shown = false; $('#rv').showModal(); render(); };
+$('#rvClose').onclick = () => $('#rv').close();
+$('#menuBtn').onclick = () => document.body.classList.toggle('menu');
+$("#viewBtn").onclick = () => document.body.classList.toggle("study");
+
+// ---------- selection toolbar ----------
+let picked = null, selT;
+document.addEventListener('selectionchange', () => {
+  clearTimeout(selT);
+  selT = setTimeout(() => {
+    const s = getSelection(), text = s.toString().replace(/\s+/g, ' ').trim(), page = s.anchorNode?.parentElement?.closest('.page');
+    const bar = $('#sel');
+    if (!page || text.length < 3) return bar.style.display = 'none';
+    const rg = s.getRangeAt(0), idx = spansOf(page).flatMap((x, i) => rg.intersectsNode(x) ? [i] : []);
+    picked = { text: text.slice(0, 2000), page: +page.dataset.n, a: idx[0], b: idx.at(-1) };
+    const r = rg.getBoundingClientRect();
+    bar.style.display = 'flex';
+    bar.style.top = Math.max(8, r.top - 48) + 'px'; bar.style.left = Math.max(8, Math.min(innerWidth - 260, r.left)) + 'px';
+  }, 250);
+});
+$('#sel').onclick = e => {
+  const k = e.target.dataset.s, { text, page, a, b } = picked; if (!k) return;
+  getSelection().removeAllRanges();
+  if (k === 'explain') ask(`Explain this passage from p.${page} in plain language, with the intuition behind it:\n"${text}"`);
+  if (k === 'note') { P.notes.unshift({ quote: text, page, a, b, note: '' }); save(P); tab = 'notes'; render(); paintAll(); }
+  if (k === 'card') run('Writing a flashcard…', async p => {
+    const j = await aiJSON('Turn the passage into one flashcard that tests the underlying idea. JSON: {"q":"","a":"short answer"}', text);
+    p.cards.push({ q: j.q, a: j.a }); toast('Card added: ' + j.q);
+  });
+};
+
+// ---------- boot ----------
+papers = (await idb('papers', 'readonly', s => s.getAll())).sort((a, b) => b.added - a.added);
+render();
+</script>
+</body>
+</html>
