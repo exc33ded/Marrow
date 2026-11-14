@@ -698,7 +698,8 @@ const analyze = () => run('Reading it for you. About a minute; skim the opening 
   if (!j.tldr || !Array.isArray(j.sections)) throw new Error('The AI returned an incomplete analysis. Please retry.');
   p.brief = { tldr: j.tldr, problem: j.problem, idea: j.idea, method: j.method, results: j.results, limitations: j.limitations, prerequisites: j.prerequisites || [] };
   if (j.title && !p.titled) p.title = j.title; // a PDF's embedded title is often junk; a web page's or a search result's is not
-  p.sections = j.sections; p.concepts = j.concepts || []; p.links = j.links || [];
+  // Only the four fields asked for are kept. Models sometimes add an "answer" to each checkpoint, which would land in the reader's answer box.
+  p.sections = j.sections.map(s => ({ title: String(s.title || ''), page: +s.page || 1, gist: String(s.gist || ''), question: String(s.question || '') })); p.concepts = j.concepts || []; p.links = j.links || [];
   const m = p.meta || {}; // what the source itself said about its authors wins; the AI only fills gaps
   p.meta = { authors: m.authors?.length ? m.authors : j.authors || [], year: m.year || j.year || '', venue: m.venue || j.venue || '' };
   const all = norm(p.pages.join(' '));
@@ -1797,6 +1798,8 @@ $('#sel').onclick = e => {
 try {
   ({ items: lib, notes, activity, feeds = [] } = await api('library'));
   F.project = lsGet('project', ''); if (!projects().includes(F.project)) F.project = '';
+  // Repair sources analyzed before the fix above: if every checkpoint already has an answer and none was ever checked, the AI wrote them, not the reader.
+  for (const p of lib) if (p.sections.length > 1 && p.sections.every(s => s.answer && !s.done && !s.feedback)) { p.sections.forEach(s => delete s.answer); save(p); }
   await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
 } catch (e) { toast('Could not reach the Marrow server (' + e.message + '). Check that it is still running, then reload this page.'); }
 enter($('#page')); render();
