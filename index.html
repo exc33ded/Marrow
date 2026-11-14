@@ -1537,12 +1537,44 @@ function mountEd() {
   const n = curNote(); if (!n || !window.EditorJS || !$('#ed')) return;
   edN = n.id;
   const me = ed = new EditorJS({
-    holder: 'ed', data: { blocks: docOf(n).blocks }, placeholder: 'Write, press / for blocks, or @ to cite a source',
+    holder: 'ed', data: { blocks: docOf(n).blocks }, placeholder: 'Write, press / for blocks, "# " for a heading, @ to cite a source',
     tools: { header: { class: Header, inlineToolbar: true, config: { levels: [2, 3, 4], defaultLevel: 2 } }, list: { class: EditorjsList, inlineToolbar: true }, toggle: Toggle, callout: Callout, quote: { class: Quote, inlineToolbar: true },
       table: { class: Table, inlineToolbar: true }, code: CodeTool, math: MathBlock, delimiter: Delimiter, inlineCode: InlineCode, marker: Marker },
     onReady: () => { if (me !== ed) return; try { window.DragDrop && new DragDrop(me); window.Undo && new Undo({ editor: me }); } catch {} nbToc(); }, // blocks can be dragged by their handle; Ctrl Z undoes
     onChange: () => { edDirty = true; clearTimeout(edT); edT = setTimeout(() => { keepEd(); nbToc(); }, 900); },
   });
+  // Notion-style Markdown: "# ", "## ", "### ", "> ", "- ", "* ", "1. ", "[] " and "``` " make a block; "---" plus Enter makes a divider.
+  const SHORT = { '#': ['header', 2], '##': ['header', 3], '###': ['header', 4], '>': ['quote'], '-': ['list', 'unordered'], '*': ['list', 'unordered'], '1.': ['list', 'ordered'], '[]': ['list', 'checklist'], '```': ['code'] };
+  const edEl = $('#ed');
+  if (edEl.mdKey) edEl.removeEventListener('keydown', edEl.mdKey, true);
+  edEl.mdKey = e => {
+    if ((e.key !== ' ' && e.key !== 'Enter') || !e.target.isContentEditable) return;
+    const s = getSelection(), r = s.rangeCount ? s.getRangeAt(0) : null;
+    if (!r || !r.collapsed || r.startContainer.nodeType !== 3) return;
+    const text = r.startContainer.textContent, at = r.startOffset;
+    if (!text || at !== text.length) return;
+    const enter = e.key === 'Enter';
+    let type, data;
+    if (enter) {
+      if (text === '---') { type = 'delimiter'; data = {}; } else if (text === '```') { type = 'code'; data = { code: '' }; } else return;
+    } else {
+      const k = SHORT[text]; if (!k) return; type = k[0];
+      data = type === 'header' ? { text: '', level: k[1] }
+        : type === 'quote' ? { text: '', caption: '', alignment: 'left' }
+          : type === 'list' ? { style: k[1], meta: {}, items: [{ content: '', meta: k[1] === 'checklist' ? { checked: false } : {}, items: [] }] } : { code: '' };
+    }
+    const idx = [...document.querySelectorAll('#ed .ce-block')].indexOf(e.target.closest('.ce-block'));
+    if (idx < 0 || !ed.blocks.getBlockByIndex(idx)) return;
+    e.preventDefault(); // the marker becomes the block, not the block's text
+    r.startContainer.textContent = '';
+    if (type === 'delimiter') {
+      ed.blocks.insert('delimiter', {}, undefined, idx, false, true);
+      try { ed.caret.setToBlock(ed.blocks.insert('paragraph', {}, undefined, idx + 1, true), 'start'); } catch {}
+      return;
+    }
+    try { ed.caret.setToBlock(ed.blocks.insert(type, data, undefined, idx, false, true), 'start'); } catch {}
+  };
+  edEl.addEventListener('keydown', edEl.mdKey, true);
   // "@" at the start of a word cites a source: pick one and a link to it lands at the caret.
   $('#ed').onkeydown = e => {
     if (e.key !== '@' || !e.target.isContentEditable) return;
