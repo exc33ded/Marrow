@@ -1150,7 +1150,7 @@ const PAGE = {
     const side = `<aside class="nbside"><div style="padding:0 4px 8px">${projSel().replace('<select', '<select style="width:100%"')}</div><input id="nbq" type="search" placeholder="Search pages" aria-label="Search pages"><div class="prow" tabindex="0" data-act="nbnew"><span class="ico">＋</span><span class="t">New page</span></div><div id="nbList"></div></aside>`;
     if (!n) return `<div class="nb">${side}<div class="nbmain"><div class="nbpage"><h1>Your notebook</h1><p class="muted lead">A page is where you work with your sources. Put the papers you are thinking about on a page, ask across them, and the answer is written into the page with citations that open the exact passage. Then write around it.</p>
       <p><button class="pri" data-act="nbnew">Start a page</button></p><p class="muted">You can also tick sources in the Library and choose “Work with these in the Notebook”.</p></div></div></div>`;
-    const d = docOf(n);
+    const d = docOf(n), srcN = pageSrcs(n).length;
     return `<div class="nb">${side}<div class="nbmain">
       <div class="nbtop"><span>Notebook</span><span>/</span><span id="nbcrumb"></span><span class="sp"></span><span id="nbwhen"></span><button data-act="nbexport">Export</button><button data-act="nbdel">Delete</button></div>
       <div id="toc" class="toc"></div>
@@ -1159,8 +1159,8 @@ const PAGE = {
         <div class="props"><div class="prop"><span>${ic('layers', 15)}Project</span><div><input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="Empty" aria-label="Project"></div></div>
           <div class="prop"><span>${ic('book', 15)}Sources</span><div id="nbsrc"></div></div></div>
         <div id="ed"></div></div>
-      <div class="askbar"><div class="acts">${WORK.map(([l, q]) => `<button class="chip" data-act="work" data-q="${esc(q)}">${l}</button>`).join('')}<button class="chip" data-act="nbhl">Insert my highlights</button><button class="chip" data-act="nbtable">Insert comparison table</button></div>
-        <form data-f="work">${ic('search', 17)}<input name="q" autocomplete="off" placeholder="Ask across this page's sources…" aria-label="Ask across this page's sources"><button class="pri">Ask</button></form></div>
+      <div class="askbar"><div class="acts" id="nbacts">${workActs(n)}</div>
+        <form data-f="work">${ic('search', 17)}<input name="q" autocomplete="off" placeholder="${askPh(srcN)}" aria-label="${askPh(srcN)}"><button class="pri">Ask</button></form></div>
     </div></div>`;
   },
   map() {
@@ -1457,10 +1457,20 @@ const docOf = n => n.doc ||= (() => {
 const putDoc = n => { n.note = JSON.stringify(docOf(n)); n.updated = Date.now(); return saveNote(n); };
 const pageSrcs = n => docOf(n).sources.map(byId).filter(Boolean);
 const ICONS = ['📄', '📚', '🧪', '🔬', '🧠', '💡', '📝', '📊', '🧬', '⚙️', '🔭', '🗺️', '📌', '❓', '✅', '🧩', '📐', '🔗', '🗂️', '⏳', '🏁', '✍️', '🌱', '💧'];
+const WORK1 = [['Summarise it', 'Summarise this source: the problem, the core idea, the method, the results, and its limitations, in a few tight paragraphs. Point to the passages that matter.'],
+  ['Find the gaps', 'What does this source leave unanswered? List the open questions and untested assumptions, and say where it gestures at them.'],
+  ['Explain it simply', 'Explain this source simply, as if to a smart friend outside the field: the intuition first, then how it works, with a concrete example. Say what it does not cover.']];
 const WORK = [['Compare them', 'Compare these sources: what each one claims, how their methods differ, and where their results agree or conflict.'],
   ['Find disagreements', 'Where do these sources disagree or reach different conclusions? Set the conflicting claims side by side.'],
   ['Find the gaps', 'What do these sources leave unanswered? List the open questions and untested assumptions, and say which source each comes from.'],
   ['Draft related work', 'Write a related-work paragraph in academic prose that positions these sources against each other.']];
+// The quick actions follow what is on the page: one source cannot be compared with itself, and with none there is nothing to ask across.
+const workActs = n => {
+  const k = n ? pageSrcs(n).length : 0;
+  return (k === 1 ? WORK1 : k ? WORK : []).map(([l, q]) => `<button class="chip" data-act="work" data-q="${esc(q)}">${l}</button>`).join('') +
+    (k ? `<button class="chip" data-act="nbhl">Insert my highlights</button>` : '') + (k > 1 ? `<button class="chip" data-act="nbtable">Insert comparison table</button>` : '');
+};
+const askPh = k => k > 1 ? "Ask across this page's sources…" : k ? 'Ask about this source…' : 'Add sources to ask across them…';
 class MathBlock { // a block of display math: LaTeX in, rendered formula under it
   static get toolbox() { return { title: 'Math', icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 5H7l6 7-6 7h11"/></svg>' }; }
   constructor({ data }) { this.tex = data.tex || ''; }
@@ -1539,6 +1549,8 @@ function nbSide() {
 function nbSrc() {
   const el = $('#nbsrc'), n = curNote(); if (!el || !n) return;
   el.innerHTML = pageSrcs(n).map(p => `<span class="srcchip"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}</span><a href="#" data-open="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</a><button class="x" data-act="nbunsrc" data-id="${esc(p.id)}" aria-label="Take ${esc(p.title)} off this page">✕</button></span>`).join('') + `<button class="add" data-act="nbaddsrc">+ Add sources</button>`;
+  const acts = $('#nbacts'); if (acts) acts.innerHTML = workActs(n); // suggestions follow the sources on the page
+  const q = acts?.parentElement?.querySelector('input[name="q"]'); if (q) { q.placeholder = askPh(pageSrcs(n).length); q.setAttribute('aria-label', q.placeholder); }
 }
 function nbToc() { // an outline of the page's headings, shown in the margin on wide screens
   const el = $('#toc'); if (!el) return;
