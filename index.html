@@ -143,7 +143,7 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .runhead{display:flex;justify-content:space-between;gap:12px;font:500 11px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:26px}
 .k,.kind,.mx th,kbd{font-family:"IBM Plex Mono",monospace!important}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px} .mapgrid #node{margin:0;overflow:auto;max-height:calc(100vh - 290px)} .mapgrid #node h3{font-size:19px}
-#mapsrcs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-size:13px} #mapsrcs .chip,.rel .chip{min-height:26px;padding:0 .7em;font-size:12.5px;display:inline-flex;gap:5px;align-items:center} .rel{margin:.35em 0;line-height:1.9}
+#mapsrcs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-size:13px} #mapsrcs .chip,.rel .chip{min-height:26px;padding:0 .7em;font-size:12.5px;display:inline-flex;gap:5px;align-items:center} #mapsrcs select{width:auto;max-width:min(440px,100%);min-height:26px;padding:.15em .5em;font-size:12.5px} .rel{margin:.35em 0;line-height:1.9}
 .whrow{display:flex;gap:6px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line)} .whrow:first-child{border-top:0;padding-top:0}
 .whrow>div:first-child{flex:1 1 260px;min-width:0} .whrow small{display:block;margin-top:2px} .whrow code{font-size:12px}
 .whact{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .whact small{margin:0} .whact progress{width:180px} .set .whuse{display:inline-flex;gap:8px;align-items:center;cursor:pointer;margin:0;font:inherit;color:inherit} .set .whuse input{width:auto;margin:0}
@@ -1240,6 +1240,7 @@ function mxTable() {
 }
 
 function drawMap(ps, all) {
+  cy?.destroy(); // re-drawing (a filter keystroke, a new source) used to stack instances in the same box; each kept its own listeners and canvases
   const $in = s => (all ? $('#page') : $('#body')).querySelector(s); // the hidden Map page keeps its own #cy and #node while a source is open
   const nodes = new Map(), edges = [], css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   for (const p of ps) {
@@ -1272,7 +1273,12 @@ function drawMap(ps, all) {
   const srcs = [...nodes.values()].filter(n => n.src).sort((a, b) => a.year - b.year), pgs = [...nodes.values()].filter(n => n.page), nc = nodes.size - srcs.length - pgs.length;
   if ($in('#mapn')) $in('#mapn').textContent = srcs.length ? `${srcs.length} source${srcs.length === 1 ? '' : 's'} · ${nc} concept${nc === 1 ? '' : 's'}${pgs.length ? ` · ${pgs.length} of your page${pgs.length === 1 ? '' : 's'}` : ''}` : 'No analyzed sources match these filters.';
   const shown = ps.filter(p => p.concepts.length);
-  if ($in('#mapsrcs')) $in('#mapsrcs').innerHTML = shown.length ? `<span class="muted">${S.kind ? KIND[S.kind][0] + 's' : 'Sources'} on the map:</span>` + shown.slice(0, 40).map(p => `<button class="chip" data-act="mapsel" data-v="src:${esc(p.id)}" title="${esc(p.title)}">${ic(KIND[p.kind][1], 13)}${esc(p.title.length > 42 ? p.title.slice(0, 40) + '…' : p.title)}</button>`).join('') + (shown.length > 40 ? `<span class="muted">and ${shown.length - 40} more</span>` : '') : '';
+  if ($in('#mapsrcs')) {
+    const word = (S.kind ? KIND[S.kind][0] : 'source').toLowerCase(), name = S.kind ? KIND[S.kind][0] + 's' : 'Sources';
+    $in('#mapsrcs').innerHTML = shown.length ? `<span class="muted">${name} on the map:</span>` + (shown.length > 8 // hundreds of chips would bury the map: a picker when there are many
+      ? `<select class="mapjump" data-act="mapjump" aria-label="Jump to a ${word} on the map"><option value="">Jump to a ${word} (${shown.length})…</option>${[...shown].sort((a, b) => a.title.localeCompare(b.title)).map(p => `<option value="${esc(p.id)}">${esc(p.title)}</option>`).join('')}</select>`
+      : shown.map(p => `<button class="chip" data-act="mapsel" data-v="src:${esc(p.id)}" title="${esc(p.title)}">${ic(KIND[p.kind][1], 13)}${esc(p.title.length > 42 ? p.title.slice(0, 40) + '…' : p.title)}</button>`).join('')) : '';
+  }
   // "By year" lays sources out left to right in time, one column per year, with each concept hanging between the sources that use it.
   const box = $in('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 30)); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
   let layout = { name: 'cose', animate: nodes.size < 150 ? 'end' : false, animationDuration: 450, nodeRepulsion: () => 9000, idealEdgeLength: () => 110, nodeOverlap: 20, padding: 30, nodeDimensionsIncludeLabels: true,
@@ -1321,12 +1327,16 @@ function drawMap(ps, all) {
   cy.on('mouseover', 'node', e => trace(e.target)); cy.on('mouseout', 'node', rest);
   cy.on('tap', e => { if (e.target === cy) { picked = null; rest(); $in('#node').innerHTML = hint; } });
   cy.on('dbltap', e => { if (e.target === cy) cy.animate({ fit: { eles: cy.elements(':visible'), padding: 30 } }, { duration: 300 }); });
-  // The map can't be dragged or zoomed out of sight: some of it always stays on screen.
-  cy.on('viewport', () => {
+  // The map can't be dragged or zoomed out of sight: once the gesture settles, if all of it is off screen, bring it back.
+  // (Running this on every viewport event panned against the wheel and made zooming jitter.)
+  let edgeT;
+  const edge = () => {
     const b = cy.elements(':visible').renderedBoundingBox(), W = cy.width(), H = cy.height(), m = 80;
     const dx = b.x2 < m ? m - b.x2 : b.x1 > W - m ? W - m - b.x1 : 0, dy = b.y2 < m ? m - b.y2 : b.y1 > H - m ? H - m - b.y1 : 0;
     if (dx || dy) cy.panBy({ x: dx, y: dy });
-  });
+  };
+  cy.on('dragfree', edge);
+  cy.on('zoom', () => { clearTimeout(edgeT); edgeT = setTimeout(edge, 160); });
   cy.on('tap', 'node', e => {
     const d = e.target.data(), p = d.src && byId(d.src); picked = e.target; trace(picked);
     const chips = ids => `<div class="row">${ids.filter(id => cy.$id(id).length).map(id => `<button class="chip" data-act="mapsel" data-v="${esc(id)}">${esc(cy.$id(id).data('label'))}</button>`).join('')}</div>`;
@@ -1750,6 +1760,7 @@ const ACT = {
   txfile: () => { const p = P, i = Object.assign(document.createElement('input'), { type: 'file', accept: 'audio/*,video/*' }); i.onchange = () => i.files[0] && transcribeIt(p, i.files[0]); i.click(); },
   txstop: () => { const id = tx?.id; tx = null; api('transcribe?id=' + id, { method: 'DELETE' }).catch(() => {}); render(); },
   mapsel: el => { const n = cy?.$id(el.dataset.v); if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
+  mapjump: el => { const n = el.value && cy?.$id('src:' + el.value); el.value = ''; if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
   mapfocus: el => { const n = cy.$id(el.dataset.v), keep = n.closedNeighborhood().closedNeighborhood().not('[solo]'); cy.elements().not(keep).style('display', 'none'); mapLayout(keep, 'tree', n); n.emit('tap'); },
   mapall: () => view === 'map' ? drawBig() : render(),
   mappage: el => newPage(el.dataset.s.split(',').filter(Boolean), el.dataset.v),
