@@ -143,6 +143,8 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .runhead{display:flex;justify-content:space-between;gap:12px;font:500 11px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:26px}
 .k,.kind,.mx th,kbd{font-family:"IBM Plex Mono",monospace!important}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px} .mapgrid #node{margin:0;overflow:auto;max-height:calc(100vh - 290px)} .mapgrid #node h3{font-size:19px}
+#mapsrcs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-size:13px} #mapsrcs .chip,.rel .chip{min-height:26px;padding:0 .7em;font-size:12.5px;display:inline-flex;gap:5px;align-items:center} .rel{margin:.35em 0;line-height:1.9}
+#node blockquote{margin:.4em 0;font-size:13px} #node .acts{display:flex;gap:6px;flex-wrap:wrap;margin:.8em 0}
 .pickbar{padding:8px 12px;border:1px solid var(--acc);border-radius:4px;background:var(--acc-bg);margin-bottom:8px}
 .card input[type=checkbox],.mx input[type=checkbox]{width:16px;height:16px;flex:none;accent-color:var(--acc)}
 /* notebook: a list of pages, a page of blocks, and a bench that works across the page's sources */
@@ -1081,11 +1083,11 @@ const PAGE = {
   },
   map() {
     const on = lib.filter(p => p.concepts.length).length, shared = M.shared ?? on > 6;
-    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Squares are sources, circles are concepts; a concept grows with the number of sources that use it. Hover to trace its links, click for what it means and where it appears.</p>` +
+    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Squares are sources, circles are concepts, diamonds are your own notebook pages. Read along a line: every link is a sentence. Click anything to see everything you know about it; double-click the background to bring the whole map back.</p>` +
       (on ? `${filterBar(false)}<div class="cols"><span class="muted">Show</span><button class="chip ${shared ? 'on' : ''}" data-act="mapshared" data-v="1">Shared concepts only</button><button class="chip ${shared ? '' : 'on'}" data-act="mapshared" data-v="">Every concept</button>
         <span class="muted" style="margin-left:10px">Arrange</span><button class="chip ${M.by === 'cluster' ? 'on' : ''}" data-act="mapby" data-v="cluster">By topic</button><button class="chip ${M.by === 'year' ? 'on' : ''}" data-act="mapby" data-v="year">By year</button>
         <button class="chip" data-act="mapfit">Fit to screen</button><span class="sp"></span><span id="mapn" class="muted"></span></div>
-        <div class="mapgrid"><div id="cy" class="big"></div><div id="node" class="box"></div></div>` : '<p class="box">The map fills in as sources are analyzed.</p>') + `</div>`;
+        <div id="mapsrcs"></div><div class="mapgrid"><div id="cy" class="big"></div><div id="node" class="box"></div></div>` : '<p class="box">The map fills in as sources are analyzed.</p>') + `</div>`;
   },
 };
 function libRows() {
@@ -1156,6 +1158,7 @@ function mxTable() {
 }
 
 function drawMap(ps, all) {
+  const $in = s => (all ? $('#page') : $('#body')).querySelector(s); // the hidden Map page keeps its own #cy and #node while a source is open
   const nodes = new Map(), edges = [], css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   for (const p of ps) {
     if (!p.concepts.length) continue;
@@ -1166,62 +1169,122 @@ function drawMap(ps, all) {
     }
   }
   const sharedOnly = all && (M.shared ?? ps.filter(p => p.concepts.length).length > 6);
+  const solo = all && [...nodes.values()].filter(n => n.src).length === 1; // one source: its spokes say nothing, so the concepts' own links carry the map
   for (const n of [...nodes.values()]) {
-    if (n.src) continue;
+    if (n.src) { if (solo) n.solo = 1; continue; }
     if (sharedOnly && n.in.length < 2) { nodes.delete(n.id); continue; }
-    n.w = all ? Math.min(46, 10 + 8 * n.in.length) : 16; n.many = !all || n.in.length > 1 ? 1 : 0;
-    if (all) for (const id of n.in) edges.push({ source: 'src:' + id, target: n.id });
+    n.many = all && !solo && n.in.length > 1 ? 1 : 0;
+    if (all && !solo) for (const id of n.in) edges.push({ source: 'src:' + id, target: n.id });
   }
   for (const p of ps) for (const l of p.links) { const a = ckey(l.from), b = ckey(l.to); if (a !== b && nodes.has(a) && nodes.has(b)) edges.push({ source: a, target: b, label: l.label, rel: 1 }); }
-  const srcs = [...nodes.values()].filter(n => n.src).sort((a, b) => a.year - b.year), nc = nodes.size - srcs.length;
-  if ($('#mapn')) $('#mapn').textContent = srcs.length ? `${srcs.length} source${srcs.length === 1 ? '' : 's'} · ${nc} concept${nc === 1 ? '' : 's'}` : 'No analyzed sources match these filters.';
+  const deg = {}; for (const e of edges) if (e.rel) deg[e.source] = (deg[e.source] || 0) + 1, deg[e.target] = (deg[e.target] || 0) + 1;
+  for (const n of nodes.values()) if (!n.src) n.w = all && !solo ? Math.min(46, 10 + 8 * n.in.length) : (n.many = +(deg[n.id] >= 3), Math.min(40, 14 + 4 * (deg[n.id] || 0))); // many sources: size by use; one source: by how much hangs off it
+  // Your own notebook pages join the map wherever they mention a concept: the map holds your thinking, not only what the AI pulled out of sources.
+  if (all) for (const pg of notes) {
+    if (F.project && pg.project !== F.project) continue;
+    const t = (pg.title + ' ' + pageText(pg)).toLowerCase(), hit = [...nodes.values()].filter(c => !c.src && t.includes(c.label.toLowerCase())).map(c => c.id);
+    if (!hit.length) continue;
+    nodes.set('pg:' + pg.id, { id: 'pg:' + pg.id, label: pg.title || 'Untitled page', page: pg.id, hit, w: 20 });
+    for (const id of hit) edges.push({ source: 'pg:' + pg.id, target: id, mine: 1 });
+  }
+  const srcs = [...nodes.values()].filter(n => n.src).sort((a, b) => a.year - b.year), pgs = [...nodes.values()].filter(n => n.page), nc = nodes.size - srcs.length - pgs.length;
+  if ($in('#mapn')) $in('#mapn').textContent = srcs.length ? `${srcs.length} source${srcs.length === 1 ? '' : 's'} · ${nc} concept${nc === 1 ? '' : 's'}${pgs.length ? ` · ${pgs.length} of your page${pgs.length === 1 ? '' : 's'}` : ''}` : 'No analyzed sources match these filters.';
+  const shown = ps.filter(p => p.concepts.length);
+  if ($in('#mapsrcs')) $in('#mapsrcs').innerHTML = shown.length ? `<span class="muted">${S.kind ? KIND[S.kind][0] + 's' : 'Sources'} on the map:</span>` + shown.slice(0, 40).map(p => `<button class="chip" data-act="mapsel" data-v="src:${esc(p.id)}" title="${esc(p.title)}">${ic(KIND[p.kind][1], 13)}${esc(p.title.length > 42 ? p.title.slice(0, 40) + '…' : p.title)}</button>`).join('') + (shown.length > 40 ? `<span class="muted">and ${shown.length - 40} more</span>` : '') : '';
   // "By year" lays sources out left to right in time, one column per year, with each concept hanging between the sources that use it.
-  const box = $('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 30)); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
-  let layout = { name: 'cose', animate: nodes.size < 150 ? 'end' : false, animationDuration: 450, nodeRepulsion: () => 9000, idealEdgeLength: () => 80, nodeOverlap: 20, padding: 30, nodeDimensionsIncludeLabels: true,
+  const box = $in('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 30)); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
+  let layout = { name: 'cose', animate: nodes.size < 150 ? 'end' : false, animationDuration: 450, nodeRepulsion: () => 9000, idealEdgeLength: () => 110, nodeOverlap: 20, padding: 30, nodeDimensionsIncludeLabels: true,
     boundingBox: { x1: 0, y1: 0, w: box.clientWidth * big, h: box.clientHeight * big } };
   if (all && M.by === 'year') {
     const years = [...new Set(srcs.map(n => n.year))], row = {}, pos = {};
     for (const n of srcs) pos[n.id] = { x: years.indexOf(n.year) * 480, y: (row[n.year] = (row[n.year] ?? -1) + 1) * 440 };
     const own = {}, seat = {}; let mid = 0; // a source's own concepts sit in a ring around it; shared ones sit between their sources
-    for (const n of nodes.values()) if (!n.src && n.in.length === 1) own[n.in[0]] = (own[n.in[0]] || 0) + 1;
-    for (const n of nodes.values()) if (!n.src) {
+    for (const n of nodes.values()) if (n.in?.length === 1) own[n.in[0]] = (own[n.in[0]] || 0) + 1;
+    for (const n of nodes.values()) if (n.in) {
       const at = n.in.map(id => pos['src:' + id]), avg = k => at.reduce((a, q) => a + q[k], 0) / at.length;
       if (at.length > 1) { pos[n.id] = { x: avg('x'), y: avg('y') + 70 * mid++ }; continue; }
       const k = seat[n.in[0]] = (seat[n.in[0]] ?? -1) + 1, a = k / own[n.in[0]] * 2 * Math.PI, r = 135 + (k % 2) * 55;
       pos[n.id] = { x: at[0].x + r * Math.cos(a), y: at[0].y + r * Math.sin(a) };
     }
+    pgs.forEach((n, i) => { const at = n.hit.map(id => pos[id]); pos[n.id] = { x: at.reduce((a, q) => a + q.x, 0) / at.length + 40, y: at.reduce((a, q) => a + q.y, 0) / at.length + 60 + 30 * i }; });
     years.forEach((y, i) => { nodes.set('yr:' + y, { id: 'yr:' + y, label: y ? String(y) : 'No year', yr: 1, w: 1 }); pos['yr:' + y] = { x: i * 480, y: -250 }; });
     layout = { name: 'preset', positions: n => pos[n.id()], padding: 30 };
-  }
+  } else if (!all || solo) layout = 'tree'; // one source: a hierarchy, the most-linked concept on top, read downwards
   const label = { 'text-background-color': css('--panel'), 'text-background-opacity': .82, 'text-background-padding': 2, 'text-background-shape': 'roundrectangle' };
   cy = cytoscape({
-    container: $('#cy'), layout, minZoom: .15, maxZoom: 3, wheelSensitivity: .3,
+    container: $in('#cy'), layout: { name: 'null' }, minZoom: .15, maxZoom: 3, wheelSensitivity: .3,
     elements: [...[...nodes.values()].map(data => ({ data })), ...edges.map(data => ({ data }))],
     style: [
       { selector: 'node', style: { label: 'data(label)', 'font-family': 'Schibsted Grotesk, sans-serif', 'font-size': 11, color: css('--ink'), 'background-color': css('--muted'), width: 'data(w)', height: 'data(w)', 'text-wrap': 'wrap', 'text-max-width': 110, 'text-margin-y': -5, 'min-zoomed-font-size': 6, ...label } },
       { selector: 'node[many > 0]', style: { 'background-color': css('--acc'), 'font-weight': 600 } },
       { selector: 'node[src]', style: { shape: 'round-rectangle', 'background-color': css('--ok'), 'font-weight': 700, 'font-size': 12, 'text-max-width': 160 } },
+      { selector: 'node[solo]', style: { display: 'none' } },
+      { selector: 'node[page]', style: { shape: 'diamond', 'background-color': css('--ink'), 'font-style': 'italic', 'font-weight': 600 } },
       { selector: 'node[kind = "web"]', style: { 'background-color': css('--web') } }, { selector: 'node[kind = "video"]', style: { 'background-color': css('--vid') } },
       { selector: 'node[yr]', style: { 'background-opacity': 0, 'font-size': 15, 'font-weight': 700, color: css('--muted'), events: 'no', 'text-background-opacity': 0 } },
       { selector: 'edge', style: { width: 1, 'line-color': css('--line'), 'curve-style': 'bezier' } },
-      { selector: 'edge[rel]', style: { width: 1.2, 'line-color': css('--muted'), 'target-arrow-shape': 'triangle', 'target-arrow-color': css('--muted'), 'arrow-scale': .7 } },
+      { selector: 'edge[rel]', style: { width: 1.3, 'line-color': css('--muted'), 'target-arrow-shape': 'triangle', 'target-arrow-color': css('--muted'), 'arrow-scale': .7,
+        label: 'data(label)', 'font-size': 9, color: css('--muted'), 'text-wrap': 'wrap', 'text-max-width': 100, 'min-zoomed-font-size': 7, ...label, 'text-background-opacity': .95 } },
+      { selector: 'edge[mine]', style: { 'line-style': 'dashed', 'line-color': css('--ink'), opacity: .45 } },
       { selector: '.dim', style: { opacity: .1 } },
-      { selector: 'edge.hl', style: { label: 'data(label)', 'font-size': 9, color: css('--ink'), 'text-rotation': 'autorotate', width: 2, 'line-color': css('--acc'), 'target-arrow-color': css('--acc'), ...label, 'text-background-opacity': .95 } },
+      { selector: 'edge.hl', style: { width: 2, color: css('--ink'), 'line-color': css('--acc'), 'target-arrow-color': css('--acc'), opacity: 1, 'z-index': 9 } },
     ],
   });
+  mapLayout(layout === 'tree' ? cy.elements().not('[solo]') : null, layout);
   let picked = null;
-  const hint = `<span class="muted">Click a concept or a source to see what it is and what it connects to.</span>`;
-  const trace = n => { cy.elements().addClass('dim').removeClass('hl'); n.closedNeighborhood().removeClass('dim'); n.connectedEdges().addClass('hl'); };
+  const hint = `<span class="muted">Click a concept to see everything you know about it: what each source says, how it links to other ideas, and your own highlights, cards and pages that mention it.</span>`;
+  const trace = n => { if (!n.visible()) return cy.elements().removeClass('dim hl'); cy.elements().addClass('dim').removeClass('hl'); n.closedNeighborhood().removeClass('dim'); n.connectedEdges().addClass('hl'); };
   const rest = () => picked ? trace(picked) : cy.elements().removeClass('dim hl');
-  if ($('#node')) $('#node').innerHTML = hint;
+  if ($in('#node')) $in('#node').innerHTML = hint;
   cy.on('mouseover', 'node', e => trace(e.target)); cy.on('mouseout', 'node', rest);
-  cy.on('tap', e => { if (e.target === cy) { picked = null; rest(); $('#node').innerHTML = hint; } });
+  cy.on('tap', e => { if (e.target === cy) { picked = null; rest(); $in('#node').innerHTML = hint; } });
+  cy.on('dbltap', e => { if (e.target === cy) cy.animate({ fit: { eles: cy.elements(':visible'), padding: 30 } }, { duration: 300 }); });
+  // The map can't be dragged or zoomed out of sight: some of it always stays on screen.
+  cy.on('viewport', () => {
+    const b = cy.elements(':visible').renderedBoundingBox(), W = cy.width(), H = cy.height(), m = 80;
+    const dx = b.x2 < m ? m - b.x2 : b.x1 > W - m ? W - m - b.x1 : 0, dy = b.y2 < m ? m - b.y2 : b.y1 > H - m ? H - m - b.y1 : 0;
+    if (dx || dy) cy.panBy({ x: dx, y: dy });
+  });
   cy.on('tap', 'node', e => {
     const d = e.target.data(), p = d.src && byId(d.src); picked = e.target; trace(picked);
-    $('#node').innerHTML = p ? `<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span><h3>${esc(p.title)}</h3><small class="muted">${esc(byline(p))}</small>${p.brief ? `<p>${md(p.brief.tldr, p)}</p>` : ''}
-        <p><button class="pri" data-open="${esc(p.id)}">Open this source</button></p><div class="k">Its concepts</div><div class="row">${p.concepts.filter(c => nodes.has(ckey(c.name))).map(c => `<button class="chip" data-act="mapsel" data-v="${esc(ckey(c.name))}">${esc(c.name)}</button>`).join('')}</div>`
-      : `<div class="k" style="margin-top:0">Concept</div><h3>${esc(d.label)}</h3><p>${md(d.def, null)}</p>` + (all ? `<div class="k">In ${d.in.length} source${d.in.length === 1 ? '' : 's'}</div>` + d.in.map(id => `<p><a href="#" data-open="${esc(id)}">${esc(byId(id)?.title)}</a></p>`).join('') : '');
+    const chips = ids => `<div class="row">${ids.filter(id => cy.$id(id).length).map(id => `<button class="chip" data-act="mapsel" data-v="${esc(id)}">${esc(cy.$id(id).data('label'))}</button>`).join('')}</div>`;
+    $in('#node').innerHTML = p ? `<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span><h3>${esc(p.title)}</h3><small class="muted">${esc(byline(p))}</small>${p.brief ? `<p>${md(p.brief.tldr, p)}</p>` : ''}
+        <p><button class="pri" data-open="${esc(p.id)}">Open this source</button></p><div class="k">Its concepts</div>${chips(p.concepts.map(c => ckey(c.name)))}`
+      : d.page ? `<div class="k" style="margin-top:0">Your page</div><h3>${esc(d.label)}</h3><p><button class="pri" data-act="nbgo" data-id="${esc(d.page)}">Open this page</button></p><div class="k">Concepts it mentions</div>${chips(d.hit)}`
+      : conceptPanel(e.target, all);
+    window.renderMathInElement?.($in('#node'), MATH);
   });
+}
+// Runs a layout and, once it settles, stops zooming out far past the whole map.
+function mapLayout(eles, layout, root) {
+  if (layout === 'tree') {
+    const out = n => n.outgoers('edge[rel]').length;
+    layout = { name: 'breadthfirst', directed: !root, spacingFactor: 1.35, padding: 30, animate: false, roots: root || cy.collection(eles.components().map(c => c.nodes().max(out).ele)) };
+  }
+  cy.one('layoutstop', () => { cy.fit(cy.elements(':visible'), 30); cy.minZoom(Math.min(1, cy.zoom()) * .6); });
+  (eles || cy.elements()).layout(layout).run();
+}
+// ponytail: substring match on each block's JSON data; a concept called "text" or "items" would match the field names. Use the editor's plain text if that bites.
+const pageText = pg => docOf(pg).blocks.map(b => JSON.stringify(b.data || '')).join(' ').replace(/<[^>]+>/g, ' ');
+// A concept's page: every place it turns up, in the sources and in your own work.
+function conceptPanel(node, all) {
+  const d = node.data(), k = d.label.toLowerCase(), has = s => String(s || '').toLowerCase().includes(k);
+  const defs = d.in.map(id => [byId(id), byId(id)?.concepts.find(c => ckey(c.name) === d.id)?.def]).filter(([p, def]) => p && def);
+  const pill = n => `<button class="chip" data-act="mapsel" data-v="${esc(n.id())}">${esc(n.data('label'))}</button>`;
+  const rels = node.connectedEdges('[rel]').map(e => { const out = e.source().same(node); return `<p class="rel">${out ? `<b>${esc(d.label)}</b>` : pill(e.source())} ${esc(e.data('label'))} ${out ? pill(e.target()) : `<b>${esc(d.label)}</b>`}</p>`; });
+  const pool = all ? scoped() : d.in.map(byId).filter(Boolean);
+  const hls = pool.flatMap(p => (p.notes || []).filter(n => has(n.quote) || has(n.note)).map(n => [p, n])).slice(0, 6);
+  const cards = pool.flatMap(p => (p.cards || []).filter(c => has(c.q) || has(c.a)).map(c => [p, c])).slice(0, 6);
+  const pages = notes.filter(pg => (!F.project || pg.project === F.project) && (has(pg.title) || has(pageText(pg))));
+  const near = node.closedNeighborhood().closedNeighborhood().nodes().not('[solo]').length;
+  return `<div class="k" style="margin-top:0">Concept</div><h3>${esc(d.label)}</h3>` +
+    (defs.length > 1 ? defs.map(([p, def]) => `<p>${md(def, p)} <small class="muted">— <a href="#" data-open="${esc(p.id)}">${esc(p.title)}</a></small></p>`).join('') : `<p>${md(d.def, null)}</p>`) +
+    `<div class="acts"><button data-act="mappage" data-v="${esc(d.label)}" data-s="${esc(d.in.join(','))}">Start a page on this</button>${near < cy.nodes(':visible').length ? `<button data-act="mapfocus" data-v="${esc(d.id)}">Show only what's around it</button>` : ''}${cy.nodes(':hidden').not('[solo]').length ? `<button data-act="mapall">Show the whole map</button>` : ''}</div>` +
+    (rels.length ? `<div class="k">How it connects</div>${rels.join('')}` : '') +
+    (all && d.in.length ? `<div class="k">In ${d.in.length} source${d.in.length === 1 ? '' : 's'}</div>` + d.in.map(id => `<p><a href="#" data-open="${esc(id)}">${esc(byId(id)?.title)}</a></p>`).join('') : '') +
+    `<div class="k">Your highlights</div>` + (hls.length ? hls.map(([p, n]) => `<blockquote>${n.quote ? `“${esc(n.quote)}”` : ''}${n.note ? `<br><b>${esc(n.note)}</b>` : ''} <small>${n.page ? cite(p, n.page) : ''}</small></blockquote>`).join('') : '<p class="muted">None mention it yet.</p>') +
+    `<div class="k">Your cards</div>` + (cards.length ? cards.map(([, c]) => `<p>${esc(c.q)}</p>`).join('') : '<p class="muted">None yet.</p>') +
+    `<div class="k">Your pages</div>` + (pages.length ? pages.map(pg => `<p><a href="#" data-act="nbgo" data-id="${esc(pg.id)}">${esc(pg.title || 'Untitled page')}</a></p>`).join('') : '<p class="muted">No page mentions it yet.</p>');
 }
 const drawBig = () => $('#cy') && drawMap(scoped(), true);
 
@@ -1594,7 +1657,10 @@ const ACT = {
   mapshared: el => { M.shared = !!el.dataset.v; render(); },
   mapby: el => { M.by = el.dataset.v; render(); },
   mapfit: () => cy?.animate({ fit: { padding: 30 } }, { duration: 300 }),
-  mapsel: el => { const n = cy?.$id(el.dataset.v); if (n?.length) { n.emit('tap'); cy.animate({ center: { eles: n } }, { duration: 300 }); } },
+  mapsel: el => { const n = cy?.$id(el.dataset.v); if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
+  mapfocus: el => { const n = cy.$id(el.dataset.v), keep = n.closedNeighborhood().closedNeighborhood().not('[solo]'); cy.elements().not(keep).style('display', 'none'); mapLayout(keep, 'tree', n); n.emit('tap'); },
+  mapall: () => view === 'map' ? drawBig() : render(),
+  mappage: el => newPage(el.dataset.s.split(',').filter(Boolean), el.dataset.v),
   fstatus: el => { F.status = el.value; render(); },
   ftag: el => { F.q = el.dataset.v; render(); ftSearch(); },
   del: async el => {
