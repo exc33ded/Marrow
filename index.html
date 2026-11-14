@@ -26,9 +26,9 @@ h1,h2,h3,h4,.q{font-family:Fraunces,"Iowan Old Style",Georgia,serif;margin:.2em 
 h1{font-size:30px;letter-spacing:-.4px}
 a{color:var(--acc)}
 button,input,textarea,select{font:inherit;color:inherit}
-button,.btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.45em .9em;cursor:pointer;min-height:36px;text-decoration:none;color:inherit;white-space:nowrap;transition:background .15s,border-color .15s,transform .05s}
-button:hover,.btn:hover{border-color:var(--acc)} button:active{transform:translateY(1px)}
-button.pri{background:linear-gradient(180deg,#d65f1f,#b4460f);border:0;color:#fff;font-weight:600;box-shadow:0 2px 10px #b4460f55}
+button,.btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.45em .9em;cursor:pointer;min-height:36px;text-decoration:none;color:inherit;white-space:nowrap;transition:background .15s,border-color .15s,transform .12s var(--e)}
+button:hover,.btn:hover{border-color:var(--acc)} button:active{transform:scale(.97)}
+button.pri{background:#b4460f;border:0;color:#fff;font-weight:600} button.pri:hover{background:#c5521a}
 button:disabled{opacity:.5;cursor:wait}
 input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:.55em .75em}
 select{width:auto}
@@ -40,9 +40,32 @@ blockquote{margin:.3em 0;padding:.2em .8em;border-left:3px solid var(--acc);colo
 b.h{display:block;font:700 18px Fraunces,Georgia,serif;margin:.9em 0 .3em} b.h:first-child{margin-top:0}
 .pl{display:block;margin:.35em 0} .gap{display:block;height:.35em}
 ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-top:1px solid var(--line);margin:1em 0}
-@keyframes rise{from{opacity:0;transform:translateY(6px)}}
-.wrap,#body>*,article,.vid{animation:rise .28s ease-out}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* motion: one easing curve, transform and opacity only. Entrances play after navigation (.in, set by enter()), never on re-renders caused by typing or saving. */
+:root{--e:cubic-bezier(.22,1,.36,1);interpolate-size:allow-keywords}
+@property --p{syntax:'<number>';inherits:true;initial-value:0}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+@keyframes pop{from{opacity:0;transform:translateY(4px) scale(.97)}}
+@keyframes fill{from{--p:0}}
+@keyframes grow{from{transform:scaleX(0)}}
+@keyframes shim{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes vtout{to{opacity:0}} @keyframes vtin{from{opacity:0}}
+.in>.wrap>*,#body.in>*,#doc.in>article,#doc.in>.vid,.in :is(.grid,.rows,.tiles)>*,.fxin{animation:rise .45s var(--e) backwards}
+.in :is(.wrap,.grid,.rows,.tiles)>:nth-child(2),#body.in>:nth-child(2){animation-delay:35ms}
+.in :is(.wrap,.grid,.rows,.tiles)>:nth-child(3),#body.in>:nth-child(3){animation-delay:70ms}
+.in :is(.wrap,.grid,.rows,.tiles)>:nth-child(4),#body.in>:nth-child(4){animation-delay:105ms}
+.in :is(.wrap,.grid,.rows,.tiles)>:nth-child(5),#body.in>:nth-child(5){animation-delay:140ms}
+.in :is(.wrap,.grid,.rows,.tiles)>:nth-child(6),#body.in>:nth-child(6){animation-delay:175ms}
+.in :is(.wrap,.grid,.rows,.tiles)>:nth-child(7),#body.in>:nth-child(7){animation-delay:210ms}
+.in :is(.wrap,.grid,.rows,.tiles)>:nth-child(n+8),#body.in>:nth-child(n+8){animation-delay:245ms}
+.in .ring{animation:fill .9s var(--e) .15s backwards}
+.in .bar i{transform-origin:left;animation:grow .8s var(--e) .2s backwards}
+::view-transition-old(root){animation:vtout .12s ease-in both} ::view-transition-new(root){animation:vtin .22s ease-out both}
+details::details-content{block-size:0;overflow:clip;transition:block-size .3s var(--e),content-visibility .3s allow-discrete} details[open]::details-content{block-size:auto}
+.sk{display:block;height:13px;border-radius:7px;margin:11px 0;background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--panel)) 40%,var(--line) 60%) 0/300% 100%;animation:shim 1.6s linear infinite}
+h1,h2,h3,h4{text-wrap:balance}
+kbd{font:600 11px Inter,system-ui;border:1px solid currentColor;border-radius:5px;padding:0 5px;margin-left:7px;opacity:.55}
+@media (hover:none){kbd{display:none}}
+@media (prefers-reduced-motion:reduce){*,::view-transition-group(root),::view-transition-old(root),::view-transition-new(root){animation:none!important;transition:none!important}}
 .cover{--h:20;height:112px;border-radius:11px;margin:-5px -5px 2px;background:linear-gradient(135deg,hsl(var(--h) 60% 90%),hsl(calc(var(--h) + 45) 55% 80%)) center/cover;display:grid;place-items:center;color:hsl(var(--h) 45% 38%);position:relative}
 [data-theme=dark] .cover{background-image:linear-gradient(135deg,hsl(var(--h) 35% 24%),hsl(calc(var(--h) + 45) 40% 15%));color:hsl(var(--h) 55% 72%)}
 .cover .kind{position:absolute;left:8px;top:8px;background:var(--panel);padding:3px 9px;border-radius:99px;box-shadow:var(--sh)} .cover .ring{position:absolute;right:8px;top:8px;box-shadow:var(--sh)}
@@ -55,7 +78,7 @@ ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-to
 #prog{height:3px;background:var(--line);flex:none} #prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .1s}
 .wrap.narrow .box{padding:26px 28px} .wrap.narrow .q{font-size:25px;margin:.5em 0 .7em} .wrap.narrow .box button{min-width:92px}
 /* rail */
-#rail{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;overflow:auto}
+#rail{view-transition-name:rail;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;overflow:auto}
 .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(160deg,#d65f1f,#9c3a0a);color:#fff;font:700 24px Fraunces,Georgia,serif;display:grid;place-items:center;margin-bottom:10px;flex:none}
 #nav{display:contents}
 #rail button{border:0;background:none;width:66px;padding:8px 0 6px;display:grid;justify-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);border-radius:12px;position:relative;min-height:0;flex:none}
@@ -78,6 +101,7 @@ ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-to
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--sh);cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:transform .15s,border-color .15s;min-width:0}
 .card:hover{border-color:var(--acc);transform:translateY(-2px)}
 .card h4{font-size:16.5px;margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+button.card{text-align:left;white-space:normal;align-items:flex-start;gap:6px;padding:16px}
 .card.flat{cursor:default} .card.flat:hover{transform:none;border-color:var(--line)}
 .rows{display:flex;flex-direction:column;gap:8px}
 .rows .card{flex-direction:row;align-items:center;gap:12px;padding:10px 14px} .rows .card:hover{transform:none}
@@ -138,7 +162,7 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 #tabs .on i{background:var(--acc);color:#fff} #tabs .done i{background:var(--ok);color:#fff}
 #body{flex:1;overflow:auto;padding:14px;background:var(--bg)}
 .box{border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px;background:var(--panel);box-shadow:var(--sh)}
-.box.done{border-left:4px solid var(--ok)}
+.box.done{border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
 .box h4{margin:0 0 .3em;font-size:15.5px}
 .k{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;background:var(--acc-bg);border-radius:6px;padding:2px 8px;margin:1.3em 0 .4em}
 .badge{font:700 12px Inter,system-ui;color:var(--ok);float:right}
@@ -162,17 +186,24 @@ progress{width:100%;height:6px;accent-color:var(--ok)}
 details.cardrow summary{cursor:pointer;font-weight:600;list-style-position:outside;margin-left:1em}
 body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer-events:none} body.snip #snipBtn{background:var(--acc);color:#fff}
 #snipbox{position:absolute;border:2px dashed var(--acc);background:#b4460f22;pointer-events:none;z-index:5}
-#sel{position:fixed;z-index:20;display:none;background:#221f1a;border-radius:12px;padding:4px;gap:2px;box-shadow:0 4px 16px #0005}
+#sel{position:fixed;z-index:20;display:none;background:#221f1a;border-radius:12px;padding:4px;gap:2px;box-shadow:0 4px 16px #0005;animation:pop .16s var(--e)}
 #sel button{background:none;border:0;color:#faf7f2;min-height:34px} #sel button:hover{background:#fff3}
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;display:none;z-index:30;max-width:90vw}
-#status{position:fixed;left:92px;bottom:16px;z-index:25;background:var(--acc-bg);color:var(--ink);border:1px solid var(--acc);border-radius:99px;padding:7px 14px;font-size:13.5px;box-shadow:var(--sh);max-width:min(520px,80vw)}
+#toast{position:fixed;bottom:20px;left:50%;translate:-50% 14px;opacity:0;pointer-events:none;transition:opacity .18s,translate .3s var(--e);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:30;max-width:90vw}
+#toast.on{opacity:1;translate:-50% 0;pointer-events:auto}
+#status{position:fixed;left:92px;bottom:16px;z-index:25;background:var(--acc-bg);color:var(--ink);border:1px solid var(--acc);border-radius:99px;padding:7px 14px;font-size:13.5px;box-shadow:var(--sh);max-width:min(520px,80vw);animation:rise .3s var(--e)}
+#pal{border:1px solid var(--line);border-radius:16px;padding:0;background:var(--panel);color:var(--ink);width:min(620px,92vw);margin-top:13vh;box-shadow:0 24px 80px #0007;overflow:hidden}
+#pal[open]{animation:pop .2s var(--e)} #pal::backdrop{background:#14110c80}
+#palq{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:16px 18px;font-size:17px} #palq:focus-visible{outline:0}
+#pall{padding:6px;max-height:52vh;overflow:auto}
+#pall button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;border-radius:10px;padding:.55em .7em} #pall button.on{background:var(--acc-bg)}
+#pall .grow{overflow:hidden;text-overflow:ellipsis}
 #status:empty{display:none}
 #status::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;vertical-align:-1px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (max-width:900px){
   body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
   #rail{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px;justify-content:space-between} .logo,#rail .sp{display:none}
-  #rail button{width:54px}
+  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn{display:none}
   .wrap{padding:22px 16px 60px} .hero{font-size:32px}
   .addbar{flex-wrap:wrap} .addbar input{flex:1 1 100%}
   .nb{grid-template-columns:1fr}
@@ -190,6 +221,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
   <div class="logo" title="Marrow">M</div>
   <div id="nav"></div>
   <span class="sp"></span>
+  <button id="palBtn" data-act="palette" title="Jump to anything (Ctrl K)"></button>
   <button id="themeBtn" data-act="theme"></button>
 </nav>
 <div id="page"></div>
@@ -222,6 +254,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 <input type="file" id="file" accept="application/pdf" multiple hidden>
 <input type="file" id="resFile" accept="application/json" hidden>
 <datalist id="projects"></datalist>
+<dialog id="pal" aria-label="Jump to anything"><input id="palq" autocomplete="off" placeholder="Jump to a source, a note or a page. Or paste a link to add it." aria-label="Search everything"><div id="pall"></div></dialog>
 <div id="status" role="status"></div>
 <div id="toast" role="status"></div>
 
@@ -237,6 +270,7 @@ const IC = {
   layers: 'M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 18l10 5 10-5', table: 'M3 5h18v14H3zM3 10h18M3 15h18M9 5v14', pen: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
   graph: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
   sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4', moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+  compass: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z',
   file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z', play: 'M3 5h18v14H3zM10 9l5 3-5 3z',
 };
 const ic = (k, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[k]}"/></svg>`;
@@ -262,7 +296,10 @@ function md(s, p = P) {
 }
 const list = a => (a || []).length ? '<ul>' + a.map(x => `<li>${md(x)}</li>`).join('') + '</ul>' : '<p class="muted">—</p>';
 let toastT;
-const toast = m => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 6000); };
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6000); };
+// Motion. enter(): the next render inside these containers plays its entrance. vt(): cross-fade a whole-screen change where the browser can.
+const enter = (...els) => els.forEach(el => { el.classList.add('in'); clearTimeout(el._in); el._in = setTimeout(() => el.classList.remove('in'), 900); });
+const vt = fn => document.startViewTransition && !matchMedia('(prefers-reduced-motion:reduce)').matches ? document.startViewTransition(fn).updateCallbackDone : fn();
 const dl = (name, text, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); };
 const fname = s => String(s).replace(/[^\w ]+/g, '').trim().slice(0, 60) || 'marrow';
 
@@ -298,7 +335,7 @@ async function aiJSON(system, user) {
 const fullText = p => p.pages.map((t, i) => `[p.${i + 1}] ${t}`).join('\n').slice(0, 150000);
 
 const SYS_ANALYZE = `You are an expert research mentor preparing a student to deeply master a source: a research paper, a web article, or the transcript of a talk or lecture. Markers like [p.N] number its pages, paragraphs or transcript chunks; wherever "page" is asked for, give that number N. Produce JSON:
-{"title":"title of the source","authors":["Full Name"],"year":"YYYY","venue":"journal/conference, site or channel",
+{"title":"title of the source","authors":["Full Name"],"year":"YYYY","venue":"short name of the journal/conference, site or channel, e.g. NeurIPS",
 "tldr":"2 plain sentences",
 "problem":"what gap or question it addresses and why it matters",
 "idea":"the core insight, stated so a smart outsider gets it",
@@ -311,14 +348,14 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 "links":[{"from":"concept name","to":"concept name","label":"verb phrase"}],
 "cards":[{"q":"","a":"short answer","quote":"one sentence copied VERBATIM from the source that proves the answer"}],
 "references":[{"title":"exact title as written in the source's reference list","why":"why reading it helps understand this source"}]}
-Rules: plain text only, no LaTeX. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
+Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
 
 // ---------- state ----------
 let feeds = [], news = null, newsAt = 0;
-let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askAll = false, pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT;
+let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askAll = false, pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, fx = false;
 let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
 const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: '', rows: null, busy: false };
-const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'search'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
+const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'compass'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
 const TABS = [['brief', 'Brief'], ['read', 'Read'], ['teach', 'Teach'], ['cards', 'Cards'], ['map', 'Map'], ['notes', 'Notes'], ['ask', 'Ask']];
 const byId = id => lib.find(p => p.id === id);
 const projects = () => [...new Set([...lib, ...notes].map(x => x.project).filter(Boolean))].sort();
@@ -509,7 +546,7 @@ async function loadNews(force) {
 }
 const addFiles = async files => { for (const f of files) if (f.type === 'application/pdf') await addPdf(await f.arrayBuffer(), f.name).catch(e => toast('Could not read ' + f.name + ': ' + e.message)); };
 
-const analyze = () => run('Reading it for you — about a minute. Skim the opening meanwhile.', async p => {
+const analyze = () => run('Reading it for you. About a minute; skim the opening meanwhile.', async p => {
   const known = [...new Set(lib.filter(x => x !== p).flatMap(x => x.concepts.map(c => c.name)))].slice(0, 150);
   const j = await aiJSON(SYS_ANALYZE, fullText(p) + (known.length ? `\n\nEXISTING CONCEPT NAMES: ${known.join('; ')}` : ''));
   if (!j.tldr || !Array.isArray(j.sections)) throw new Error('The AI returned an incomplete analysis. Please retry.');
@@ -627,27 +664,35 @@ async function openItem(id, n) {
   CSS.highlights?.clear(); yt = null;
   P = p; view = 'read'; tab = p.brief ? 'read' : 'brief'; shown = false;
   findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = '';
-  p.opened = Date.now(); save(p); render();
+  p.opened = Date.now(); save(p); enter($('#body'), $('#doc')); await vt(render);
+  if (P !== p) return; // something else was opened meanwhile
   if (p.kind === 'pdf') await api('files/' + id).then(renderPdf).catch(e => { $('#doc').innerHTML = `<p class="muted pad">Could not load the PDF: ${esc(e.message)}</p>`; });
   else renderBlocks(n && p.parts[n - 1]?.t);
   if (n) gotoPage(n);
 }
 function go(v) {
   if (view === 'read') yt?.pauseVideo?.();
-  view = v; shown = false; document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0;
+  view = v; shown = false; enter($('#page'));
+  vt(() => { document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0; });
   if (v === 'discover') loadNews();
 }
 
 // ---------- study panel ----------
 function cardsHTML(ps, all) {
   const q = due(ps);
-  if (!q.length) return `<div class="box"><b>Nothing due.</b> <span class="muted">Cards come back right before you'd forget them.</span></div>`;
+  const anim = fx ? 'fxin' : ''; fx = false; // set by the show and grade actions, so only those two moves animate
+  if (!q.length) {
+    const next = Math.min(...ps.flatMap(p => p.cards.map(c => c.due))) - Date.now(), h = Math.ceil(next / 36e5);
+    return `<div class="box ${anim}"><b>Nothing due.</b> <span class="muted">${next > 0 && isFinite(next) ? `The next card comes back in ${h < 24 ? h + ' hour' + (h === 1 ? '' : 's') : Math.round(h / 24) + ' day' + (h < 36 ? '' : 's')}, right before you'd forget it.` : 'Cards are written when a source is analyzed, and come back right before you’d forget them.'}</span></div>`;
+  }
   const { p, c, i } = q[0];
-  return `<div class="box"><small class="muted">${q.length} due${all ? ' · ' + esc(p.title) : ''}</small><p class="q">${esc(c.q)}</p>` +
-    (shown ? `<p>${md(c.a, p)}</p>` + (c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src)}</blockquote>`
-      : c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : '') + `<div class="row">${['Again', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-pid="${esc(p.id)}" data-i="${i}" data-g="${g}">${l}</button>`).join('')}</div>`
-      : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer</button>`) + `</div>`;
+  return `<div class="box ${shown ? '' : anim}"><small class="muted">${q.length} due${all ? ' · ' + esc(p.title) : ''}</small><p class="q">${esc(c.q)}</p>` +
+    (shown ? `<div class="${anim}"><p>${md(c.a, p)}</p>` + (c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src)}</blockquote>`
+      : c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : '') + `<div class="row">${['Again', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-pid="${esc(p.id)}" data-i="${i}" data-g="${g}">${l}<kbd>${g + 1}</kbd></button>`).join('')}</div></div>`
+      : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer<kbd>Space</kbd></button>`) + `</div>`;
 }
+const SKEL = `<div class="tldr"><i class="sk"></i><i class="sk"></i><i class="sk" style="width:55%"></i></div>` +
+  ['The problem', 'The core idea', 'How they did it'].map(k => `<div class="fact"><div class="k">${k}</div><i class="sk"></i><i class="sk" style="width:80%"></i></div>`).join('');
 const VIEW = {
   brief() {
     const b = P.brief, rel = related(P), verb = P.kind === 'video' ? 'watching' : 'reading';
@@ -656,13 +701,13 @@ const VIEW = {
       <div class="box"><h4>Add the transcript</h4><p class="muted">YouTube doesn't hand transcripts to other apps, so bring it over yourself — it takes ten seconds. On <a href="${esc(P.url)}" target="_blank" rel="noopener">the video's page</a>, open the description, choose <b>Show transcript</b>, select all of it, copy, and paste below. Timestamps are kept, so every note, card and answer links to its moment in the video. SRT and VTT text work too.</p>
       <form data-f="paste"><textarea name="t" required placeholder="0:00&#10;Welcome to the lecture…&#10;0:07&#10;Today we'll look at…"></textarea><p><button class="pri">Save transcript and build the briefing</button></p></form></div>
       <p class="muted">Without a transcript you can still watch here and keep notes in the Notes tab.</p>`;
-    if (!b) return `<h2>${esc(P.title)}</h2>${meta}` + (working ? '<p class="muted">Your briefing will appear here.</p>' : `<p>No briefing yet.</p><button class="pri" data-act="analyze">Analyze this source</button>`);
+    if (!b) return `<h2>${esc(P.title)}</h2>${meta}` + (working ? `<p class="muted">Writing your briefing: the skeleton of the argument, checkpoints, a concept map and flashcards.</p>${SKEL}` : `<p>No briefing yet.</p><button class="pri" data-act="analyze">Analyze this source</button>`);
     return `<p class="muted">Start here. Two minutes with the skeleton saves twenty in the source.</p><h2>${esc(P.title)}</h2>
       <p class="muted">${esc(byline(P))}</p>${meta}<div class="tldr">${md(b.tldr)}</div>` +
       [['The problem', b.problem], ['The core idea', b.idea], ['How they did it', b.method], ['What they found', b.results], ['Where it is weak', b.limitations]]
         .map(([k, v], i) => `<div class="fact ${i === 1 ? 'key' : ''}"><div class="k">${k}</div><div>${md(v)}</div></div>`).join('') +
       `<div class="k">Know these before you start</div><div class="terms">` + b.prerequisites.map(x => `<div class="term"><b>${esc(x.term)}</b>${md(x.explain)}</div>`).join('') + `</div>` +
-      (P.refs?.length ? `<div class="k">Go deeper</div>` + P.refs.map(r => `<p><a target="_blank" rel="noopener" href="https://scholar.google.com/scholar?q=${encodeURIComponent(r.title)}">${esc(r.title)}</a> — ${md(r.why)}</p>`).join('') : '') +
+      (P.refs?.length ? `<div class="k">Go deeper</div>` + P.refs.map(r => `<p><a target="_blank" rel="noopener" href="https://scholar.google.com/scholar?q=${encodeURIComponent(r.title)}">${esc(r.title)}</a>: ${md(r.why)} <a href="#" data-act="find" data-v="${esc(r.title)}">Find it to add →</a></p>`).join('') : '') +
       (rel.length ? `<div class="k">Connected in your library</div>` + rel.map(({ q, why }) => `<div class="box"><a href="#" data-open="${esc(q.id)}"><b>${esc(q.title)}</b></a><br><small class="muted">${esc(why.join(' · '))}</small></div>`).join('') +
         `<p><button data-act="askall" ${working ? 'disabled' : ''}>How do these fit together?</button></p>` : '') +
       `<p><button class="pri" data-act="tab" data-t="read">Start ${verb} →</button></p>`;
@@ -738,22 +783,29 @@ const step = p => {
   return p.done ? 'Finished' : !p.brief ? 'Not analyzed yet' : d < s.length ? `Next: checkpoint ${d + 1} of ${s.length}` : p.feynman?.score == null ? 'Next: teach it back' : dc ? `${dc} card${dc > 1 ? 's' : ''} due` : 'All caught up';
 };
 const hue = s => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
-const card = p => `<div class="card" data-open="${esc(p.id)}">
+const card = p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}">
   <div class="cover ${p.vid ? 'shot' : ''}" style="${p.vid ? `background-image:url(https://i.ytimg.com/vi/${String(p.vid).replace(/[^\w-]/g, '')}/mqdefault.jpg)` : `--h:${hue(p.title)}`}">${p.vid ? '' : ic(KIND[p.kind][1], 36)}<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span>${ring(p)}</div>
-  <h4>${esc(p.title)}</h4><small class="muted">${esc(byline(p))}</small><span class="sp"></span>
+  <h4>${esc(p.title)}</h4><small class="muted clamp" style="-webkit-line-clamp:2">${esc(byline(p))}</small><span class="sp"></span>
   <div class="row"><small class="step">${step(p)}</small><span class="sp"></span>${p.project ? `<span class="tag proj">${esc(p.project)}</span>` : ''}</div><div class="bar"><i style="width:${mastery(p)}%"></i></div></div>`;
-const HOW = `<div class="box" style="margin-top:8px"><h3>How Marrow works</h3><p class="muted">Summaries make you feel like you understand. Marrow makes you actually understand, with the four things research on learning says work — for a paper, a blog post or a lecture alike.</p>
+const HOW = `<div class="box" style="margin-top:8px"><h3>How Marrow works</h3><p class="muted">Summaries make you feel like you understand. Marrow makes you actually understand, with the four things research on learning says work, for a paper, a blog post or a lecture alike.</p>
 <ol><li><b>Brief.</b> Get the skeleton first: problem, idea, method, results, and the terms you need.</li>
 <li><b>Read or watch.</b> Section by section. Each one tells you what to look for, then asks a checkpoint question you answer from memory.</li>
 <li><b>Teach.</b> Explain it in your own words. The AI finds the gaps and misconceptions you can't see yourself.</li>
 <li><b>Keep.</b> Flashcards on a spaced schedule, and a concept map that links everything you've studied.</li></ol>
-<p class="muted">Then step back: compare sources side by side in the Matrix, draft a synthesis, and keep your own thinking in the Notebook. Try pasting <code>1706.03762</code> above.</p></div>`;
+<p class="muted">Then step back: compare sources side by side in the Matrix, draft a synthesis, and keep your own thinking in the Notebook.</p></div>`;
+const SAMPLES = [['pdf', 'Attention Is All You Need', 'Vaswani et al. · 2017 · the Transformer paper', '1706.03762'],
+  ['web', 'LLM Powered Autonomous Agents', 'Lilian Weng · a long-form blog post', 'https://lilianweng.github.io/posts/2023-06-23-agent/'],
+  ['video', 'But what is a neural network?', '3Blue1Brown · a 19-minute lecture', 'https://www.youtube.com/watch?v=aircAruvnKk']];
 const PAGE = {
   home() {
     const h = new Date().getHours(), d = due(lib).length, started = lib.filter(mastery), count = k => lib.filter(p => p.kind === k).length;
     const cont = lib.filter(p => p.opened && !p.done).sort((a, b) => b.opened - a.opened).slice(0, 6), fresh = lib.filter(p => !p.opened).slice(0, 6);
+    if (!lib.length) return `<div class="wrap"><h1 class="hero">Your research desk.</h1>
+      <p class="muted lead">Papers, articles and lectures in one place, read in a way that makes them stick.</p>${ADDBAR}
+      <div class="sec"><h3>Start with one of these</h3><small class="muted">or paste your own link above, or drop a PDF anywhere</small></div>
+      <div class="grid">${SAMPLES.map(([k, t, by, v]) => `<button class="card" data-act="sample" data-v="${v}"><span class="kind ${k}">${ic(KIND[k][1], 13)}${KIND[k][0]}</span><h4>${t}</h4><small class="muted">${by}</small></button>`).join('')}</div>${HOW}</div>`;
     return `<div class="wrap"><h1 class="hero">${h < 5 ? 'Still up?' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'}</h1>
-      <p class="muted lead">One desk for everything you read, watch and think about.</p>${ADDBAR}
+      <p class="muted lead">${cont[0] ? `Next up: <a href="#" data-open="${esc(cont[0].id)}">${esc(cont[0].title)}</a> · ${step(cont[0]).replace(/^Next: /, '')}` : 'One desk for everything you read, watch and think about.'}</p>${ADDBAR}
       <div class="tiles">
         <button class="tile" data-view="library"><b>${lib.length}</b>source${lib.length === 1 ? '' : 's'}<small>${[['pdf', 'paper'], ['web', 'article'], ['video', 'video']].map(([k, l]) => `${count(k)} ${l}${count(k) === 1 ? '' : 's'}`).join(' · ')}</small></button>
         <button class="tile" data-view="review"><b>${d}</b>card${d === 1 ? '' : 's'} due<small>${d ? 'Review now →' : 'All caught up'}</small></button>
@@ -761,7 +813,6 @@ const PAGE = {
         <div class="tile"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b>mastery<small>Average over ${started.length} started</small></div>
         <div class="tile"><small>Last 12 weeks</small>${heat()}</div>
       </div>` +
-      (lib.length ? '' : HOW) +
       (cont.length ? `<div class="sec"><h3>Pick up where you left off</h3></div><div class="grid">${cont.map(card).join('')}</div>` : '') +
       (fresh.length ? `<div class="sec"><h3>Not opened yet</h3></div><div class="grid">${fresh.map(card).join('')}</div>` : '') + `</div>`;
   },
@@ -828,11 +879,11 @@ const PAGE = {
 function libRows() {
   if (!$('#libList')) return;
   const f = F.q.toLowerCase(), ps = inScope().filter(p => (!F.kind || p.kind === F.kind) && (!F.status || (F.status === 'done') === !!p.done) && [p.title, p.project, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f));
-  $('#libList').innerHTML = ps.map(p => `<div class="card" data-open="${esc(p.id)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
+  $('#libList').innerHTML = ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
     <div class="grow"><b>${esc(p.title)}</b><br><small class="muted">${esc(byline(p))}</small> ${(p.tags || []).map(t => `<span class="tag" data-act="ftag" data-v="${esc(t)}">${esc(t)}</span>`).join(' ')}</div>
     ${p.project ? `<span class="tag proj" data-act="fproject" data-v="${esc(p.project)}">${esc(p.project)}</span>` : ''}${p.done ? '<span class="tag ok">Finished</span>' : ''}${ring(p)}
     <button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete">✕</button></div>`).join('') || `<p class="muted">${lib.length ? 'No titles match.' : 'Your library is empty. Paste a link above, or drop a PDF anywhere.'}</p>`;
-  $('#hits').innerHTML = F.hits.length ? `<div class="sec"><h3>Inside your sources</h3><small class="muted">full-text matches</small></div><div class="rows">` + F.hits.map(h => { const p = byId(h.item_id); return !p ? '' : `<div class="card" data-open="${esc(p.id)}" data-n="${+h.n}"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 18)}</span>
+  $('#hits').innerHTML = F.hits.length ? `<div class="sec"><h3>Inside your sources</h3><small class="muted">full-text matches</small></div><div class="rows">` + F.hits.map(h => { const p = byId(h.item_id); return !p ? '' : `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}" data-n="${+h.n}"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 18)}</span>
     <div class="grow"><small class="muted">${esc(p.title)}</small><br>${esc(h.s).replace(/\x01/g, '<mark>').replace(/\x02/g, '</mark>')}</div></div>`; }).join('') + `</div>` : '';
 }
 async function ftSearch() {
@@ -844,7 +895,7 @@ const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', disp
 function renderRail() {
   const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}</button>`).join('');
-  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark');
+  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Jump';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
   $('#status').textContent = working;
 }
@@ -981,12 +1032,55 @@ function ask(q, img) {
 
 // ---------- actions ----------
 const curNote = () => notes.find(x => x.id === N);
+async function discover(q) {
+  disc.q = q; disc.busy = true; render();
+  try { disc.rows = await api('discover?q=' + encodeURIComponent(q)); } catch (e) { toast('Search failed: ' + e.message); }
+  disc.busy = false; if (view === 'discover') { enter($('#page')); render(); }
+}
+// Command palette (Ctrl/⌘ K or /): every source, note and page, plus full-text search and "add this link", from one box.
+let palI = 0, palRows = [];
+function palette() {
+  const q = $('#palq').value.trim(), words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  palRows = [
+    ...lib.map(p => [p.title, KIND[p.kind][0], KIND[p.kind][1], () => openItem(p.id)]),
+    ...notes.map(n => [n.title || 'Untitled', 'Note', 'pen', () => { N = n.id; go('notebook'); }]),
+    ...NAV.map(([v, l, i]) => [l, 'Go to', i, () => go(v)]),
+    ['Upload a PDF', 'Action', 'file', ACT.upload], ['Switch between light and dark', 'Action', 'sun', ACT.theme],
+  ].filter(r => words.every(w => (r[0] + ' ' + r[1]).toLowerCase().includes(w))).slice(0, 8);
+  if (q) palRows.push([`Search inside every source for “${q}”`, 'Full text', 'search', () => { F.q = q; go('library'); ftSearch(); }]);
+  if (/^(https?:\/\/|doi:|10\.\d{4})|\d{4}\.\d{4,5}/i.test(q)) palRows.unshift([`Add ${q}`, 'New source', 'book', () => { toast('Fetching…'); addLink(q).catch(e => toast(e.message)); }]);
+  palI = Math.max(0, Math.min(palI, palRows.length - 1));
+  $('#pall').innerHTML = palRows.map((r, i) => `<button class="${i === palI ? 'on' : ''}" data-pal="${i}">${ic(r[2], 16)}<span class="grow">${esc(r[0])}</span><small class="muted">${esc(r[1])}</small></button>`).join('');
+  $('#pall .on')?.scrollIntoView({ block: 'nearest' });
+}
+const palRun = i => { $('#pal').close(); palRows[i]?.[3](); };
+$('#palq').oninput = () => { palI = 0; palette(); };
+$('#pal').onkeydown = e => {
+  if (e.key === 'Enter') { e.preventDefault(); return palRun(palI); }
+  const d = { ArrowDown: 1, ArrowUp: -1 }[e.key]; if (!d) return;
+  e.preventDefault(); palI = (palI + d + palRows.length) % palRows.length; palette();
+};
+$('#pal').onclick = e => { const b = e.target.closest('[data-pal]'); if (b) palRun(+b.dataset.pal); else if (e.target.id === 'pal') e.target.close(); };
+// Keyboard: Ctrl/⌘ K or / opens the palette; Space shows a card's answer and 1 2 3 grade it; Enter opens a focused card.
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); return ACT.palette(); }
+  const t = e.target;
+  if (e.ctrlKey || e.metaKey || e.altKey || $('#pal').open || /INPUT|TEXTAREA|SELECT/.test(t.tagName)) return;
+  if (e.key === '/') { e.preventDefault(); return ACT.palette(); }
+  if (e.key === 'Enter' && t.matches('[tabindex][data-open]')) return t.click();
+  const root = view === 'read' ? $('#body') : $('#page');
+  const b = e.key === ' ' && t.tagName !== 'BUTTON' ? root.querySelector('[data-act=show]') : root.querySelectorAll('[data-act=grade]')[+e.key - 1];
+  if (b) { e.preventDefault(); b.click(); }
+});
 const ACT = {
-  tab: el => { tab = el.dataset.t; shown = false; render(); },
-  theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.theme = t; } catch {} render(); },
+  tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
+  theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
-  show: () => { shown = true; render(); },
-  grade: el => { const p = byId(el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; log('review', p); save(p); render(); },
+  palette: () => { $('#palq').value = ''; palI = 0; palette(); $('#pal').showModal(); },
+  sample: async el => { el.disabled = true; toast('Fetching…'); try { await addLink(el.dataset.v); } catch (e) { toast(e.message); el.disabled = false; } },
+  find: el => { go('discover'); discover(el.dataset.v); },
+  show: () => { shown = fx = true; render(); },
+  grade: el => { const p = byId(el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; fx = true; log('review', p); save(p); render(); },
   delcard: el => { P.cards.splice(+el.dataset.i, 1); save(P); render(); },
   delnote: el => { P.notes.splice(+el.dataset.i, 1); save(P); render(); paintAll(); },
   bib: () => navigator.clipboard.writeText(bib(P)).then(() => toast('BibTeX copied.'), () => toast(bib(P))),
@@ -1089,11 +1183,7 @@ const FORM = {
     try { await addLink(v); } catch (e) { toast(e.message); }
     b.disabled = false;
   },
-  disc: async f => {
-    disc.q = f.q.value.trim(); disc.busy = true; render();
-    try { disc.rows = await api('discover?q=' + encodeURIComponent(disc.q)); } catch (e) { toast('Search failed: ' + e.message); }
-    disc.busy = false; if (view === 'discover') render();
-  },
+  disc: f => discover(f.q.value.trim()),
   follow: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); b.disabled = true; toast('Looking for the feed…');
     try {
@@ -1222,7 +1312,7 @@ try {
   ({ items: lib, notes, activity, feeds = [] } = await api('library'));
   await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
 } catch (e) { toast('Could not reach the Marrow server: ' + e.message); }
-render();
+enter($('#page')); render();
 </script>
 </body>
 </html>
