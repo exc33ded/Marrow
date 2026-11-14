@@ -27,7 +27,7 @@ Around that:
 - **Matrix** – a literature-review table (problem, idea, method, findings, limitations, your take) per project, exportable as CSV or Markdown, plus an AI-drafted synthesis.
 - **Notebook** – your own notes in Markdown with math.
 - **Map** – one concept map linking everything you've studied.
-- **Jump** – `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a pasted link. In Review, `Space` shows the answer and `1` `2` `3` grade it.
+- **Search** – `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a pasted link. In Review, `Space` shows the answer and `1` `2` `3` grade it.
 - Highlights and notes on PDFs, articles and transcripts; snip a figure or equation to have it explained; chat with citations; BibTeX; Markdown export with `[[wikilinks]]`; light and dark themes.
 
 AI-generated flashcards and feedback must quote the source; quotes are checked against its text and anything unverified is flagged.

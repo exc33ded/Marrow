@@ -9,20 +9,21 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Schibsted+Grotesk:wght@400..700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
 <style>
-:root{--bg:#f6f2ea;--panel:#fffdf8;--ink:#1f1c17;--muted:#746c5f;--line:#e4dccd;--acc:#b4460f;--acc-bg:#f9e6d6;--ok:#2f7d4f;--pdf:#e9e2d5;--web:#2a6a9c;--vid:#b3261e;--sh:0 1px 2px #0000000f,0 8px 24px #0000000d;color-scheme:light}
-[data-theme=dark]{--bg:#131210;--panel:#1b1916;--ink:#ece6da;--muted:#9c9382;--line:#322e27;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#0d0c0a;--web:#7fb6e0;--vid:#f2857c;--sh:0 1px 2px #0006,0 8px 24px #0004;color-scheme:dark}
+/* palette: the grey-green of a lab notebook's ruled paper, with rust ink as the one accent */
+:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:0 1px 2px #0000000f,0 8px 24px #0000000d;color-scheme:light}
+[data-theme=dark]{--bg:#0f1412;--panel:#161c19;--ink:#e4eae6;--muted:#8c9991;--line:#29322d;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#090c0a;--web:#7fb6e0;--vid:#f2857c;--sh:0 1px 2px #0006,0 8px 24px #0004;color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;grid-template-columns:78px minmax(0,1fr);grid-template-rows:minmax(0,1fr);overflow:hidden;transition:background .2s,color .2s}
-h1,h2,h3,h4,.q{font-family:Fraunces,"Iowan Old Style",Georgia,serif;margin:.2em 0 .4em;line-height:1.2}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 "Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;grid-template-columns:78px minmax(0,1fr);grid-template-rows:minmax(0,1fr);overflow:hidden;transition:background .2s,color .2s}
+h1,h2,h3,h4,.q{font-family:Newsreader,"Iowan Old Style",Georgia,serif;margin:.2em 0 .4em;line-height:1.2}
 h1{font-size:30px;letter-spacing:-.4px}
 a{color:var(--acc)}
 button,input,textarea,select{font:inherit;color:inherit}
@@ -37,7 +38,7 @@ textarea{min-height:110px;resize:vertical}
 .muted{color:var(--muted)} .row{display:flex;gap:.5em;flex-wrap:wrap;align-items:center} .sp{flex:1}
 code{background:var(--line);padding:0 .3em;border-radius:4px;font-size:.9em}
 blockquote{margin:.3em 0;padding:.2em .8em;border-left:3px solid var(--acc);color:var(--muted);font-size:13.5px}
-b.h{display:block;font:700 18px Fraunces,Georgia,serif;margin:.9em 0 .3em} b.h:first-child{margin-top:0}
+b.h{display:block;font:700 18px Newsreader,Georgia,serif;margin:.9em 0 .3em} b.h:first-child{margin-top:0}
 .pl{display:block;margin:.35em 0} .gap{display:block;height:.35em}
 ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-top:1px solid var(--line);margin:1em 0}
 /* motion: one easing curve, transform and opacity only. Entrances play after navigation (.in, set by enter()), never on re-renders caused by typing or saving. */
@@ -63,7 +64,7 @@ ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-to
 details::details-content{block-size:0;overflow:clip;transition:block-size .3s var(--e),content-visibility .3s allow-discrete} details[open]::details-content{block-size:auto}
 .sk{display:block;height:13px;border-radius:7px;margin:11px 0;background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--panel)) 40%,var(--line) 60%) 0/300% 100%;animation:shim 1.6s linear infinite}
 h1,h2,h3,h4{text-wrap:balance}
-kbd{font:600 11px Inter,system-ui;border:1px solid currentColor;border-radius:5px;padding:0 5px;margin-left:7px;opacity:.55}
+kbd{font:600 11px "Schibsted Grotesk",system-ui;border:1px solid currentColor;border-radius:5px;padding:0 5px;margin-left:7px;opacity:.55}
 @media (hover:none){kbd{display:none}}
 @media (prefers-reduced-motion:reduce){*,::view-transition-group(root),::view-transition-old(root),::view-transition-new(root){animation:none!important;transition:none!important}}
 .cover{--h:20;height:112px;border-radius:11px;margin:-5px -5px 2px;background:linear-gradient(135deg,hsl(var(--h) 60% 90%),hsl(calc(var(--h) + 45) 55% 80%)) center/cover;display:grid;place-items:center;color:hsl(var(--h) 45% 38%);position:relative}
@@ -72,14 +73,14 @@ kbd{font:600 11px Inter,system-ui;border:1px solid currentColor;border-radius:5p
 .cover.shot::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(#0000 40%,#0006)}
 .step{font-weight:600;color:var(--acc)}
 .bar{height:4px;border-radius:9px;background:var(--line);overflow:hidden} .bar i{display:block;height:100%;background:var(--ok);border-radius:9px}
-.tldr{font:600 18px/1.5 Fraunces,Georgia,serif;background:var(--acc-bg);border-radius:14px;padding:14px 16px;margin:14px 0}
+.tldr{font:600 18px/1.5 Newsreader,Georgia,serif;background:var(--acc-bg);border-radius:14px;padding:14px 16px;margin:14px 0}
 .fact{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:2px 14px 12px;margin:10px 0;box-shadow:var(--sh)} .fact .k{margin-top:12px} .fact.key{border-color:var(--acc)}
 .terms{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px} .term{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:13.5px;line-height:1.45} .term b{display:block;margin-bottom:2px}
 #prog{height:3px;background:var(--line);flex:none} #prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .1s}
 .wrap.narrow .box{padding:26px 28px} .wrap.narrow .q{font-size:25px;margin:.5em 0 .7em} .wrap.narrow .box button{min-width:92px}
 /* rail */
 #rail{view-transition-name:rail;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;overflow:auto}
-.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(160deg,#d65f1f,#9c3a0a);color:#fff;font:700 24px Fraunces,Georgia,serif;display:grid;place-items:center;margin-bottom:10px;flex:none}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(160deg,#d65f1f,#9c3a0a);color:#fff;font:700 24px Newsreader,Georgia,serif;display:grid;place-items:center;margin-bottom:10px;flex:none}
 #nav{display:contents}
 #rail button{border:0;background:none;width:66px;padding:8px 0 6px;display:grid;justify-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);border-radius:12px;position:relative;min-height:0;flex:none}
 #rail button:hover{color:var(--ink);background:var(--bg)} #rail button.on{background:var(--acc-bg);color:var(--acc)}
@@ -93,7 +94,7 @@ kbd{font:600 11px Inter,system-ui;border:1px solid currentColor;border-radius:5p
 .addbar input{border:0;background:none;font-size:15.5px;min-width:0} .addbar input:focus-visible{outline:0} .addbar:focus-within{border-color:var(--acc)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:26px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--sh);text-align:left;white-space:normal;min-height:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
-.tile b{font:700 34px/1 Fraunces,Georgia,serif;margin-bottom:6px} .tile small{color:var(--muted)}
+.tile b{font:700 34px/1 Newsreader,Georgia,serif;margin-bottom:6px} .tile small{color:var(--muted)}
 .heat{display:grid;grid-template-rows:repeat(7,auto);grid-template-columns:repeat(12,1fr);grid-auto-flow:column;gap:3px;margin-top:8px;width:100%;max-width:190px}
 .heat i{border-radius:3px;aspect-ratio:1;background:color-mix(in srgb,var(--ok) calc(var(--a)*100%),var(--line))}
 .sec{display:flex;align-items:baseline;gap:10px;margin:26px 0 10px} .sec h3{margin:0;font-size:20px}
@@ -106,27 +107,27 @@ button.card{text-align:left;white-space:normal;align-items:flex-start;gap:6px;pa
 .rows{display:flex;flex-direction:column;gap:8px}
 .rows .card{flex-direction:row;align-items:center;gap:12px;padding:10px 14px} .rows .card:hover{transform:none}
 .grow{flex:1;min-width:0} .grow b{font-weight:600}
-.kind{display:inline-flex;gap:5px;align-items:center;font:700 11px Inter,system-ui;text-transform:uppercase;letter-spacing:.07em;color:var(--acc)} .kind.web{color:var(--web)} .kind.video{color:var(--vid)}
-.tag{font:600 11px Inter,system-ui;background:var(--acc-bg);color:var(--acc);border-radius:99px;padding:2px 9px;cursor:pointer;white-space:nowrap;display:inline-block}
+.kind{display:inline-flex;gap:5px;align-items:center;font:700 11px "Schibsted Grotesk",system-ui;text-transform:uppercase;letter-spacing:.07em;color:var(--acc)} .kind.web{color:var(--web)} .kind.video{color:var(--vid)}
+.tag{font:600 11px "Schibsted Grotesk",system-ui;background:var(--acc-bg);color:var(--acc);border-radius:99px;padding:2px 9px;cursor:pointer;white-space:nowrap;display:inline-block}
 .tag.proj{background:none;border:1px solid var(--line);color:var(--muted)} .tag.ok{background:none;border:1px solid var(--ok);color:var(--ok);cursor:default}
 .chip{border-radius:99px;min-height:32px;padding:.2em .9em;font-size:13.5px} .chip.on{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);font-weight:600}
 .filters{margin:0 0 14px} .filters #q{flex:1;min-width:220px;width:auto}
 .x{border:0;background:none;padding:0 6px;min-height:0;color:var(--muted)}
 mark{background:#ffd60070;color:inherit;border-radius:2px}
-.ring{--p:0;--in:var(--panel);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 11px Inter,system-ui;flex:none;
+.ring{--p:0;--in:var(--panel);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 11px "Schibsted Grotesk",system-ui;flex:none;
   background:radial-gradient(closest-side,var(--in) 74%,transparent 76%),conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0)}
 .clamp{overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .mxwrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--sh);max-height:calc(100vh - 200px)}
 .mx{border-collapse:separate;border-spacing:0;font-size:13.5px}
 .mx th,.mx td{border-bottom:1px solid var(--line);padding:10px 12px;vertical-align:top;text-align:left;min-width:190px}
-.mx th{position:sticky;top:0;background:var(--panel);font:700 11px Inter,system-ui;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);z-index:2}
+.mx th{position:sticky;top:0;background:var(--panel);font:700 11px "Schibsted Grotesk",system-ui;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);z-index:2}
 .mx td:first-child,.mx th:first-child{position:sticky;left:0;background:var(--panel);min-width:210px;max-width:230px;z-index:1;border-right:1px solid var(--line)} .mx th:first-child{z-index:3}
 .mx textarea{min-height:90px;font-size:13px}
 .nb{display:grid;grid-template-columns:270px minmax(0,1fr);gap:26px}
 .item{display:flex;flex-direction:column;padding:9px 11px;border-radius:10px;cursor:pointer;border:1px solid transparent}
 .item:hover{background:var(--panel)} .item.on{border-color:var(--acc);background:var(--acc-bg)}
 .item b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ttl{font:700 26px Fraunces,Georgia,serif;border:0;background:none;padding:0;margin-bottom:8px}
+.ttl{font:700 26px Newsreader,Georgia,serif;border:0;background:none;padding:0;margin-bottom:8px}
 .nbedit textarea{min-height:46vh;margin-top:10px;font-size:15px;line-height:1.6}
 #cy{height:420px;border:1px solid var(--line);border-radius:14px;background:var(--panel)} #cy.big{height:calc(100vh - 250px);min-height:380px}
 /* reader */
@@ -140,7 +141,7 @@ header h3{flex:1;margin:0;font-size:15.5px;white-space:nowrap;overflow:hidden;te
 #doc{flex:1;overflow:auto;background:var(--pdf);padding:12px}
 .page{position:relative;margin:0 auto 12px;background:#fff;box-shadow:0 1px 6px #0003}
 .page canvas{display:block}
-article{max-width:740px;margin:8px auto 60px;padding:34px 40px 60px;background:var(--panel);border-radius:16px;box-shadow:var(--sh);font:calc(17.5px*var(--z,1))/1.72 Georgia,"Iowan Old Style",serif;overflow-wrap:break-word}
+article{max-width:740px;margin:8px auto 60px;padding:34px 40px 60px;background:var(--panel);border-radius:16px;box-shadow:var(--sh);font:calc(19px*var(--z,1))/1.65 Newsreader,Georgia,serif;overflow-wrap:break-word}
 article h1{font-size:1.9em} article h2{font-size:1.4em;margin-top:1.4em} article h3{font-size:1.2em;margin-top:1.2em}
 article img,article svg,article video{max-width:100%;height:auto;border-radius:8px} article figure{margin:1em 0} article figcaption{font-size:.8em;color:var(--muted)}
 article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;font-size:.78em;line-height:1.5} article table{border-collapse:collapse;font-size:.85em;display:block;overflow:auto} article td,article th{border:1px solid var(--line);padding:4px 8px}
@@ -150,7 +151,7 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 #yt{position:sticky;top:-12px;z-index:4;background:var(--pdf);padding:12px 0 10px}
 #yt iframe,#player{width:100%;height:auto;aspect-ratio:16/9;max-height:48vh;border:0;border-radius:14px;display:block;background:#000}
 .seg{display:flex;gap:12px;padding:7px 10px;font-size:calc(15.5px*var(--z,1));line-height:1.6} .seg.now{background:var(--acc-bg)}
-.ts{user-select:none;font:600 12px/2.1 Inter,system-ui;color:var(--acc);min-width:46px;text-decoration:none;flex:none}
+.ts{user-select:none;font:600 12px/2.1 "Schibsted Grotesk",system-ui;color:var(--acc);min-width:46px;text-decoration:none;flex:none}
 .pad{padding:18px}
 ::highlight(c1){background:#ffd60070} ::highlight(c2){background:#6fdc8c80} ::highlight(c3){background:#ff8fb180}
 ::highlight(ul){text-decoration:underline;text-decoration-color:#e0531a;text-decoration-thickness:2.5px}
@@ -158,18 +159,18 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 #tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);flex:none;padding:8px 10px;align-items:center}
 #tabs button{border:0;border-radius:99px;background:none;padding:.35em .5em;font-size:13.5px;min-height:34px;display:flex;gap:5px;align-items:center;color:var(--muted)}
 #tabs button.on{background:var(--acc-bg);color:var(--acc);font-weight:600}
-#tabs i{font:700 11px Inter,system-ui;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--muted)}
+#tabs i{font:700 11px "Schibsted Grotesk",system-ui;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--muted)}
 #tabs .on i{background:var(--acc);color:#fff} #tabs .done i{background:var(--ok);color:#fff}
 #body{flex:1;overflow:auto;padding:14px;background:var(--bg)}
 .box{border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px;background:var(--panel);box-shadow:var(--sh)}
 .box.done{border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
 .box h4{margin:0 0 .3em;font-size:15.5px}
 .k{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;background:var(--acc-bg);border-radius:6px;padding:2px 8px;margin:1.3em 0 .4em}
-.badge{font:700 12px Inter,system-ui;color:var(--ok);float:right}
-.q{font:600 19px/1.4 Fraunces,Georgia,serif}
+.badge{font:700 12px "Schibsted Grotesk",system-ui;color:var(--ok);float:right}
+.q{font:600 19px/1.4 Newsreader,Georgia,serif}
 .msg{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
 .msg.user{background:var(--acc-bg);border-color:transparent;margin-left:15%}
-.num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc-bg);color:var(--acc);font:700 12px Inter,system-ui;margin-right:6px;vertical-align:2px}
+.num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc-bg);color:var(--acc);font:700 12px "Schibsted Grotesk",system-ui;margin-right:6px;vertical-align:2px}
 .done .num{background:var(--ok);color:#fff}
 progress{width:100%;height:6px;accent-color:var(--ok)}
 .warn{color:#b58900;font-size:12.5px}
@@ -221,7 +222,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
   <div class="logo" title="Marrow">M</div>
   <div id="nav"></div>
   <span class="sp"></span>
-  <button id="palBtn" data-act="palette" title="Jump to anything (Ctrl K)"></button>
+  <button id="palBtn" data-act="palette" title="Search everything, or paste a link to add it (Ctrl K)"></button>
   <button id="themeBtn" data-act="theme"></button>
 </nav>
 <div id="page"></div>
@@ -240,7 +241,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
       <input id="find" type="search" placeholder="Find in this source ⏎" aria-label="Find in this source"><small id="findn" class="muted"></small><span class="sp"></span>
       <button id="tnote">+ Note at this moment</button>
       <button id="zo" aria-label="Smaller">−</button><button id="zi" aria-label="Larger">+</button>
-      <button id="snipBtn" title="Drag a box around a figure, table or equation to have it explained">Snip figure</button>
+      <button id="snipBtn" title="Drag a box around a figure, table or equation to have it explained">Explain a figure</button>
     </div>
     <div id="prog"><i></i></div>
     <div id="doc"></div>
@@ -315,7 +316,7 @@ const send = (method, path, body) => api(path, { method, headers: JH, body: JSON
 let saving = Promise.resolve();
 const save = (p, parts) => {
   const { pages, parts: _, ...rest } = p, body = JSON.stringify(parts ? { ...rest, parts } : rest);
-  return saving = saving.then(() => api('items/' + p.id, { method: 'PUT', headers: JH, body })).catch(e => toast('Could not save: ' + e.message));
+  return saving = saving.then(() => api('items/' + p.id, { method: 'PUT', headers: JH, body })).catch(e => toast('Could not save (' + e.message + '). Nothing is lost: it is saved again with your next change.'));
 };
 const saveNote = n => n && send('PUT', 'notes/' + n.id, n).catch(e => toast('Could not save the note: ' + e.message));
 const text = async p => p.pages || (p.parts = await api(`items/${p.id}/parts`), p.pages = p.parts.map(x => x.body));
@@ -487,7 +488,7 @@ async function addWeb(html, url) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   doc.head.prepend(Object.assign(doc.createElement('base'), { href: url })); // so relative links and images resolve against the article's site
   const art = new Readability(doc).parse();
-  if (!art || art.textContent.trim().length < 200) throw new Error('Could not find an article on that page. It may need a login or only load with JavaScript.');
+  if (!art || art.textContent.trim().length < 200) throw new Error('Could not find an article on that page. It may need a login or only load with JavaScript. Save the page as a PDF and upload that instead.');
   const root = new DOMParser().parseFromString(DOMPurify.sanitize(art.content, PURE), 'text/html').body;
   const pp = blocks(root).map(el => ({ body: el.textContent.replace(/\s+/g, ' ').trim(), html: el.outerHTML })).filter(x => x.body || /<img/i.test(x.html));
   await create('web', art.title || hostOf(url), { url, titled: true, meta: { authors: art.byline ? [art.byline.replace(/^by\s+/i, '').trim()] : [], year: (art.publishedTime || '').slice(0, 4), venue: art.siteName || hostOf(url) } }, pp);
@@ -505,7 +506,7 @@ async function addLink(v, extra, pdfOnly) {
   const doi = v.match(/^(?:doi:\s*|https?:\/\/(?:dx\.)?doi\.org\/)?(10\.\d{4,9}\/\S+)$/i)?.[1];
   const ax = doi ? doi.match(/^10\.48550\/arxiv\.(.+)$/i)?.[1] : /^https?:/.test(v) && !/arxiv\.org/.test(v) ? null : v.match(ARXIV)?.[0];
   const url = vid ? 'https://www.youtube.com/watch?v=' + vid : ax ? 'https://arxiv.org/pdf/' + ax : doi ? 'https://doi.org/' + doi : /^https?:\/\/\S+$/.test(v) ? v : null;
-  if (!url) throw new Error('Paste a link, an arXiv ID or a DOI.');
+  if (!url) throw new Error('That is not a link, an arXiv ID or a DOI. Paste one of those.');
   const dup = lib.find(p => p.url === url || (ax && p.arxiv === ax));
   if (dup) { toast('Already in your library.'); return openItem(dup.id); }
   if (vid) return addVideo(vid);
@@ -530,7 +531,7 @@ async function getFeed(url) {
   let j = await api('fetch?url=' + encodeURIComponent(url)), f = parseFeed(j.html);
   if (!f?.items.length) { // probably a blog's home page: use the feed it advertises
     const alt = new DOMParser().parseFromString(String(j.html), 'text/html').querySelector('link[rel~=alternate][type*=rss], link[rel~=alternate][type*=atom]')?.getAttribute('href');
-    if (!alt) throw new Error('no feed found at that address');
+    if (!alt) throw new Error('no feed at that address. Try the site’s RSS or Atom link');
     url = new URL(alt, j.url).href; j = await api('fetch?url=' + encodeURIComponent(url)); f = parseFeed(j.html);
     if (!f?.items.length) throw new Error('that feed is empty or unreadable');
   }
@@ -739,7 +740,7 @@ const VIEW = {
     return cardsHTML([P]) + `<details><summary>All ${P.cards.length} cards</summary>` +
       `<p class="muted">Answers stay hidden. Tap a question to reveal its answer.</p>` +
       P.cards.map((c, i) => `<details class="cardrow box"><summary>${esc(c.q)}</summary><p>${md(c.a)}</p>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(P, c.src)}</blockquote>` : ''}<button data-act="delcard" data-i="${i}">Delete card</button></details>`).join('') + `</details>
-      <p class="muted">Tip: select text in the source → “Card”.</p>`;
+      <p class="muted">To write your own card, select text in the source and choose “Card”.</p>`;
   },
   map() {
     return `<div id="cy"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>
@@ -810,7 +811,7 @@ const PAGE = {
         <button class="tile" data-view="library"><b>${lib.length}</b>source${lib.length === 1 ? '' : 's'}<small>${[['pdf', 'paper'], ['web', 'article'], ['video', 'video']].map(([k, l]) => `${count(k)} ${l}${count(k) === 1 ? '' : 's'}`).join(' · ')}</small></button>
         <button class="tile" data-view="review"><b>${d}</b>card${d === 1 ? '' : 's'} due<small>${d ? 'Review now →' : 'All caught up'}</small></button>
         <div class="tile"><b>${streak()}</b>day streak<small>Days in a row you studied</small></div>
-        <div class="tile"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b>mastery<small>Average over ${started.length} started</small></div>
+        <div class="tile"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b>mastery<small>Average across the ${started.length} you have started</small></div>
         <div class="tile"><small>Last 12 weeks</small>${heat()}</div>
       </div>` +
       (cont.length ? `<div class="sec"><h3>Pick up where you left off</h3></div><div class="grid">${cont.map(card).join('')}</div>` : '') +
@@ -818,7 +819,7 @@ const PAGE = {
   },
   library() {
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`;
-    return `<div class="wrap"><div class="row"><h1>Library</h1><span class="sp"></span><button data-act="backup">Backup</button><button data-act="restore">Restore</button><button data-act="biball">Export .bib</button></div>${ADDBAR}
+    return `<div class="wrap"><div class="row"><h1>Library</h1><span class="sp"></span><button data-act="backup">Download backup</button><button data-act="restore">Restore from backup</button><button data-act="biball">Export .bib</button></div>${ADDBAR}
       <div class="row filters"><input id="q" type="search" value="${esc(F.q)}" placeholder="Search titles, tags and full text" aria-label="Search the library">
         ${[['', 'All'], ['pdf', 'Papers'], ['web', 'Articles'], ['video', 'Videos']].map(([v, l]) => `<button class="chip ${F.kind === v ? 'on' : ''}" data-act="fkind" data-v="${v}">${l}</button>`).join('')}
         <select data-act="fproject" aria-label="Project">${opt('', 'All projects', F.project)}${projects().map(x => opt(x, x, F.project)).join('')}</select>
@@ -829,7 +830,7 @@ const PAGE = {
     const have = new Set(lib.map(tkey));
     return `<div class="wrap"><h1>Discover</h1><p class="muted lead">Search 250 million scholarly works through OpenAlex. Open-access papers go straight into your library.</p>
       <form data-f="disc" class="addbar"><input name="q" type="search" value="${esc(disc.q)}" required placeholder="Topic, title or author…" aria-label="Search papers"><button class="pri" ${disc.busy ? 'disabled' : ''}>Search</button></form>` +
-      (disc.busy ? '<p class="muted">Searching…</p>' : !disc.rows ? `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories — anything with a feed</small></div>
+      (disc.busy ? '<p class="muted">Searching OpenAlex…</p>' : !disc.rows ? `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories — anything with a feed</small></div>
         <form data-f="follow" class="addbar"><input name="u" required autocomplete="off" placeholder="Blog or feed address, e.g. lilianweng.github.io or rss.arxiv.org/rss/cs.LG" aria-label="Blog or feed address"><button>Follow</button></form>
         <div class="row" style="margin-bottom:14px">${feeds.map(f => `<span class="tag proj">${esc(f.title)} <a href="#" data-act="unfollow" data-v="${esc(f.url)}" aria-label="Unfollow ${esc(f.title)}" style="text-decoration:none">✕</a></span>`).join('')}</div>` +
         (!feeds.length ? '<p class="muted">Follow the blogs and journals you keep up with. New posts show up here, one click from your library.</p>' : !news ? '<p class="muted">Checking for new posts…</p>' : !news.length ? '<p class="muted">Nothing could be loaded from these feeds right now.</p>' :
@@ -863,11 +864,11 @@ const PAGE = {
   },
   notebook() {
     const n = notes.find(x => x.id === N) || notes[0]; N = n?.id;
-    return `<div class="wrap nb"><div><div class="row"><h1>Notebook</h1><span class="sp"></span><button class="pri" data-act="nbnew">+ New</button></div>` +
+    return `<div class="wrap nb"><div><div class="row"><h1>Notebook</h1><span class="sp"></span><button class="pri" data-act="nbnew">+ New note</button></div>` +
       (notes.map(x => `<div class="item ${x === n ? 'on' : ''}" data-act="nbopen" data-id="${esc(x.id)}"><b>${esc(x.title || 'Untitled')}</b><small class="muted">${esc(new Date(x.updated).toLocaleDateString())}${x.project ? ' · ' + esc(x.project) : ''}</small></div>`).join('')
         || '<p class="muted">Ideas, meeting notes, drafts and AI syntheses live here. Markdown and $math$ work.</p>') + `</div>
       <div class="nbedit">` + (n ? `<input class="ttl" data-k="nbtitle" value="${esc(n.title)}" placeholder="Untitled" aria-label="Title">
-        <div class="row"><input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="Project" aria-label="Project" style="max-width:240px"><span class="sp"></span><button data-act="nbexport">Export .md</button><button data-act="nbdel">Delete</button></div>
+        <div class="row"><input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="Project" aria-label="Project" style="max-width:240px"><span class="sp"></span><button data-act="nbexport">Export .md</button><button data-act="nbdel">Delete note</button></div>
         <textarea data-k="nbnote" placeholder="Write…">${esc(n.note)}</textarea>${mathKeys}
         <div class="k">Preview</div><div id="nbprev" class="box">${md(n.note || '', null)}</div>` : '') + `</div></div>`;
   },
@@ -882,7 +883,7 @@ function libRows() {
   $('#libList').innerHTML = ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
     <div class="grow"><b>${esc(p.title)}</b><br><small class="muted">${esc(byline(p))}</small> ${(p.tags || []).map(t => `<span class="tag" data-act="ftag" data-v="${esc(t)}">${esc(t)}</span>`).join(' ')}</div>
     ${p.project ? `<span class="tag proj" data-act="fproject" data-v="${esc(p.project)}">${esc(p.project)}</span>` : ''}${p.done ? '<span class="tag ok">Finished</span>' : ''}${ring(p)}
-    <button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete">✕</button></div>`).join('') || `<p class="muted">${lib.length ? 'No titles match.' : 'Your library is empty. Paste a link above, or drop a PDF anywhere.'}</p>`;
+    <button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete">✕</button></div>`).join('') || `<p class="muted">${lib.length ? 'No titles match. Clear the search or the filters to see everything.' : 'Your library is empty. Paste a link above, or drop a PDF anywhere.'}</p>`;
   $('#hits').innerHTML = F.hits.length ? `<div class="sec"><h3>Inside your sources</h3><small class="muted">full-text matches</small></div><div class="rows">` + F.hits.map(h => { const p = byId(h.item_id); return !p ? '' : `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}" data-n="${+h.n}"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 18)}</span>
     <div class="grow"><small class="muted">${esc(p.title)}</small><br>${esc(h.s).replace(/\x01/g, '<mark>').replace(/\x02/g, '</mark>')}</div></div>`; }).join('') + `</div>` : '';
 }
@@ -895,7 +896,7 @@ const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', disp
 function renderRail() {
   const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}</button>`).join('');
-  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Jump';
+  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
   $('#status').textContent = working;
 }
@@ -1022,7 +1023,7 @@ async function migrate() {
 function ask(q, img) {
   if (!q.trim() || working) return;
   P.chat.push({ role: 'user', content: q }); tab = 'ask'; document.body.classList.add('study');
-  run(img ? 'Looking at the figure…' : 'Thinking…', async p => {
+  run(img ? 'Looking at the figure…' : 'Writing an answer…', async p => {
     const hist = p.chat.slice(-8), others = askAll ? lib.filter(o => o !== p && o.brief).slice(0, 25) : [];
     if (img) hist[hist.length - 1] = { role: 'user', content: [{ type: 'text', text: q }, { type: 'image_url', image_url: { url: img } }] };
     const text = await ai([{ role: 'system', content: `You are a patient expert tutor helping someone master this source (a paper, an article, or a talk transcript). Markers like [p.N] number its parts. Answer from the source and cite the part like (p.4). If the source does not say, say so, then give your best general knowledge clearly labelled. Be concise and plain; define jargon; prefer intuition and concrete examples. Write any math as LaTeX inside $...$.\n\nSOURCE:\n${fullText(p)}` + (others.length ? `\n\nOTHER SOURCES IN THE READER'S LIBRARY (summaries only; name a source by its title when you use it, and say so if a detail would need its full text):\n` + others.map(o => `- "${o.title}" (${o.meta?.year || 'n.d.'}): ${o.brief.tldr} Idea: ${o.brief.idea} Method: ${o.brief.method} Results: ${o.brief.results} Limitations: ${o.brief.limitations}`).join('\n') : '') }, ...hist]);
@@ -1034,7 +1035,7 @@ function ask(q, img) {
 const curNote = () => notes.find(x => x.id === N);
 async function discover(q) {
   disc.q = q; disc.busy = true; render();
-  try { disc.rows = await api('discover?q=' + encodeURIComponent(q)); } catch (e) { toast('Search failed: ' + e.message); }
+  try { disc.rows = await api('discover?q=' + encodeURIComponent(q)); } catch (e) { toast('The paper search failed (' + e.message + '). Try again.'); }
   disc.busy = false; if (view === 'discover') { enter($('#page')); render(); }
 }
 // Command palette (Ctrl/⌘ K or /): every source, note and page, plus full-text search and "add this link", from one box.
@@ -1048,7 +1049,7 @@ function palette() {
     ['Upload a PDF', 'Action', 'file', ACT.upload], ['Switch between light and dark', 'Action', 'sun', ACT.theme],
   ].filter(r => words.every(w => (r[0] + ' ' + r[1]).toLowerCase().includes(w))).slice(0, 8);
   if (q) palRows.push([`Search inside every source for “${q}”`, 'Full text', 'search', () => { F.q = q; go('library'); ftSearch(); }]);
-  if (/^(https?:\/\/|doi:|10\.\d{4})|\d{4}\.\d{4,5}/i.test(q)) palRows.unshift([`Add ${q}`, 'New source', 'book', () => { toast('Fetching…'); addLink(q).catch(e => toast(e.message)); }]);
+  if (/^(https?:\/\/|doi:|10\.\d{4})|\d{4}\.\d{4,5}/i.test(q)) palRows.unshift([`Add ${q}`, 'New source', 'book', () => { toast('Fetching that link…'); addLink(q).catch(e => toast(e.message)); }]);
   palI = Math.max(0, Math.min(palI, palRows.length - 1));
   $('#pall').innerHTML = palRows.map((r, i) => `<button class="${i === palI ? 'on' : ''}" data-pal="${i}">${ic(r[2], 16)}<span class="grow">${esc(r[0])}</span><small class="muted">${esc(r[1])}</small></button>`).join('');
   $('#pall .on')?.scrollIntoView({ block: 'nearest' });
@@ -1077,7 +1078,7 @@ const ACT = {
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
   palette: () => { $('#palq').value = ''; palI = 0; palette(); $('#pal').showModal(); },
-  sample: async el => { el.disabled = true; toast('Fetching…'); try { await addLink(el.dataset.v); } catch (e) { toast(e.message); el.disabled = false; } },
+  sample: async el => { el.disabled = true; toast('Fetching that link…'); try { await addLink(el.dataset.v); } catch (e) { toast(e.message); el.disabled = false; } },
   find: el => { go('discover'); discover(el.dataset.v); },
   show: () => { shown = fx = true; render(); },
   grade: el => { const p = byId(el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; fx = true; log('review', p); save(p); render(); },
@@ -1121,7 +1122,7 @@ const ACT = {
   ftag: el => { F.q = el.dataset.v; render(); ftSearch(); },
   del: async el => {
     const p = byId(el.dataset.id);
-    if (!confirm(`Delete “${p.title}” with all its notes and cards?`)) return;
+    if (!confirm(`Delete “${p.title}” with all its notes, highlights and cards? This cannot be undone.`)) return;
     try { await api('items/' + p.id, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
     lib = lib.filter(x => x !== p); if (P === p) P = null; render();
   },
@@ -1132,7 +1133,7 @@ const ACT = {
   },
   dclear: () => { disc.rows = null; disc.q = ''; render(); },
   fadd: async el => {
-    el.disabled = true; toast('Fetching…');
+    el.disabled = true; toast('Fetching that link…');
     try { await addLink(news[+el.dataset.i].link); } catch (e) { toast(e.message); el.disabled = false; }
   },
   unfollow: async el => {
@@ -1157,7 +1158,7 @@ const ACT = {
   nbnew: () => { const n = { id: crypto.randomUUID(), title: '', project: F.project, note: '', updated: Date.now() }; notes.unshift(n); N = n.id; saveNote(n); render(); $('.ttl')?.focus(); },
   nbopen: el => { saveNote(curNote()); N = el.dataset.id; render(); },
   nbdel: async () => {
-    const n = curNote(); if (!n || !confirm(`Delete “${n.title || 'Untitled'}”?`)) return;
+    const n = curNote(); if (!n || !confirm(`Delete “${n.title || 'Untitled'}”? This cannot be undone.`)) return;
     clearTimeout(nbT); await api('notes/' + n.id, { method: 'DELETE' }).catch(e => toast(e.message));
     notes = notes.filter(x => x !== n); N = null; render();
   },
@@ -1179,7 +1180,7 @@ const FORM = {
   ask: f => ask(f.q.value),
   add: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); if (!v) return;
-    b.disabled = true; toast('Fetching…');
+    b.disabled = true; toast('Fetching that link…');
     try { await addLink(v); } catch (e) { toast(e.message); }
     b.disabled = false;
   },
@@ -1311,7 +1312,7 @@ $('#sel').onclick = e => {
 try {
   ({ items: lib, notes, activity, feeds = [] } = await api('library'));
   await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
-} catch (e) { toast('Could not reach the Marrow server: ' + e.message); }
+} catch (e) { toast('Could not reach the Marrow server (' + e.message + '). Check that it is still running, then reload this page.'); }
 enter($('#page')); render();
 </script>
 </body>
