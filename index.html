@@ -9,7 +9,16 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Schibsted+Grotesk:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Schibsted+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.31.7/dist/editorjs.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.9/dist/header.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@2.0.9/dist/editorjs-list.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@2.7.6/dist/quote.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2.9.4/dist/code.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1.4.2/dist/delimiter.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@2.4.6/dist/table.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@1.5.2/dist/inline-code.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@1.4.0/dist/marker.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
@@ -17,8 +26,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
 <style>
 /* palette: the grey-green of a lab notebook's ruled paper, with rust ink as the one accent */
-:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:0 1px 2px #0000000f,0 8px 24px #0000000d;color-scheme:light}
-[data-theme=dark]{--bg:#0f1412;--panel:#161c19;--ink:#e4eae6;--muted:#8c9991;--line:#29322d;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#090c0a;--web:#7fb6e0;--vid:#f2857c;--sh:0 1px 2px #0006,0 8px 24px #0004;color-scheme:dark}
+:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;color-scheme:light}
+[data-theme=dark]{--bg:#0f1412;--panel:#161c19;--ink:#e4eae6;--muted:#8c9991;--line:#29322d;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#090c0a;--web:#7fb6e0;--vid:#f2857c;--sh:none;color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%;margin:0}
@@ -27,11 +36,11 @@ h1,h2,h3,h4,.q{font-family:Newsreader,"Iowan Old Style",Georgia,serif;margin:.2e
 h1{font-size:30px;letter-spacing:-.4px}
 a{color:var(--acc)}
 button,input,textarea,select{font:inherit;color:inherit}
-button,.btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.45em .9em;cursor:pointer;min-height:36px;text-decoration:none;color:inherit;white-space:nowrap;transition:background .15s,border-color .15s,transform .12s var(--e)}
+button,.btn{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:.45em .9em;cursor:pointer;min-height:36px;text-decoration:none;color:inherit;white-space:nowrap;transition:background .15s,border-color .15s,transform .12s var(--e)}
 button:hover,.btn:hover{border-color:var(--acc)} button:active{transform:scale(.97)}
 button.pri{background:#b4460f;border:0;color:#fff;font-weight:600} button.pri:hover{background:#c5521a}
 button:disabled{opacity:.5;cursor:wait}
-input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:.55em .75em}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:.55em .75em}
 select{width:auto}
 textarea{min-height:110px;resize:vertical}
 :focus-visible{outline:2px solid var(--acc);outline-offset:1px}
@@ -67,22 +76,22 @@ h1,h2,h3,h4{text-wrap:balance}
 kbd{font:600 11px "Schibsted Grotesk",system-ui;border:1px solid currentColor;border-radius:5px;padding:0 5px;margin-left:7px;opacity:.55}
 @media (hover:none){kbd{display:none}}
 @media (prefers-reduced-motion:reduce){*,::view-transition-group(root),::view-transition-old(root),::view-transition-new(root){animation:none!important;transition:none!important}}
-.cover{--h:20;height:112px;border-radius:11px;margin:-5px -5px 2px;background:linear-gradient(135deg,hsl(var(--h) 60% 90%),hsl(calc(var(--h) + 45) 55% 80%)) center/cover;display:grid;place-items:center;color:hsl(var(--h) 45% 38%);position:relative}
+.cover{--h:20;height:112px;border-radius:4px;margin:-5px -5px 2px;background:linear-gradient(135deg,hsl(var(--h) 60% 90%),hsl(calc(var(--h) + 45) 55% 80%)) center/cover;display:grid;place-items:center;color:hsl(var(--h) 45% 38%);position:relative}
 [data-theme=dark] .cover{background-image:linear-gradient(135deg,hsl(var(--h) 35% 24%),hsl(calc(var(--h) + 45) 40% 15%));color:hsl(var(--h) 55% 72%)}
 .cover .kind{position:absolute;left:8px;top:8px;background:var(--panel);padding:3px 9px;border-radius:99px;box-shadow:var(--sh)} .cover .ring{position:absolute;right:8px;top:8px;box-shadow:var(--sh)}
 .cover.shot::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(#0000 40%,#0006)}
 .step{font-weight:600;color:var(--acc)}
 .bar{height:4px;border-radius:9px;background:var(--line);overflow:hidden} .bar i{display:block;height:100%;background:var(--ok);border-radius:9px}
-.tldr{font:600 18px/1.5 Newsreader,Georgia,serif;background:var(--acc-bg);border-radius:14px;padding:14px 16px;margin:14px 0}
-.fact{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:2px 14px 12px;margin:10px 0;box-shadow:var(--sh)} .fact .k{margin-top:12px} .fact.key{border-color:var(--acc)}
-.terms{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px} .term{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:13.5px;line-height:1.45} .term b{display:block;margin-bottom:2px}
+.tldr{font:600 18px/1.5 Newsreader,Georgia,serif;background:var(--acc-bg);border-radius:4px;padding:14px 16px;margin:14px 0}
+.fact{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:2px 14px 12px;margin:10px 0;box-shadow:var(--sh)} .fact .k{margin-top:12px} .fact.key{border-color:var(--acc)}
+.terms{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px} .term{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:9px 11px;font-size:13.5px;line-height:1.45} .term b{display:block;margin-bottom:2px}
 #prog{height:3px;background:var(--line);flex:none} #prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .1s}
 .wrap.narrow .box{padding:26px 28px} .wrap.narrow .q{font-size:25px;margin:.5em 0 .7em} .wrap.narrow .box button{min-width:92px}
 /* rail */
-#rail{view-transition-name:rail;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;overflow:auto}
-.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(160deg,#d65f1f,#9c3a0a);color:#fff;font:700 24px Newsreader,Georgia,serif;display:grid;place-items:center;margin-bottom:10px;flex:none}
+#rail{view-transition-name:rail;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;overflow:hidden auto;scrollbar-width:none}
+.logo{width:40px;height:40px;border-radius:4px;background:linear-gradient(160deg,#d65f1f,#9c3a0a);color:#fff;font:700 24px Newsreader,Georgia,serif;display:grid;place-items:center;margin-bottom:10px;flex:none}
 #nav{display:contents}
-#rail button{border:0;background:none;width:66px;padding:8px 0 6px;display:grid;justify-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);border-radius:12px;position:relative;min-height:0;flex:none}
+#rail button{border:0;background:none;width:100%;padding:8px 0 6px;display:grid;justify-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);border-radius:4px;position:relative;min-height:0;flex:none}
 #rail button:hover{color:var(--ink);background:var(--bg)} #rail button.on{background:var(--acc-bg);color:var(--acc)}
 #rail .n{position:absolute;top:2px;right:8px;background:var(--acc);color:#fff;border-radius:99px;font-size:10px;line-height:16px;padding:0 5px}
 [data-theme=dark] #rail .n{color:#1b1916}
@@ -90,16 +99,16 @@ kbd{font:600 11px "Schibsted Grotesk",system-ui;border:1px solid currentColor;bo
 #page{overflow:auto;min-width:0}
 .wrap{max-width:1060px;margin:0 auto;padding:36px 28px 90px} .wrap.narrow{max-width:680px} .wrap.wide{max-width:1500px}
 .hero{font-size:40px;margin:0} .lead{font-size:16.5px;margin:.2em 0 1.4em}
-.addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:var(--sh);margin:0 0 22px}
+.addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:8px;box-shadow:var(--sh);margin:0 0 22px}
 .addbar input{border:0;background:none;font-size:15.5px;min-width:0} .addbar input:focus-visible{outline:0} .addbar:focus-within{border-color:var(--acc)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:26px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--sh);text-align:left;white-space:normal;min-height:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;box-shadow:var(--sh);text-align:left;white-space:normal;min-height:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .tile b{font:700 34px/1 Newsreader,Georgia,serif;margin-bottom:6px} .tile small{color:var(--muted)}
 .heat{display:grid;grid-template-rows:repeat(7,auto);grid-template-columns:repeat(12,1fr);grid-auto-flow:column;gap:3px;margin-top:8px;width:100%;max-width:190px}
 .heat i{border-radius:3px;aspect-ratio:1;background:color-mix(in srgb,var(--ok) calc(var(--a)*100%),var(--line))}
 .sec{display:flex;align-items:baseline;gap:10px;margin:26px 0 10px} .sec h3{margin:0;font-size:20px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--sh);cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:transform .15s,border-color .15s;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px;box-shadow:var(--sh);cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:transform .15s,border-color .15s;min-width:0}
 .card:hover{border-color:var(--acc);transform:translateY(-2px)}
 .card h4{font-size:16.5px;margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 button.card{text-align:left;white-space:normal;align-items:flex-start;gap:6px;padding:16px}
@@ -117,19 +126,54 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .ring{--p:0;--in:var(--panel);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 11px "Schibsted Grotesk",system-ui;flex:none;
   background:radial-gradient(closest-side,var(--in) 74%,transparent 76%),conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0)}
 .clamp{overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
-.mxwrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--sh);max-height:calc(100vh - 200px)}
-.mx{border-collapse:separate;border-spacing:0;font-size:13.5px}
-.mx th,.mx td{border-bottom:1px solid var(--line);padding:10px 12px;vertical-align:top;text-align:left;min-width:190px}
+.mxwrap{overflow:auto;border:1px solid var(--line);border-radius:4px;background:var(--panel);box-shadow:var(--sh);max-height:calc(100vh - 200px)}
+.mx{border-collapse:separate;border-spacing:0;font-size:13.5px;line-height:1.5;width:100%}
+.mx th,.mx td{border-bottom:1px solid var(--line);padding:12px 14px;vertical-align:top;text-align:left;min-width:230px;max-width:360px}
+.mx tr:last-child td{border-bottom:0} .mx th{cursor:pointer;white-space:nowrap} .mx th small{color:var(--muted)}
+.mx th button{min-height:0;padding:1px 6px;margin-left:6px;font:500 10px "IBM Plex Mono",monospace;color:var(--muted)}
+.cell{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer} tr.open .cell{display:block}
+.mx td textarea{min-height:2.4em;field-sizing:content;resize:none;background:none;border-color:transparent;padding:4px 6px;margin:-4px -6px;width:calc(100% + 12px)}
+.mx td textarea:hover,.mx td textarea:focus{border-color:var(--line);background:var(--bg)}
+/* filters shared by the matrix and the map */
+.fbar,.cols{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+.fbar input[type=search]{flex:1;min-width:200px;width:auto} .fbar input[type=number]{width:84px}
+.cols{font-size:13px;gap:6px} .cols form{display:flex;gap:6px;margin-left:8px} .cols form input{width:220px;padding:.3em .7em} .cols form button{min-height:32px;padding:.2em .8em}
+.runhead{display:flex;justify-content:space-between;gap:12px;font:500 11px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:26px}
+.k,.kind,.mx th,kbd{font-family:"IBM Plex Mono",monospace!important}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px} .mapgrid #node{margin:0;overflow:auto;max-height:calc(100vh - 290px)} .mapgrid #node h3{font-size:19px}
+.pickbar{padding:8px 12px;border:1px solid var(--acc);border-radius:4px;background:var(--acc-bg);margin-bottom:8px}
+.card input[type=checkbox]{width:16px;height:16px;flex:none;accent-color:var(--acc)}
+/* notebook: a list of pages, a page of blocks, and a bench that works across the page's sources */
+.nb{display:grid;grid-template-columns:250px minmax(0,1fr);height:100%}
+.nbside{border-right:1px solid var(--line);padding:22px 12px;overflow:auto;background:var(--panel)}
+.nbmain{overflow:auto;display:flex;flex-direction:column;min-height:0}
+.nbpage{max-width:800px;width:100%;margin:0 auto;padding:44px 60px 30px;flex:1}
+.nbmeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 14px;font-size:13px;color:var(--muted)}
+.nbmeta input{width:180px;padding:.25em .6em;font-size:13px} .nbmeta button{min-height:30px;padding:.15em .7em;font-size:13px}
+.srcchip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:3px 2px 3px 8px;background:var(--panel);max-width:270px;color:var(--ink)}
+.srcchip a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;color:inherit} .srcchip a:hover{color:var(--acc)}
+.bench{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:12px 60px 14px;z-index:3} .bench>div{max-width:680px;margin:0 auto}
+.bench form{display:flex;gap:8px;margin-bottom:8px}
+#ed{font-size:16.5px;line-height:1.65} #ed .codex-editor__redactor{padding-bottom:140px!important}
+#ed .ce-block__content,#ed .ce-toolbar__content{max-width:100%} #ed h2{font-size:26px} #ed h3{font-size:21px} #ed h4{font-size:18px}
+#ed [contenteditable]:focus-visible{outline:0} .ce-popover{--max-height:330px}
+#ed a{color:var(--acc)} #ed a[href^="#src:"]{text-decoration:none;border-bottom:1px dotted var(--acc);font-size:.92em}
+#ed .ce-toolbar__plus,#ed .ce-toolbar__settings-btn{color:var(--muted)} #ed .ce-toolbar__plus:hover,#ed .ce-toolbar__settings-btn:hover{background:var(--line)}
+#ed .ce-block--selected .ce-block__content{background:var(--acc-bg)} #ed ::selection{background:var(--acc-bg)}
+#ed .cdx-quote__text,#ed .cdx-quote__caption,#ed .ce-code__textarea,#ed .mathblk textarea{background:var(--bg);border:1px solid var(--line);color:var(--ink);box-shadow:none;border-radius:4px}
+#ed .cdx-quote__text{min-height:0;border:0;border-left:3px solid var(--acc);border-radius:0;background:none;font-family:Newsreader,Georgia,serif;font-size:1.05em} #ed .cdx-quote__caption{border:0;background:none;color:var(--muted);font-size:.85em}
+#ed .mathblk textarea{min-height:0;field-sizing:content;font:13px "IBM Plex Mono",monospace} #ed .mathblk>div{padding:8px 0;overflow:auto}
+.ce-popover,.ce-inline-toolbar,.ce-conversion-toolbar,.tc-popover,.tc-wrap,.tc-toolbox{--color-background:var(--panel);--color-text-primary:var(--ink);--color-text-secondary:var(--muted);--color-border:var(--line);--color-background-item-hover:var(--bg);--color-background-hover:var(--bg);--color-background-icon:var(--bg);--color-border-icon:var(--line);--color-background-item-focus:var(--acc-bg);--color-text-icon-active:var(--acc);--color-background-icon-active:var(--acc-bg)}
+.ce-inline-toolbar,.ce-conversion-toolbar{background:var(--panel)!important;color:var(--ink);border-color:var(--line)!important} .ce-inline-tool,.ce-inline-toolbar__dropdown{color:var(--ink)} .ce-inline-tool:hover,.ce-inline-toolbar__dropdown:hover{background:var(--bg)!important}
+.ce-inline-tool-input{background:var(--bg)!important;color:var(--ink)!important;border-color:var(--line)!important} .cdx-search-field{background:var(--bg)!important} .cdx-search-field__input{color:var(--ink)!important}
 .mx th{position:sticky;top:0;background:var(--panel);font:700 11px "Schibsted Grotesk",system-ui;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);z-index:2}
 .mx td:first-child,.mx th:first-child{position:sticky;left:0;background:var(--panel);min-width:210px;max-width:230px;z-index:1;border-right:1px solid var(--line)} .mx th:first-child{z-index:3}
 .mx textarea{min-height:90px;font-size:13px}
-.nb{display:grid;grid-template-columns:270px minmax(0,1fr);gap:26px}
-.item{display:flex;flex-direction:column;padding:9px 11px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.item{display:flex;flex-direction:column;padding:9px 11px;border-radius:4px;cursor:pointer;border:1px solid transparent}
 .item:hover{background:var(--panel)} .item.on{border-color:var(--acc);background:var(--acc-bg)}
 .item b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ttl{font:700 26px Newsreader,Georgia,serif;border:0;background:none;padding:0;margin-bottom:8px}
-.nbedit textarea{min-height:46vh;margin-top:10px;font-size:15px;line-height:1.6}
-#cy{height:420px;border:1px solid var(--line);border-radius:14px;background:var(--panel)} #cy.big{height:calc(100vh - 250px);min-height:380px}
+.ttl{font:700 38px/1.15 Newsreader,Georgia,serif;border:0;background:none;padding:0;border-radius:0} .ttl:focus-visible{outline:0}
+#cy{height:420px;border:1px solid var(--line);border-radius:4px;background:var(--panel)} #cy.big{height:calc(100vh - 290px);min-height:380px}
 /* reader */
 #reader{display:grid;grid-template-columns:minmax(0,1fr) 480px;min-height:0;height:100%}
 main{display:flex;flex-direction:column;min-width:0;min-height:0}
@@ -141,7 +185,7 @@ header h3{flex:1;margin:0;font-size:15.5px;white-space:nowrap;overflow:hidden;te
 #doc{flex:1;overflow:auto;background:var(--pdf);padding:12px}
 .page{position:relative;margin:0 auto 12px;background:#fff;box-shadow:0 1px 6px #0003}
 .page canvas{display:block}
-article{max-width:740px;margin:8px auto 60px;padding:34px 40px 60px;background:var(--panel);border-radius:16px;box-shadow:var(--sh);font:calc(19px*var(--z,1))/1.65 Newsreader,Georgia,serif;overflow-wrap:break-word}
+article{max-width:740px;margin:8px auto 60px;padding:34px 40px 60px;background:var(--panel);border-radius:4px;box-shadow:var(--sh);font:calc(19px*var(--z,1))/1.65 Newsreader,Georgia,serif;overflow-wrap:break-word}
 article h1{font-size:1.9em} article h2{font-size:1.4em;margin-top:1.4em} article h3{font-size:1.2em;margin-top:1.2em}
 article img,article svg,article video{max-width:100%;height:auto;border-radius:8px} article figure{margin:1em 0} article figcaption{font-size:.8em;color:var(--muted)}
 article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;font-size:.78em;line-height:1.5} article table{border-collapse:collapse;font-size:.85em;display:block;overflow:auto} article td,article th{border:1px solid var(--line);padding:4px 8px}
@@ -149,7 +193,7 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 @keyframes fl{0%,60%{background:var(--acc-bg);box-shadow:0 0 0 6px var(--acc-bg)}}
 .vid{max-width:860px;margin:0 auto}
 #yt{position:sticky;top:-12px;z-index:4;background:var(--pdf);padding:12px 0 10px}
-#yt iframe,#player{width:100%;height:auto;aspect-ratio:16/9;max-height:48vh;border:0;border-radius:14px;display:block;background:#000}
+#yt iframe,#player{width:100%;height:auto;aspect-ratio:16/9;max-height:48vh;border:0;border-radius:4px;display:block;background:#000}
 .seg{display:flex;gap:12px;padding:7px 10px;font-size:calc(15.5px*var(--z,1));line-height:1.6} .seg.now{background:var(--acc-bg)}
 .ts{user-select:none;font:600 12px/2.1 "Schibsted Grotesk",system-ui;color:var(--acc);min-width:46px;text-decoration:none;flex:none}
 .pad{padding:18px}
@@ -162,13 +206,13 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 #tabs i{font:700 11px "Schibsted Grotesk",system-ui;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--muted)}
 #tabs .on i{background:var(--acc);color:#fff} #tabs .done i{background:var(--ok);color:#fff}
 #body{flex:1;overflow:auto;padding:14px;background:var(--bg)}
-.box{border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px;background:var(--panel);box-shadow:var(--sh)}
+.box{border:1px solid var(--line);border-radius:4px;padding:14px;margin:0 0 12px;background:var(--panel);box-shadow:var(--sh)}
 .box.done{border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
 .box h4{margin:0 0 .3em;font-size:15.5px}
 .k{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;background:var(--acc-bg);border-radius:6px;padding:2px 8px;margin:1.3em 0 .4em}
 .badge{font:700 12px "Schibsted Grotesk",system-ui;color:var(--ok);float:right}
 .q{font:600 19px/1.4 Newsreader,Georgia,serif}
-.msg{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.msg{margin:0 0 12px;padding:10px 12px;border-radius:4px;background:var(--panel);border:1px solid var(--line)}
 .msg.user{background:var(--acc-bg);border-color:transparent;margin-left:15%}
 .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc-bg);color:var(--acc);font:700 12px "Schibsted Grotesk",system-ui;margin-right:6px;vertical-align:2px}
 .done .num{background:var(--ok);color:#fff}
@@ -187,16 +231,16 @@ progress{width:100%;height:6px;accent-color:var(--ok)}
 details.cardrow summary{cursor:pointer;font-weight:600;list-style-position:outside;margin-left:1em}
 body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer-events:none} body.snip #snipBtn{background:var(--acc);color:#fff}
 #snipbox{position:absolute;border:2px dashed var(--acc);background:#b4460f22;pointer-events:none;z-index:5}
-#sel{position:fixed;z-index:20;display:none;background:#221f1a;border-radius:12px;padding:4px;gap:2px;box-shadow:0 4px 16px #0005;animation:pop .16s var(--e)}
+#sel{position:fixed;z-index:20;display:none;background:#221f1a;border-radius:4px;padding:4px;gap:2px;box-shadow:0 4px 16px #0005;animation:pop .16s var(--e)}
 #sel button{background:none;border:0;color:#faf7f2;min-height:34px} #sel button:hover{background:#fff3}
-#toast{position:fixed;bottom:20px;left:50%;translate:-50% 14px;opacity:0;pointer-events:none;transition:opacity .18s,translate .3s var(--e);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:30;max-width:90vw}
+#toast{position:fixed;bottom:20px;left:50%;translate:-50% 14px;opacity:0;pointer-events:none;transition:opacity .18s,translate .3s var(--e);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:4px;z-index:30;max-width:90vw}
 #toast.on{opacity:1;translate:-50% 0;pointer-events:auto}
 #status{position:fixed;left:92px;bottom:16px;z-index:25;background:var(--acc-bg);color:var(--ink);border:1px solid var(--acc);border-radius:99px;padding:7px 14px;font-size:13.5px;box-shadow:var(--sh);max-width:min(520px,80vw);animation:rise .3s var(--e)}
-#pal{border:1px solid var(--line);border-radius:16px;padding:0;background:var(--panel);color:var(--ink);width:min(620px,92vw);margin-top:13vh;box-shadow:0 24px 80px #0007;overflow:hidden}
+#pal{border:1px solid var(--line);border-radius:4px;padding:0;background:var(--panel);color:var(--ink);width:min(620px,92vw);margin-top:13vh;box-shadow:0 24px 80px #0007;overflow:hidden}
 #pal[open]{animation:pop .2s var(--e)} #pal::backdrop{background:#14110c80}
 #palq{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:16px 18px;font-size:17px} #palq:focus-visible{outline:0}
 #pall{padding:6px;max-height:52vh;overflow:auto}
-#pall button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;border-radius:10px;padding:.55em .7em} #pall button.on{background:var(--acc-bg)}
+#pall button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;border-radius:4px;padding:.55em .7em} #pall button.on{background:var(--acc-bg)}
 #pall .grow{overflow:hidden;text-overflow:ellipsis}
 #status:empty{display:none}
 #status::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;vertical-align:-1px}
@@ -207,7 +251,8 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
   #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn{display:none}
   .wrap{padding:22px 16px 60px} .hero{font-size:32px}
   .addbar{flex-wrap:wrap} .addbar input{flex:1 1 100%}
-  .nb{grid-template-columns:1fr}
+  .nb{grid-template-columns:1fr;height:auto} .nbside{border-right:0;border-bottom:1px solid var(--line);max-height:32vh} .nbpage{padding:24px 18px} .bench{padding:10px 18px}
+  .mapgrid{grid-template-columns:1fr} .runhead span:last-child{display:none}
   #reader{grid-template-columns:1fr} .mob{display:inline-block}
   header #doneBtn,header #orig{display:none}
   article{padding:22px 18px 40px}
@@ -300,7 +345,11 @@ let toastT;
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6000); };
 // Motion. enter(): the next render inside these containers plays its entrance. vt(): cross-fade a whole-screen change where the browser can.
 const enter = (...els) => els.forEach(el => { el.classList.add('in'); clearTimeout(el._in); el._in = setTimeout(() => el.classList.remove('in'), 900); });
-const vt = fn => document.startViewTransition && !matchMedia('(prefers-reduced-motion:reduce)').matches ? document.startViewTransition(fn).updateCallbackDone : fn();
+const vt = fn => {
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion:reduce)').matches) return fn();
+  const t = document.startViewTransition(fn); t.ready.catch(() => {}); // a newer navigation skipping this fade is not an error
+  return t.updateCallbackDone;
+};
 const dl = (name, text, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); };
 const fname = s => String(s).replace(/[^\w ]+/g, '').trim().slice(0, 60) || 'marrow';
 
@@ -318,7 +367,7 @@ const save = (p, parts) => {
   const { pages, parts: _, ...rest } = p, body = JSON.stringify(parts ? { ...rest, parts } : rest);
   return saving = saving.then(() => api('items/' + p.id, { method: 'PUT', headers: JH, body })).catch(e => toast('Could not save (' + e.message + '). Nothing is lost: it is saved again with your next change.'));
 };
-const saveNote = n => n && send('PUT', 'notes/' + n.id, n).catch(e => toast('Could not save the note: ' + e.message));
+const saveNote = n => n && send('PUT', 'notes/' + n.id, { title: n.title, project: n.project, note: n.note }).catch(e => toast('Could not save the note: ' + e.message));
 const text = async p => p.pages || (p.parts = await api(`items/${p.id}/parts`), p.pages = p.parts.map(x => x.body));
 const log = (kind, p) => { activity.push(Date.now()); send('POST', 'activity', { kind, item_id: p?.id }).catch(() => {}); };
 
@@ -361,6 +410,29 @@ const TABS = [['brief', 'Brief'], ['read', 'Read'], ['teach', 'Teach'], ['cards'
 const byId = id => lib.find(p => p.id === id);
 const projects = () => [...new Set([...lib, ...notes].map(x => x.project).filter(Boolean))].sort();
 const inScope = () => lib.filter(p => !F.project || p.project === F.project);
+// The matrix and the map share one set of filters, so narrowing 200 sources down in one narrows the other.
+const S = { q: '', kind: '', y0: '', y1: '', sort: 'added' }, M = { shared: null, by: 'cluster' }, picks = new Set();
+const yearOf = p => +p.meta?.year || 0;
+function scoped() {
+  const w = S.q.toLowerCase().split(/\s+/).filter(Boolean);
+  const hay = p => [p.title, p.project, p.meta?.venue, ...(p.tags || []), ...(p.meta?.authors || []), ...p.concepts.map(c => c.name)].join(' ').toLowerCase();
+  return inScope().filter(p => (!S.kind || p.kind === S.kind) && (!S.y0 || yearOf(p) >= +S.y0) && (!S.y1 || (yearOf(p) && yearOf(p) <= +S.y1)) && w.every(x => hay(p).includes(x)))
+    .sort(S.sort === 'title' ? (a, b) => a.title.localeCompare(b.title) : S.sort === 'new' ? (a, b) => yearOf(b) - yearOf(a) : S.sort === 'old' ? (a, b) => yearOf(a) - yearOf(b) : (a, b) => b.added - a.added);
+}
+const sel = (act, opts, cur, label) => `<select data-act="${act}" aria-label="${label}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+const filterBar = sort => `<div class="fbar"><input type="search" data-s="q" value="${esc(S.q)}" placeholder="Filter by title, author, tag or concept" aria-label="Filter sources">
+  ${[['', 'All'], ['pdf', 'Papers'], ['web', 'Articles'], ['video', 'Videos']].map(([v, l]) => `<button class="chip ${S.kind === v ? 'on' : ''}" data-act="skind" data-v="${v}">${l}</button>`).join('')}
+  ${sel('fproject', [['', 'All projects'], ...projects().map(x => [x, x])], F.project, 'Project')}
+  <label class="muted">Year <input type="number" data-s="y0" value="${esc(S.y0)}" placeholder="from" aria-label="From year"> to <input type="number" data-s="y1" value="${esc(S.y1)}" placeholder="to" aria-label="To year"></label>
+  ${sort ? sel('ssort', [['added', 'Newest added'], ['new', 'Year, newest first'], ['old', 'Year, oldest first'], ['title', 'Title A to Z']], S.sort, 'Sort') : ''}</div>`;
+const lsGet = (k, d) => { try { return JSON.parse(localStorage[k]) ?? d; } catch { return d; } }, lsSet = (k, v) => { try { localStorage[k] = JSON.stringify(v); } catch {} };
+// Matrix columns: the five briefing fields, any columns the reader added (kept on each source as p.cols), and "My take".
+let mxHide = new Set(lsGet('mxHide', [])), mxCustom = lsGet('mxCols', []);
+const mxCols = () => [...MX.map(([label, key]) => ({ label, key })),
+  ...[...new Set([...mxCustom, ...lib.flatMap(p => Object.keys(p.cols || {}))])].map(label => ({ label, key: 'c:' + label, custom: label })), { label: 'My take', key: 'take' }];
+const mxVal = (p, c) => c.custom ? p.cols?.[c.custom] || '' : c.key === 'take' ? p.take || '' : p.brief[c.key] || '';
+const mxShown = () => mxCols().filter(c => !mxHide.has(c.key));
+const short = p => { const a = p.meta?.authors || []; return a.length ? a[0].split(' ').pop() + (a.length > 1 ? ' et al.' : '') + (p.meta.year ? ' ' + p.meta.year : '') : p.title.slice(0, 30); };
 const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 const byline = p => { const a = p.meta?.authors || []; return [a.slice(0, 3).join(', ') + (a.length > 3 ? ' et al.' : ''), p.meta?.year, p.meta?.venue || (p.kind === 'web' ? hostOf(p.url) : '')].filter(Boolean).join(' · '); };
 // Equation input: buttons insert LaTeX at the cursor; anything between $…$ is previewed live under the field.
@@ -433,7 +505,40 @@ window.DOMPurify?.addHook('afterSanitizeAttributes', n => {
   if (n.tagName === 'A') { n.target = '_blank'; n.rel = 'noopener noreferrer'; }
   if (n.tagName === 'IMG') { n.loading = 'lazy'; n.referrerPolicy = 'no-referrer'; }
 });
+// Notebook pages are stored as blocks. These convert Markdown (AI drafts, old notes) to blocks and blocks back to Markdown (export).
+// ponytail: nested list items and inline italics are flattened on the way through. Extend both functions together if that matters.
+const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>');
+function mdBlocks(src, f = inl) {
+  const out = [], lines = String(src).split('\n'); let para = [], li = null;
+  const flush = () => { if (para.length) out.push({ type: 'paragraph', data: { text: para.join(' ') } }); para = []; li = null; };
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i], h = l.match(/^(#{1,4}) (.+)$/), b = l.match(/^\s*(?:[-*•]|(\d+)[.)]) (.+)$/);
+    if (/^```/.test(l)) { flush(); const code = []; while (++i < lines.length && !/^```/.test(lines[i])) code.push(lines[i]); out.push({ type: 'code', data: { code: code.join('\n') } }); }
+    else if (/^\$\$.+\$\$$/.test(l.trim())) { flush(); out.push({ type: 'math', data: { tex: l.trim().slice(2, -2) } }); }
+    else if (h) { flush(); out.push({ type: 'header', data: { text: f(h[2]), level: Math.max(2, h[1].length) } }); }
+    else if (b) { const style = b[1] ? 'ordered' : 'unordered'; if (li?.style !== style) { flush(); out.push({ type: 'list', data: li = { style, items: [] } }); } li.items.push({ content: f(b[2]), meta: {}, items: [] }); }
+    else if (/^> /.test(l)) { flush(); out.push({ type: 'quote', data: { text: f(l.slice(2)), caption: '', alignment: 'left' } }); }
+    else if (l.trim() === '---') { flush(); out.push({ type: 'delimiter', data: {} }); }
+    else if (!l.trim()) flush();
+    else { if (li) flush(); para.push(f(l)); }
+  }
+  flush(); return out;
+}
+const unhtml = h => { // parsed with DOMParser, so nothing in a note's HTML can run
+  const d = new DOMParser().parseFromString(String(h ?? '').replace(/<\/?(b|strong)>/g, '**').replace(/<code[^>]*>|<\/code>/g, '`').replace(/<br\s*\/?>/g, '\n'), 'text/html').body;
+  d.querySelectorAll('a[href^=http]').forEach(a => a.replaceWith(`[${a.textContent}](${a.getAttribute('href')})`));
+  return d.textContent;
+};
+const blocksMd = bs => bs.map(({ type, data: d }) =>
+  type === 'header' ? '#'.repeat(d.level) + ' ' + unhtml(d.text)
+  : type === 'list' ? d.items.map((it, i) => (d.style === 'ordered' ? i + 1 + '. ' : d.style === 'checklist' ? `- [${it.meta?.checked ? 'x' : ' '}] ` : '- ') + unhtml(it.content ?? it)).join('\n')
+  : type === 'quote' ? '> ' + unhtml(d.text) + (d.caption ? '\n> ' + unhtml(d.caption) : '')
+  : type === 'code' ? '```\n' + d.code + '\n```' : type === 'delimiter' ? '---' : type === 'math' ? `$$${d.tex}$$`
+  : type === 'table' ? d.content.map((r, i) => '| ' + r.map(unhtml).join(' | ') + ' |' + (i ? '' : '\n|' + r.map(() => ' --- |').join(''))).join('\n')
+  : unhtml(d.text)).join('\n\n');
 if (location.hash === '#test') { // self-check: open /#test and look at the console
+  const mb = mdBlocks('# T\n\ntext **b**\n- a\n- b\n\n> q\n---\n$$x^2$$\n<img src=x onerror=alert(1)>');
+  console.assert(mb.map(b => b.type).join() === 'header,paragraph,list,quote,delimiter,math,paragraph' && blocksMd(mb) === '## T\n\ntext **b**\n\n- a\n- b\n\n> q\n\n---\n\n$$x^2$$\n\n<img src=x onerror=alert(1)>', 'notebook Markdown survives the round trip, HTML stays text', blocksMd(mb));
   const c = {}; grade(c, 1); console.assert(c.ivl === 1, 'first good = 1 day'); grade(c, 1); console.assert(c.ivl === 3, 'second good grows');
   grade(c, 0); console.assert(c.ivl === 0 && c.due <= Date.now(), 'again = due now');
   console.assert(md('<b> p.3', { id: 'x', kind: 'pdf' }).includes('&lt;b&gt;') && md('p.3', { id: 'x', kind: 'pdf' }).includes('data-page="3"'), 'md escapes + links');
@@ -462,7 +567,7 @@ async function run(label, fn, p = P) {
   soft();
 }
 // Re-render after background work, but never under someone who is typing on a page.
-const soft = () => view !== 'read' && $('#page').contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName) ? renderRail() : render();
+const soft = () => view !== 'read' && $('#page').contains(document.activeElement) && (/INPUT|TEXTAREA/.test(document.activeElement.tagName) || document.activeElement.isContentEditable) ? renderRail() : render();
 
 // ---------- adding sources ----------
 async function create(kind, title, extra, pp) {
@@ -747,7 +852,9 @@ const VIEW = {
       <p><button data-view="map">See how it connects to the whole library →</button></p>`;
   },
   notes() {
-    return `<div class="row"><button data-act="addnote">+ Note</button><button data-act="export">Export Markdown (Obsidian)</button><button data-act="bib">Copy BibTeX</button></div><p></p>` +
+    const pages = notes.filter(n => docOf(n).sources.includes(P.id));
+    return `<div class="row"><button data-act="addnote">+ Note</button><button data-act="nbfrom">Write about this in the Notebook</button><button data-act="export">Export Markdown (Obsidian)</button><button data-act="bib">Copy BibTeX</button></div>` +
+      (pages.length ? `<p class="muted">Notebook pages working with this source: ${pages.map(n => `<a href="#" data-act="nbgo" data-id="${esc(n.id)}">${esc(n.title || 'Untitled page')}</a>`).join(' · ')}</p>` : '<p></p>') +
       (P.notes.length ? '' : '<p class="muted">Select text in the source and tap “Note” or a highlight colour to capture it here.</p>') +
       P.notes.map((n, i) => `<div class="box note ${n.ul ? 'ul' : n.quote ? 'c' + (n.c || 1) : ''}"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">✕</button>
         ${n.quote || n.page ? `<blockquote>${esc(n.quote)} ${cite(P, n.page)}</blockquote>` : ''}
@@ -850,37 +957,39 @@ const PAGE = {
       <div class="sec"><h3>Last 12 weeks</h3><small class="muted">${streak()} day streak</small></div>${heat()}</div>`;
   },
   matrix() {
-    const ps = inScope(), ready = ps.filter(p => p.brief), opt = (v, l) => `<option value="${esc(v)}" ${v === F.project ? 'selected' : ''}>${esc(l)}</option>`;
     return `<div class="wrap wide"><div class="row"><h1>Literature matrix</h1><span class="sp"></span>
-        <select data-act="fproject" aria-label="Project">${opt('', 'All projects')}${projects().map(x => opt(x, x)).join('')}</select>
-        <button data-act="mxcsv">Export CSV</button><button data-act="mxmd">Export Markdown</button><button class="pri" data-act="synth" ${working ? 'disabled' : ''}>Draft a synthesis</button></div>
-      <p class="muted">Every analyzed source side by side. Add your own take, then let the AI draft a synthesis into your Notebook: themes, disagreements, gaps.</p>` +
-      (ready.length ? `<div class="mxwrap"><table class="mx"><tr>${['Source', 'Problem', 'Core idea', 'Method', 'Findings', 'Limitations', 'My take'].map(h => `<th>${h}</th>`).join('')}</tr>` +
-        ready.map(p => `<tr><td><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><br><small class="muted">${esc(byline(p))}</small></td>` +
-          ['problem', 'idea', 'method', 'results', 'limitations'].map(k => `<td>${md(p.brief[k], p)}</td>`).join('') +
-          `<td><textarea data-k="take" data-id="${esc(p.id)}" placeholder="What do you make of it? How does it bear on your question?">${esc(p.take)}</textarea></td></tr>`).join('') + `</table></div>`
-        : `<p class="box">Nothing analyzed ${F.project ? 'in this project ' : ''}yet. Add a source and its row appears here once the briefing is ready.</p>`) +
-      (ps.length > ready.length ? `<p class="muted">${ps.length - ready.length} source${ps.length - ready.length === 1 ? ' is' : 's are'} not analyzed yet and not shown.</p>` : '') + `</div>`;
+        <button data-act="mxwork">Work with these in the Notebook</button><button data-act="mxcsv">Export CSV</button><button data-act="mxmd">Export Markdown</button><button class="pri" data-act="synth" ${working ? 'disabled' : ''}>Draft a synthesis</button></div>
+      <p class="muted">One row per analyzed source. Show only the columns you need, add your own, and click a cell to read it in full. Click a column heading to see that column alone.</p>${filterBar(true)}
+      <div class="cols"><span class="muted">Columns</span>${mxCols().map(c => `<button class="chip ${mxHide.has(c.key) ? '' : 'on'}" data-act="mxcol" data-v="${esc(c.key)}">${esc(c.label)}</button>`).join('')}
+        <form data-f="mxadd"><input name="c" required maxlength="40" autocomplete="off" placeholder="Add a column, e.g. Dataset" aria-label="New column name"><button>Add column</button></form></div>
+      <div id="mxBody"></div></div>`;
   },
   notebook() {
     const n = notes.find(x => x.id === N) || notes[0]; N = n?.id;
-    return `<div class="wrap nb"><div><div class="row"><h1>Notebook</h1><span class="sp"></span><button class="pri" data-act="nbnew">+ New note</button></div>` +
-      (notes.map(x => `<div class="item ${x === n ? 'on' : ''}" data-act="nbopen" data-id="${esc(x.id)}"><b>${esc(x.title || 'Untitled')}</b><small class="muted">${esc(new Date(x.updated).toLocaleDateString())}${x.project ? ' · ' + esc(x.project) : ''}</small></div>`).join('')
-        || '<p class="muted">Ideas, meeting notes, drafts and AI syntheses live here. Markdown and $math$ work.</p>') + `</div>
-      <div class="nbedit">` + (n ? `<input class="ttl" data-k="nbtitle" value="${esc(n.title)}" placeholder="Untitled" aria-label="Title">
-        <div class="row"><input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="Project" aria-label="Project" style="max-width:240px"><span class="sp"></span><button data-act="nbexport">Export .md</button><button data-act="nbdel">Delete note</button></div>
-        <textarea data-k="nbnote" placeholder="Write…">${esc(n.note)}</textarea>${mathKeys}
-        <div class="k">Preview</div><div id="nbprev" class="box">${md(n.note || '', null)}</div>` : '') + `</div></div>`;
+    return `<div class="nb"><aside class="nbside"><div class="row"><h3 style="margin:0">Notebook</h3><span class="sp"></span><button class="pri" data-act="nbnew">+ New page</button></div>
+        <input id="nbq" type="search" placeholder="Find a page" aria-label="Find a page" style="margin:12px 0 8px"><div id="nbList"></div></aside>
+      <div class="nbmain">` + (n ? `<div class="nbpage"><input class="ttl" data-k="nbtitle" value="${esc(n.title)}" placeholder="Give this page a title" aria-label="Page title">
+          <div class="nbmeta"><label>Project <input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="none"></label><span class="sp"></span><button data-act="nbexport">Export .md</button><button data-act="nbdel">Delete page</button></div>
+          <div id="nbsrc" class="nbmeta"></div><div id="ed"></div></div>
+        <div class="bench"><div><form data-f="work"><input name="q" autocomplete="off" placeholder="Ask across this page's sources. The answer is written into the page, with citations." aria-label="Ask across this page's sources"><button class="pri">Ask</button></form>
+          <div class="row">${WORK.map(([l, q]) => `<button class="chip" data-act="work" data-q="${esc(q)}">${l}</button>`).join('')}<button class="chip" data-act="nbhl">Insert my highlights</button><button class="chip" data-act="nbtable">Insert comparison table</button></div></div></div>`
+        : `<div class="nbpage"><h1>Your notebook</h1><p class="muted lead">A page is where you work with your sources. Put the papers you are thinking about on a page, ask across them, and the answer is written into the page with citations that open the exact passage. Then write around it.</p>
+          <p><button class="pri" data-act="nbnew">Start a page</button></p><p class="muted">You can also tick sources in the Library and choose “Work with these in the Notebook”.</p></div>`) + `</div></div>`;
   },
   map() {
-    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Every concept from every source. Shared concepts pull sources together. Tap a concept for its meaning, a square to open that source.</p>
-      ${lib.some(p => p.concepts.length) ? `<div id="cy" class="big"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>` : '<p class="box">The map fills in as sources are analyzed.</p>'}</div>`;
+    const on = lib.filter(p => p.concepts.length).length, shared = M.shared ?? on > 6;
+    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Squares are sources, circles are concepts; a concept grows with the number of sources that use it. Hover to trace its links, click for what it means and where it appears.</p>` +
+      (on ? `${filterBar(false)}<div class="cols"><span class="muted">Show</span><button class="chip ${shared ? 'on' : ''}" data-act="mapshared" data-v="1">Shared concepts only</button><button class="chip ${shared ? '' : 'on'}" data-act="mapshared" data-v="">Every concept</button>
+        <span class="muted" style="margin-left:10px">Arrange</span><button class="chip ${M.by === 'cluster' ? 'on' : ''}" data-act="mapby" data-v="cluster">By topic</button><button class="chip ${M.by === 'year' ? 'on' : ''}" data-act="mapby" data-v="year">By year</button>
+        <button class="chip" data-act="mapfit">Fit to screen</button><span class="sp"></span><span id="mapn" class="muted"></span></div>
+        <div class="mapgrid"><div id="cy" class="big"></div><div id="node" class="box"></div></div>` : '<p class="box">The map fills in as sources are analyzed.</p>') + `</div>`;
   },
 };
 function libRows() {
   if (!$('#libList')) return;
   const f = F.q.toLowerCase(), ps = inScope().filter(p => (!F.kind || p.kind === F.kind) && (!F.status || (F.status === 'done') === !!p.done) && [p.title, p.project, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f));
-  $('#libList').innerHTML = ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
+  $('#libList').innerHTML = (picks.size ? `<div class="row pickbar"><b>${picks.size} selected</b><span class="sp"></span><button class="pri" data-act="workwith">Work with ${picks.size === 1 ? 'it' : 'these'} in the Notebook</button><button data-act="unpick">Clear selection</button></div>` : '') +
+    ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><input type="checkbox" data-act="pick" data-id="${esc(p.id)}" ${picks.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
     <div class="grow"><b>${esc(p.title)}</b><br><small class="muted">${esc(byline(p))}</small> ${(p.tags || []).map(t => `<span class="tag" data-act="ftag" data-v="${esc(t)}">${esc(t)}</span>`).join(' ')}</div>
     ${p.project ? `<span class="tag proj" data-act="fproject" data-v="${esc(p.project)}">${esc(p.project)}</span>` : ''}${p.done ? '<span class="tag ok">Finished</span>' : ''}${ring(p)}
     <button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete">✕</button></div>`).join('') || `<p class="muted">${lib.length ? 'No titles match. Clear the search or the filters to see everything.' : 'Your library is empty. Paste a link above, or drop a PDF anywhere.'}</p>`;
@@ -906,10 +1015,16 @@ function render() {
   $('#reader').hidden = !reading; $('#page').hidden = reading;
   if (!reading) {
     if (view === 'read') view = 'library';
+    if (view === 'notebook' && ed && edN === N && $('#ed')) { nbSide(); nbSrc(); return; } // the open page keeps its editor, caret and all
+    dropEd();
     $('#page').innerHTML = PAGE[view]();
+    const at = NAV.findIndex(x => x[0] === view); // a journal's running head: where you are, how much is here, today's date
+    $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><span>Marrow · ${String(at + 1).padStart(2, '0')} ${NAV[at][1]}</span><span>${lib.length} source${lib.length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>`);
     window.renderMathInElement?.($('#page'), MATH);
     if (view === 'library') libRows();
-    if (view === 'map' && $('#cy')) drawMap(lib, true);
+    if (view === 'matrix') mxTable();
+    if (view === 'map') drawBig();
+    if (view === 'notebook') { nbSide(); nbSrc(); mountEd(); }
     return;
   }
   $('#title').textContent = P.title; $('#kindic').className = 'kind ' + P.kind; $('#kindic').innerHTML = ic(KIND[P.kind][1], 18);
@@ -924,33 +1039,87 @@ function render() {
   if (tab === 'ask') $('#body').scrollTop = 1e9;
 }
 
+function mxTable() {
+  const box = $('#mxBody'); if (!box) return;
+  const all = scoped(), ps = all.filter(p => p.brief), cols = mxShown();
+  box.innerHTML = ps.length ? `<div class="mxwrap"><table class="mx"><tr><th>Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Have the AI fill the empty cells from each source's text">Fill with AI</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">✕</button>` : ''}</th>`).join('')}</tr>` +
+    ps.map(p => `<tr><td><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
+      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p.colsrc?.[c.custom] ? `<small>${cite(p, p.colsrc[c.custom])}</small>` : ''}`
+      : `<div class="cell" data-act="mxrow">${md(mxVal(p, c), p)}</div>`) + `</td>`).join('') + `</tr>`).join('') + `</table></div>` +
+      (all.length > ps.length ? `<p class="muted">${all.length - ps.length} more ${all.length - ps.length === 1 ? 'source is' : 'sources are'} not analyzed yet and not shown.</p>` : '')
+    : `<p class="box">${all.length ? 'These sources are not analyzed yet. Open one and its row appears here once the briefing is ready.' : lib.length ? 'No sources match these filters. Clear a filter to see more.' : 'Nothing here yet. Add a source and its row appears once its briefing is ready.'}</p>`;
+  window.renderMathInElement?.(box, MATH);
+}
+
 function drawMap(ps, all) {
-  const nodes = new Map(), edges = [], key = ckey;
+  const nodes = new Map(), edges = [], css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   for (const p of ps) {
-    if (all && p.concepts.length) nodes.set('src:' + p.id, { id: 'src:' + p.id, label: p.title.slice(0, 40), src: p.id });
+    if (!p.concepts.length) continue;
+    if (all) nodes.set('src:' + p.id, { id: 'src:' + p.id, label: p.title.length > 46 ? p.title.slice(0, 44) + '…' : p.title, src: p.id, kind: p.kind, year: yearOf(p), w: 26 });
     for (const c of p.concepts) {
-      const n = nodes.get(key(c.name)) || { id: key(c.name), label: c.name, def: c.def, in: [] };
-      n.in.push(p.title); nodes.set(n.id, n);
-      if (all) edges.push({ source: 'src:' + p.id, target: n.id });
+      const n = nodes.get(ckey(c.name)) || { id: ckey(c.name), label: c.name, def: c.def, in: [] };
+      if (!n.in.includes(p.id)) n.in.push(p.id); nodes.set(n.id, n);
     }
-    for (const l of p.links) if (nodes.has(key(l.from)) && nodes.has(key(l.to))) edges.push({ source: key(l.from), target: key(l.to), label: l.label });
   }
-  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const sharedOnly = all && (M.shared ?? ps.filter(p => p.concepts.length).length > 6);
+  for (const n of [...nodes.values()]) {
+    if (n.src) continue;
+    if (sharedOnly && n.in.length < 2) { nodes.delete(n.id); continue; }
+    n.w = all ? Math.min(46, 10 + 8 * n.in.length) : 16; n.many = !all || n.in.length > 1 ? 1 : 0;
+    if (all) for (const id of n.in) edges.push({ source: 'src:' + id, target: n.id });
+  }
+  for (const p of ps) for (const l of p.links) { const a = ckey(l.from), b = ckey(l.to); if (a !== b && nodes.has(a) && nodes.has(b)) edges.push({ source: a, target: b, label: l.label, rel: 1 }); }
+  const srcs = [...nodes.values()].filter(n => n.src).sort((a, b) => a.year - b.year), nc = nodes.size - srcs.length;
+  if ($('#mapn')) $('#mapn').textContent = srcs.length ? `${srcs.length} source${srcs.length === 1 ? '' : 's'} · ${nc} concept${nc === 1 ? '' : 's'}` : 'No analyzed sources match these filters.';
+  // "By year" lays sources out left to right in time, one column per year, with each concept hanging between the sources that use it.
+  const box = $('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 30)); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
+  let layout = { name: 'cose', animate: nodes.size < 150 ? 'end' : false, animationDuration: 450, nodeRepulsion: () => 9000, idealEdgeLength: () => 80, nodeOverlap: 20, padding: 30, nodeDimensionsIncludeLabels: true,
+    boundingBox: { x1: 0, y1: 0, w: box.clientWidth * big, h: box.clientHeight * big } };
+  if (all && M.by === 'year') {
+    const years = [...new Set(srcs.map(n => n.year))], row = {}, pos = {};
+    for (const n of srcs) pos[n.id] = { x: years.indexOf(n.year) * 480, y: (row[n.year] = (row[n.year] ?? -1) + 1) * 440 };
+    const own = {}, seat = {}; let mid = 0; // a source's own concepts sit in a ring around it; shared ones sit between their sources
+    for (const n of nodes.values()) if (!n.src && n.in.length === 1) own[n.in[0]] = (own[n.in[0]] || 0) + 1;
+    for (const n of nodes.values()) if (!n.src) {
+      const at = n.in.map(id => pos['src:' + id]), avg = k => at.reduce((a, q) => a + q[k], 0) / at.length;
+      if (at.length > 1) { pos[n.id] = { x: avg('x'), y: avg('y') + 70 * mid++ }; continue; }
+      const k = seat[n.in[0]] = (seat[n.in[0]] ?? -1) + 1, a = k / own[n.in[0]] * 2 * Math.PI, r = 135 + (k % 2) * 55;
+      pos[n.id] = { x: at[0].x + r * Math.cos(a), y: at[0].y + r * Math.sin(a) };
+    }
+    years.forEach((y, i) => { nodes.set('yr:' + y, { id: 'yr:' + y, label: y ? String(y) : 'No year', yr: 1, w: 1 }); pos['yr:' + y] = { x: i * 480, y: -250 }; });
+    layout = { name: 'preset', positions: n => pos[n.id()], padding: 30 };
+  }
+  const label = { 'text-background-color': css('--panel'), 'text-background-opacity': .82, 'text-background-padding': 2, 'text-background-shape': 'roundrectangle' };
   cy = cytoscape({
-    container: $('#cy'), layout: { name: 'cose', animate: false, nodeRepulsion: 40000, idealEdgeLength: 90 },
+    container: $('#cy'), layout, minZoom: .15, maxZoom: 3, wheelSensitivity: .3,
     elements: [...[...nodes.values()].map(data => ({ data })), ...edges.map(data => ({ data }))],
     style: [
-      { selector: 'node', style: { label: 'data(label)', 'font-size': 10, color: css('--ink'), 'background-color': css('--acc'), width: 14, height: 14, 'text-wrap': 'wrap', 'text-max-width': 90, 'text-margin-y': -4 } },
-      { selector: 'node[src]', style: { 'background-color': css('--ok'), shape: 'round-rectangle', width: 20, height: 20, 'font-weight': 'bold' } },
-      { selector: 'edge', style: { width: 1, 'line-color': css('--muted'), 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'target-arrow-color': css('--muted'), 'arrow-scale': .7, label: 'data(label)', 'font-size': 8, color: css('--muted'), 'text-rotation': 'autorotate' } },
+      { selector: 'node', style: { label: 'data(label)', 'font-family': 'Schibsted Grotesk, sans-serif', 'font-size': 11, color: css('--ink'), 'background-color': css('--muted'), width: 'data(w)', height: 'data(w)', 'text-wrap': 'wrap', 'text-max-width': 110, 'text-margin-y': -5, 'min-zoomed-font-size': 6, ...label } },
+      { selector: 'node[many > 0]', style: { 'background-color': css('--acc'), 'font-weight': 600 } },
+      { selector: 'node[src]', style: { shape: 'round-rectangle', 'background-color': css('--ok'), 'font-weight': 700, 'font-size': 12, 'text-max-width': 160 } },
+      { selector: 'node[kind = "web"]', style: { 'background-color': css('--web') } }, { selector: 'node[kind = "video"]', style: { 'background-color': css('--vid') } },
+      { selector: 'node[yr]', style: { 'background-opacity': 0, 'font-size': 15, 'font-weight': 700, color: css('--muted'), events: 'no', 'text-background-opacity': 0 } },
+      { selector: 'edge', style: { width: 1, 'line-color': css('--line'), 'curve-style': 'bezier' } },
+      { selector: 'edge[rel]', style: { width: 1.2, 'line-color': css('--muted'), 'target-arrow-shape': 'triangle', 'target-arrow-color': css('--muted'), 'arrow-scale': .7 } },
+      { selector: '.dim', style: { opacity: .1 } },
+      { selector: 'edge.hl', style: { label: 'data(label)', 'font-size': 9, color: css('--ink'), 'text-rotation': 'autorotate', width: 2, 'line-color': css('--acc'), 'target-arrow-color': css('--acc'), ...label, 'text-background-opacity': .95 } },
     ],
   });
+  let picked = null;
+  const hint = `<span class="muted">Click a concept or a source to see what it is and what it connects to.</span>`;
+  const trace = n => { cy.elements().addClass('dim').removeClass('hl'); n.closedNeighborhood().removeClass('dim'); n.connectedEdges().addClass('hl'); };
+  const rest = () => picked ? trace(picked) : cy.elements().removeClass('dim hl');
+  if ($('#node')) $('#node').innerHTML = hint;
+  cy.on('mouseover', 'node', e => trace(e.target)); cy.on('mouseout', 'node', rest);
+  cy.on('tap', e => { if (e.target === cy) { picked = null; rest(); $('#node').innerHTML = hint; } });
   cy.on('tap', 'node', e => {
-    const d = e.target.data();
-    if (d.src) return openItem(d.src);
-    $('#node').innerHTML = `<b>${esc(d.label)}</b><br>${md(d.def, null)}<br><small class="muted">In: ${esc([...new Set(d.in)].join(' · '))}</small>`;
+    const d = e.target.data(), p = d.src && byId(d.src); picked = e.target; trace(picked);
+    $('#node').innerHTML = p ? `<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span><h3>${esc(p.title)}</h3><small class="muted">${esc(byline(p))}</small>${p.brief ? `<p>${md(p.brief.tldr, p)}</p>` : ''}
+        <p><button class="pri" data-open="${esc(p.id)}">Open this source</button></p><div class="k">Its concepts</div><div class="row">${p.concepts.filter(c => nodes.has(ckey(c.name))).map(c => `<button class="chip" data-act="mapsel" data-v="${esc(ckey(c.name))}">${esc(c.name)}</button>`).join('')}</div>`
+      : `<div class="k" style="margin-top:0">Concept</div><h3>${esc(d.label)}</h3><p>${md(d.def, null)}</p>` + (all ? `<div class="k">In ${d.in.length} source${d.in.length === 1 ? '' : 's'}</div>` + d.in.map(id => `<p><a href="#" data-open="${esc(id)}">${esc(byId(id)?.title)}</a></p>`).join('') : '');
   });
 }
+const drawBig = () => $('#cy') && drawMap(scoped(), true);
 
 // ---------- export, backup, migration ----------
 function exportMd() {
@@ -972,7 +1141,7 @@ const bib = p => {
 };
 const csv = rows => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
 const MX = [['Problem', 'problem'], ['Core idea', 'idea'], ['Method', 'method'], ['Findings', 'results'], ['Limitations', 'limitations']];
-const mxRows = () => inScope().filter(p => p.brief).map(p => [p.title, byline(p), ...MX.map(([, k]) => p.brief[k]), p.take || '']);
+const mxRows = () => scoped().filter(p => p.brief).map(p => [p.title, byline(p), ...mxShown().map(c => mxVal(p, c))]); // what is on screen is what is exported
 // ponytail: backup is one JSON file with PDFs inlined as data URLs. Fine for dozens of sources; for more, copy the server's data/ folder instead.
 async function backup() {
   const out = [];
@@ -980,7 +1149,7 @@ async function backup() {
     const { pages, parts: _, ...rest } = p, buf = p.kind === 'pdf' ? await api('files/' + p.id).catch(() => null) : null;
     out.push({ ...rest, parts: await api(`items/${p.id}/parts`), file: buf ? await new Promise(ok => { const f = new FileReader(); f.onload = () => ok(f.result); f.readAsDataURL(new Blob([buf])); }) : undefined });
   }
-  dl('marrow-backup.json', JSON.stringify({ marrow: 2, items: out, notes }), 'application/json');
+  dl('marrow-backup.json', JSON.stringify({ marrow: 2, items: out, notes: notes.map(({ doc, ...n }) => n) }), 'application/json');
 }
 // Takes a backup entry (new or old format) or a record from the old in-browser library, and stores it on the server.
 async function importItem(o) {
@@ -1020,6 +1189,91 @@ async function migrate() {
   if (n) toast(`Moved ${n} paper${n === 1 ? '' : 's'} from this browser into Marrow's database.`);
 }
 
+// ---------- notebook: pages of blocks that carry the sources you are working with ----------
+// A page's `note` field holds JSON: { blocks: [Editor.js blocks], sources: [ids] }. Older pages and AI drafts are Markdown and are converted when opened.
+const docOf = n => n.doc ||= (() => {
+  try { const j = JSON.parse(n.note); if (Array.isArray(j?.blocks)) return { blocks: j.blocks, sources: j.sources || [] }; } catch {}
+  return { blocks: mdBlocks(n.note || ''), sources: [] };
+})();
+const putDoc = n => { n.note = JSON.stringify(docOf(n)); n.updated = Date.now(); return saveNote(n); };
+const pageSrcs = n => docOf(n).sources.map(byId).filter(Boolean);
+const WORK = [['Compare them', 'Compare these sources: what each one claims, how their methods differ, and where their results agree or conflict.'],
+  ['Find disagreements', 'Where do these sources disagree or reach different conclusions? Set the conflicting claims side by side.'],
+  ['Find the gaps', 'What do these sources leave unanswered? List the open questions and untested assumptions, and say which source each comes from.'],
+  ['Draft related work', 'Write a related-work paragraph in academic prose that positions these sources against each other.']];
+class MathBlock { // a block of display math: LaTeX in, rendered formula under it
+  static get toolbox() { return { title: 'Math', icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 5H7l6 7-6 7h11"/></svg>' }; }
+  constructor({ data }) { this.tex = data.tex || ''; }
+  render() {
+    const w = document.createElement('div'); w.className = 'mathblk'; w.innerHTML = '<textarea placeholder="LaTeX, e.g. E = mc^2" aria-label="LaTeX"></textarea><div></div>';
+    const [t, o] = w.children, draw = () => { this.tex = t.value; window.katex?.render(t.value || '\\;', o, { displayMode: true, throwOnError: false }); };
+    t.value = this.tex; t.oninput = draw; draw(); return w;
+  }
+  save() { return { tex: this.tex }; }
+}
+let ed = null, edN = null, edT, edDirty = false;
+async function keepEd(e = ed, id = edN) { // editor -> page -> server
+  const n = notes.find(x => x.id === id); if (!e || !n) return;
+  if (e === ed) edDirty = false;
+  try { docOf(n).blocks = (await e.save()).blocks; await putDoc(n); } catch (err) { toast('Could not save this page (' + err.message + '). Keep it open and try another edit.'); }
+}
+function dropEd() {
+  const old = ed, id = edN, dirty = edDirty; clearTimeout(edT); ed = edN = null; edDirty = false;
+  if (old) (dirty ? keepEd(old, id) : Promise.resolve()).then(() => old.destroy?.());
+}
+function mountEd() {
+  const n = curNote(); if (!n || !window.EditorJS || !$('#ed')) return;
+  edN = n.id;
+  ed = new EditorJS({
+    holder: 'ed', data: { blocks: docOf(n).blocks }, placeholder: 'Write here, or press / for headings, lists, tables and math',
+    tools: { header: { class: Header, inlineToolbar: true, config: { levels: [2, 3, 4], defaultLevel: 2 } }, list: { class: EditorjsList, inlineToolbar: true }, quote: { class: Quote, inlineToolbar: true },
+      table: { class: Table, inlineToolbar: true }, code: CodeTool, math: MathBlock, delimiter: Delimiter, inlineCode: InlineCode, marker: Marker },
+    onChange: () => { edDirty = true; clearTimeout(edT); edT = setTimeout(keepEd, 900); },
+  });
+}
+function nbSide() {
+  const el = $('#nbList'); if (!el) return;
+  const q = ($('#nbq')?.value || '').toLowerCase();
+  el.innerHTML = notes.filter(x => (x.title || '').toLowerCase().includes(q)).map(x => { const k = docOf(x).sources.length; return `<div class="item ${x.id === N ? 'on' : ''}" tabindex="0" data-act="nbopen" data-id="${esc(x.id)}"><b>${esc(x.title || 'Untitled page')}</b><small class="muted">${esc([new Date(x.updated).toLocaleDateString(), x.project, k ? k + ' source' + (k > 1 ? 's' : '') : ''].filter(Boolean).join(' · '))}</small></div>`; }).join('')
+    || `<p class="muted">${notes.length ? 'No page has that in its title.' : 'No pages yet.'}</p>`;
+}
+function nbSrc() {
+  const el = $('#nbsrc'), n = curNote(); if (!el || !n) return;
+  const ps = pageSrcs(n);
+  el.innerHTML = `<span>${ps.length ? 'Working with' : 'No sources on this page yet.'}</span>` + ps.map(p => `<span class="srcchip"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}</span><a href="#" data-open="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</a><button class="x" data-act="nbunsrc" data-id="${esc(p.id)}" aria-label="Take ${esc(p.title)} off this page">✕</button></span>`).join('') +
+    `<button data-act="nbaddsrc">+ Add sources</button>`;
+}
+// Blocks go in through the live editor when the page is open, so the caret and undo history survive; otherwise straight into the stored page.
+async function addBlocks(n, blocks) {
+  if (ed && edN === n.id) {
+    await ed.isReady;
+    for (const b of blocks) ed.blocks.insert(b.type, b.data, undefined, ed.blocks.getBlocksCount(), false);
+    await keepEd(); $('.nbmain')?.scrollTo({ top: 1e9, behavior: 'smooth' });
+  } else { docOf(n).blocks.push(...blocks); putDoc(n); }
+}
+function newPage(sources = [], title = '') {
+  const n = { id: crypto.randomUUID(), title, project: F.project, note: '', updated: Date.now(), doc: { blocks: [], sources } };
+  notes.unshift(n); putDoc(n); N = n.id; view === 'notebook' ? render() : go('notebook');
+  setTimeout(() => $('.ttl')?.focus(), 350);
+}
+// Ask across a page's sources. Each source gets an equal share of the prompt: its summary, the reader's own highlights, then as much text as fits.
+function work(q) {
+  const n = curNote(), ps = n && pageSrcs(n);
+  if (!q.trim() || !n) return;
+  if (!ps.length) return toast('Add at least one source to this page first, with “+ Add sources”.');
+  if (working) return toast('Still working on the last request. Try again when it finishes.');
+  run(`Working across ${ps.length} source${ps.length > 1 ? 's' : ''}…`, async () => {
+    for (const p of ps) await text(p);
+    const share = Math.floor(150000 / ps.length);
+    const ctx = ps.map((p, i) => (`=== SOURCE S${i + 1}: "${p.title}" (${byline(p)}) ===\n` + (p.brief ? `Summary: ${p.brief.tldr}\n` : '') + (p.take ? `Reader's take: ${p.take}\n` : '') +
+      p.notes.filter(x => x.quote || x.note).map(x => `Reader highlighted${x.page ? ' [p.' + x.page + ']' : ''}: ${x.quote ? '"' + x.quote + '" ' : ''}${x.note || ''}`).join('\n') + '\nText:\n' + fullText(p)).slice(0, share)).join('\n\n');
+    const out = await ai([{ role: 'system', content: `You are a research collaborator writing straight into a researcher's notebook. Work only from the sources below; markers like [p.N] number each source's parts. Cite every claim in square brackets with the source and part, like [S1 p.4], or [S2] when no part applies, one source per bracket. In the prose itself name a source by its first author or a short title, never as "S1". Never invent findings, numbers or citations; if the sources do not say, say so plainly. Write Markdown: short paragraphs and bullet lists, "## " headings only when they help. No preamble, no closing remarks.\n\n${ctx}` }, { role: 'user', content: q }]);
+    const links = s => inl(s).replace(/\[S(\d+)(?:[\s,;]*p\.\s?(\d+))?\]/g, (m, i, k) => { const p = ps[i - 1]; return p ? `(<a href="#src:${p.id}:${k || ''}">${esc(short(p))}${k ? ', ' + esc(loc(p, +k)) : ''}</a>)` : m; }).replace(/\bS(\d+)\b(?![^<]*<\/a>)/g, (m, i) => ps[i - 1] ? esc(short(ps[i - 1])) : m);
+    await addBlocks(n, [{ type: 'header', data: { text: esc(q.length > 90 ? q.slice(0, 88) + '…' : q), level: 3 } }, ...mdBlocks(out, links),
+      { type: 'paragraph', data: { text: `<i>Drafted by AI from ${ps.length} source${ps.length > 1 ? 's' : ''}. Click a citation to check it against the passage.</i>` } }]);
+  }, null);
+}
+
 function ask(q, img) {
   if (!q.trim() || working) return;
   P.chat.push({ role: 'user', content: q }); tab = 'ask'; document.body.classList.add('study');
@@ -1039,22 +1293,24 @@ async function discover(q) {
   disc.busy = false; if (view === 'discover') { enter($('#page')); render(); }
 }
 // Command palette (Ctrl/⌘ K or /): every source, note and page, plus full-text search and "add this link", from one box.
-let palI = 0, palRows = [];
+let palI = 0, palRows = [], palPick = null;
+$('#pal').onclose = () => { palPick = null; };
 function palette() {
   const q = $('#palq').value.trim(), words = q.toLowerCase().split(/\s+/).filter(Boolean);
-  palRows = [
+  if (palPick) { const on = docOf(curNote()).sources; palRows = lib.filter(p => words.every(w => (p.title + ' ' + byline(p)).toLowerCase().includes(w))).slice(0, 40).map(p => [p.title, on.includes(p.id) ? '✓ On this page' : byline(p).slice(0, 40), KIND[p.kind][1], () => palPick(p.id)]); }
+  else palRows = [
     ...lib.map(p => [p.title, KIND[p.kind][0], KIND[p.kind][1], () => openItem(p.id)]),
     ...notes.map(n => [n.title || 'Untitled', 'Note', 'pen', () => { N = n.id; go('notebook'); }]),
     ...NAV.map(([v, l, i]) => [l, 'Go to', i, () => go(v)]),
     ['Upload a PDF', 'Action', 'file', ACT.upload], ['Switch between light and dark', 'Action', 'sun', ACT.theme],
   ].filter(r => words.every(w => (r[0] + ' ' + r[1]).toLowerCase().includes(w))).slice(0, 8);
-  if (q) palRows.push([`Search inside every source for “${q}”`, 'Full text', 'search', () => { F.q = q; go('library'); ftSearch(); }]);
-  if (/^(https?:\/\/|doi:|10\.\d{4})|\d{4}\.\d{4,5}/i.test(q)) palRows.unshift([`Add ${q}`, 'New source', 'book', () => { toast('Fetching that link…'); addLink(q).catch(e => toast(e.message)); }]);
+  if (q && !palPick) palRows.push([`Search inside every source for “${q}”`, 'Full text', 'search', () => { F.q = q; go('library'); ftSearch(); }]);
+  if (!palPick && /^(https?:\/\/|doi:|10\.\d{4})|\d{4}\.\d{4,5}/i.test(q)) palRows.unshift([`Add ${q}`, 'New source', 'book', () => { toast('Fetching that link…'); addLink(q).catch(e => toast(e.message)); }]);
   palI = Math.max(0, Math.min(palI, palRows.length - 1));
   $('#pall').innerHTML = palRows.map((r, i) => `<button class="${i === palI ? 'on' : ''}" data-pal="${i}">${ic(r[2], 16)}<span class="grow">${esc(r[0])}</span><small class="muted">${esc(r[1])}</small></button>`).join('');
   $('#pall .on')?.scrollIntoView({ block: 'nearest' });
 }
-const palRun = i => { $('#pal').close(); palRows[i]?.[3](); };
+const palRun = i => { if (palPick) { palRows[i]?.[3](); return palette(); } $('#pal').close(); palRows[i]?.[3](); };
 $('#palq').oninput = () => { palI = 0; palette(); };
 $('#pal').onkeydown = e => {
   if (e.key === 'Enter') { e.preventDefault(); return palRun(palI); }
@@ -1066,9 +1322,9 @@ $('#pal').onclick = e => { const b = e.target.closest('[data-pal]'); if (b) palR
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); return ACT.palette(); }
   const t = e.target;
-  if (e.ctrlKey || e.metaKey || e.altKey || $('#pal').open || /INPUT|TEXTAREA|SELECT/.test(t.tagName)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || $('#pal').open || /INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
   if (e.key === '/') { e.preventDefault(); return ACT.palette(); }
-  if (e.key === 'Enter' && t.matches('[tabindex][data-open]')) return t.click();
+  if (e.key === 'Enter' && t.matches('[tabindex][data-open],[tabindex][data-act]')) return t.click();
   const root = view === 'read' ? $('#body') : $('#page');
   const b = e.key === ' ' && t.tagName !== 'BUTTON' ? root.querySelector('[data-act=show]') : root.querySelectorAll('[data-act=grade]')[+e.key - 1];
   if (b) { e.preventDefault(); b.click(); }
@@ -1077,7 +1333,7 @@ const ACT = {
   tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
-  palette: () => { $('#palq').value = ''; palI = 0; palette(); $('#pal').showModal(); },
+  palette: () => { palPick = null; $('#palq').value = ''; $('#palq').placeholder = 'Jump to a source, a note or a page. Or paste a link to add it.'; palI = 0; palette(); $('#pal').showModal(); },
   sample: async el => { el.disabled = true; toast('Fetching that link…'); try { await addLink(el.dataset.v); } catch (e) { toast(e.message); el.disabled = false; } },
   find: el => { go('discover'); discover(el.dataset.v); },
   show: () => { shown = fx = true; render(); },
@@ -1117,7 +1373,17 @@ const ACT = {
   restore: () => $('#resFile').click(),
   biball: () => lib.length ? dl('marrow-library.bib', lib.map(bib).join('\n\n'), 'text/plain') : toast('Nothing in the library yet.'),
   fkind: el => { F.kind = el.dataset.v; render(); },
-  fproject: el => { F.project = el.dataset.v ?? el.value; if (view !== 'matrix') view = 'library'; render(); },
+  fproject: el => { F.project = el.dataset.v ?? el.value; if (view !== 'matrix' && view !== 'map') view = 'library'; render(); },
+  skind: el => { S.kind = el.dataset.v; render(); },
+  ssort: el => { S.sort = el.value; render(); },
+  pick: el => { picks[el.checked ? 'add' : 'delete'](el.dataset.id); libRows(); },
+  unpick: () => { picks.clear(); libRows(); },
+  workwith: () => { const ids = [...picks]; picks.clear(); newPage(ids); },
+  // map
+  mapshared: el => { M.shared = !!el.dataset.v; render(); },
+  mapby: el => { M.by = el.dataset.v; render(); },
+  mapfit: () => cy?.animate({ fit: { padding: 30 } }, { duration: 300 }),
+  mapsel: el => { const n = cy?.$id(el.dataset.v); if (n?.length) { n.emit('tap'); cy.animate({ center: { eles: n } }, { duration: 300 }); } },
   fstatus: el => { F.status = el.value; render(); },
   ftag: el => { F.q = el.dataset.v; render(); ftSearch(); },
   del: async el => {
@@ -1142,27 +1408,83 @@ const ACT = {
     feeds = feeds.filter(f => f.url !== url); news = (news || []).filter(x => x.src !== url); render();
   },
   // matrix
-  mxcsv: () => dl(`matrix-${fname(F.project || 'library')}.csv`, '﻿' + csv([['Source', 'By', ...MX.map(x => x[0]), 'My take'], ...mxRows()]), 'text/csv'),
-  mxmd: () => dl(`matrix-${fname(F.project || 'library')}.md`, mxRows().map(r => `## ${r[0]}\n*${r[1]}*\n\n` + MX.map(([l], i) => `**${l}.** ${r[i + 2]}`).join('\n\n') + (r[7] ? `\n\n**My take.** ${r[7]}` : '')).join('\n\n---\n\n'), 'text/markdown'),
+  mxcsv: () => dl(`matrix-${fname(F.project || 'library')}.csv`, '﻿' + csv([['Source', 'By', ...mxShown().map(c => c.label)], ...mxRows()]), 'text/csv'),
+  mxmd: () => dl(`matrix-${fname(F.project || 'library')}.md`, mxRows().map(r => `## ${r[0]}\n*${r[1]}*\n\n` + mxShown().flatMap((c, i) => r[i + 2] ? [`**${c.label}.** ${r[i + 2]}`] : []).join('\n\n')).join('\n\n---\n\n'), 'text/markdown'),
+  mxcol: el => { const k = el.dataset.v; mxHide[mxHide.has(k) ? 'delete' : 'add'](k); lsSet('mxHide', [...mxHide]); render(); },
+  mxsolo: el => { // show one column alone; click it again to bring the rest back
+    const k = el.dataset.v, others = mxCols().map(c => c.key).filter(x => x !== k);
+    mxHide = new Set(others.every(x => mxHide.has(x)) ? [] : others); lsSet('mxHide', [...mxHide]); render();
+  },
+  mxrow: el => el.closest('tr').classList.toggle('open'),
+  mxdrop: el => {
+    const c = el.dataset.v;
+    if (!confirm(`Remove the “${c}” column and everything written in it? This cannot be undone.`)) return;
+    mxCustom = mxCustom.filter(x => x !== c); lsSet('mxCols', mxCustom);
+    for (const p of lib) if (p.cols && c in p.cols) { delete p.cols[c]; delete p.colsrc?.[c]; save(p); }
+    render();
+  },
+  mxfill: el => {
+    const c = el.dataset.v, ps = scoped().filter(p => p.brief && !(p.cols?.[c] || '').trim());
+    if (!ps.length) return toast('Every row shown already has something in this column.');
+    if (working) return toast('Still working on the last request. Try again when it finishes.');
+    run(`Filling “${c}”…`, async () => {
+      let i = 0;
+      for (const p of ps) {
+        working = `Filling “${c}”: ${++i} of ${ps.length}`; renderRail(); await text(p);
+        const j = await aiJSON(`You fill one cell of a literature-review table. The column is "${c}". From the source below, give what belongs in that column for this source. JSON: {"answer":"at most 40 words, or 'Not stated' if the source does not say","quote":"one sentence copied VERBATIM from the source that supports the answer, or ''"}. Plain text. Never guess.`, fullText(p));
+        (p.cols ||= {})[c] = String(j.answer || 'Not stated'); (p.colsrc ||= {})[c] = findQuote(p, j.quote); save(p);
+        if (!$('#mxBody')?.contains(document.activeElement)) mxTable();
+      }
+    }, null);
+  },
+  mxwork: () => {
+    const ids = scoped().filter(p => p.brief).map(p => p.id);
+    if (!ids.length) return toast('No analyzed sources match these filters.');
+    if (ids.length > 25) toast('Took the first 25 sources. Narrow the filters to choose others.');
+    newPage(ids.slice(0, 25), F.project);
+  },
   synth: () => {
-    const ps = inScope().filter(p => p.brief).slice(0, 40);
+    const ps = scoped().filter(p => p.brief).slice(0, 40);
     if (ps.length < 2) return toast('A synthesis needs at least two analyzed sources.');
     run('Drafting a synthesis — about a minute…', async () => {
       const body = await ai([{ role: 'system', content: `You help a researcher write a literature review. From the summaries below (and the researcher's own takes, where given), write a synthesis in Markdown with these sections: ## Themes, ## Where the sources agree, ## Where they disagree or differ in method, ## Gaps and open questions, ## Suggested reading order. Refer to each source as (First author's surname, Year) or by a short title. Compare and connect; do not summarize the sources one by one. Use only what the summaries say and never invent findings, numbers or citations. If the sources are unrelated, say so plainly.` },
         { role: 'user', content: ps.map(p => `SOURCE: "${p.title}" — ${byline(p)}\nProblem: ${p.brief.problem}\nIdea: ${p.brief.idea}\nMethod: ${p.brief.method}\nFindings: ${p.brief.results}\nLimitations: ${p.brief.limitations}` + (p.take ? `\nResearcher's take: ${p.take}` : '')).join('\n\n') }]);
-      const n = { id: crypto.randomUUID(), title: `Synthesis: ${F.project || 'whole library'}`, project: F.project, note: body + `\n\n---\nDrafted by AI from ${ps.length} briefings. Check every claim against the sources before you build on it.`, updated: Date.now() };
-      notes.unshift(n); await saveNote(n); N = n.id; go('notebook');
+      const n = { id: crypto.randomUUID(), title: `Synthesis: ${F.project || 'whole library'}`, project: F.project, note: '', updated: Date.now(),
+        doc: { blocks: mdBlocks(body + `\n\n---\nDrafted by AI from ${ps.length} briefings. Check every claim against the sources before you build on it.`), sources: ps.map(p => p.id) } };
+      notes.unshift(n); await putDoc(n); N = n.id; go('notebook');
     }, null);
   },
   // notebook
-  nbnew: () => { const n = { id: crypto.randomUUID(), title: '', project: F.project, note: '', updated: Date.now() }; notes.unshift(n); N = n.id; saveNote(n); render(); $('.ttl')?.focus(); },
-  nbopen: el => { saveNote(curNote()); N = el.dataset.id; render(); },
+  nbnew: () => newPage(),
+  nbfrom: () => newPage([P.id], P.title),
+  nbgo: el => { N = el.dataset.id; go('notebook'); },
+  nbopen: el => { N = el.dataset.id; render(); },
   nbdel: async () => {
-    const n = curNote(); if (!n || !confirm(`Delete “${n.title || 'Untitled'}”? This cannot be undone.`)) return;
-    clearTimeout(nbT); await api('notes/' + n.id, { method: 'DELETE' }).catch(e => toast(e.message));
+    const n = curNote(); if (!n || !confirm(`Delete the page “${n.title || 'Untitled page'}”? This cannot be undone.`)) return;
+    clearTimeout(nbT); clearTimeout(edT); edDirty = false;
+    try { await api('notes/' + n.id, { method: 'DELETE' }); } catch (e) { return toast('Could not delete the page (' + e.message + '). Try again.'); }
     notes = notes.filter(x => x !== n); N = null; render();
   },
-  nbexport: () => { const n = curNote(); dl(fname(n.title || 'note') + '.md', `# ${n.title}\n\n${n.note}`, 'text/markdown'); },
+  nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`, 'text/markdown'); },
+  nbaddsrc: () => { // the palette, in pick mode: Enter ticks a source on or off this page and stays open for the next
+    palPick = id => { const s = docOf(curNote()).sources, i = s.indexOf(id); i < 0 ? s.push(id) : s.splice(i, 1); putDoc(curNote()); nbSrc(); nbSide(); };
+    $('#palq').value = ''; $('#palq').placeholder = 'Choose the sources to work with on this page'; palI = 0; palette(); $('#pal').showModal();
+  },
+  nbunsrc: el => { const n = curNote(), s = docOf(n).sources; s.splice(s.indexOf(el.dataset.id), 1); putDoc(n); nbSrc(); nbSide(); },
+  work: el => work(el.dataset.q),
+  nbhl: () => {
+    const n = curNote(), ps = pageSrcs(n);
+    const blocks = ps.flatMap(p => { const hs = p.notes.filter(x => x.quote || x.note); return !hs.length ? [] : [{ type: 'header', data: { text: esc(p.title), level: 3 } },
+      ...hs.map(x => x.quote ? { type: 'quote', data: { text: `${esc(x.quote)} (<a href="#src:${p.id}:${x.page || ''}">${esc(short(p))}${x.page ? ', ' + esc(loc(p, x.page)) : ''}</a>)`, caption: esc(x.note || ''), alignment: 'left' } } : { type: 'paragraph', data: { text: esc(x.note) } })]; });
+    if (!ps.length) return toast('Add at least one source to this page first, with “+ Add sources”.');
+    if (!blocks.length) return toast('No highlights or notes on these sources yet. Select text in a source and pick a colour or “Note”.');
+    addBlocks(n, blocks);
+  },
+  nbtable: () => {
+    const n = curNote(), ps = pageSrcs(n).filter(p => p.brief);
+    if (!ps.length) return toast('Add at least one analyzed source to this page first, with “+ Add sources”.');
+    addBlocks(n, [{ type: 'table', data: { withHeadings: true, content: [['Source', ...MX.map(x => x[0])], ...ps.map(p => [`<a href="#src:${p.id}:">${esc(short(p))}</a>`, ...MX.map(([, k]) => esc(p.brief[k] || ''))])] } }]);
+  },
 };
 // What typing into a field with data-k changes. Kept in the model so re-renders never lose text.
 const SET = {
@@ -1172,9 +1494,9 @@ const SET = {
   tags: v => P.tags = [...new Set(v.split(',').map(t => t.trim().toLowerCase()).filter(Boolean))],
   project: v => P.project = v.trim(),
   take: (v, d) => byId(d.id).take = v,
-  nbtitle: v => curNote().title = v,
+  col: (v, d) => { const p = byId(d.id); (p.cols ||= {})[d.c] = v; delete p.colsrc?.[d.c]; }, // an edited cell is the reader's, no longer backed by the AI's quote
+  nbtitle: v => { curNote().title = v; nbSide(); },
   nbproject: v => curNote().project = v.trim(),
-  nbnote: v => { curNote().note = v; $('#nbprev').innerHTML = md(v, null); window.renderMathInElement?.($('#nbprev'), MATH); },
 };
 const FORM = {
   ask: f => ask(f.q.value),
@@ -1185,6 +1507,8 @@ const FORM = {
     b.disabled = false;
   },
   disc: f => discover(f.q.value.trim()),
+  work: f => { work(f.q.value); f.q.value = ''; },
+  mxadd: f => { const c = f.c.value.trim(); if (!c) return; if (!mxCols().some(x => x.label.toLowerCase() === c.toLowerCase())) { mxCustom.push(c); lsSet('mxCols', mxCustom); } mxHide.delete('c:' + c); render(); },
   follow: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); b.disabled = true; toast('Looking for the feed…');
     try {
@@ -1202,6 +1526,8 @@ const FORM = {
   },
 };
 function onClick(e) {
+  const src = e.target.closest?.('a[href^="#src:"]'); // a citation in a notebook page: open the source at that passage
+  if (src) { e.preventDefault(); const [, id, n] = src.getAttribute('href').split(':'); return byId(id) ? openItem(id, +n || 0) : toast('That source is no longer in your library.'); }
   const el = e.target.closest?.('[data-act],[data-page],[data-open],[data-view],[data-ins]'); if (!el) return;
   const d = el.dataset;
   if (d.ins) return insertMath(el);
@@ -1217,14 +1543,15 @@ document.addEventListener('click', onClick);
 document.addEventListener('change', e => {
   const d = e.target.dataset;
   if (d.act) return onClick(e);
-  if (d.k === 'take') save(byId(d.id));
+  if (d.k === 'take' || d.k === 'col') save(byId(d.id));
   else if (d.k?.startsWith('nb')) { clearTimeout(nbT); saveNote(curNote()); renderRail(); }
   else if (d.k && P) { save(P); renderRail(); }
 });
 document.addEventListener('input', e => {
   const t = e.target, v = t.value;
   if (t.id === 'q') { F.q = v; libRows(); clearTimeout(ftT); ftT = setTimeout(ftSearch, 300); return; }
-  const pv = (t.closest('form') || t).nextElementSibling?.nextElementSibling;
+  if (t.id === 'nbq') return nbSide();
+  if (t.dataset?.s) { S[t.dataset.s] = v; clearTimeout(ftT); ftT = setTimeout(() => view === 'matrix' ? mxTable() : drawBig(), 250); return; }  const pv = (t.closest('form') || t).nextElementSibling?.nextElementSibling;
   if (pv?.classList.contains('mprev')) { pv.innerHTML = /\$|\\\(/.test(v) ? md(v) : ''; window.renderMathInElement?.(pv, MATH); }
   SET[t.dataset.k]?.(v, t.dataset);
   if (t.dataset.k?.startsWith('nb')) { curNote().updated = Date.now(); clearTimeout(nbT); nbT = setTimeout(() => saveNote(curNote()), 1500); }

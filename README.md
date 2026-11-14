@@ -24,9 +24,9 @@ Around that:
 
 - **Library** – projects, tags, filters, and full-text search across every word of every source.
 - **Review** – due cards from the whole library, with a streak and a 12-week activity view.
-- **Matrix** – a literature-review table (problem, idea, method, findings, limitations, your take) per project, exportable as CSV or Markdown, plus an AI-drafted synthesis.
-- **Notebook** – your own notes in Markdown with math.
-- **Map** – one concept map linking everything you've studied.
+- **Matrix** – a literature-review table, one row per source. Filter by text, kind, project and year; show only the columns you need (click a heading to see one column alone); add your own columns and have the AI fill them from each source's text, with a link to the passage it used. Exports what is on screen as CSV or Markdown, and drafts a synthesis.
+- **Notebook** – pages of blocks (headings, lists, tables, quotes, code, math; press `/`). A page carries the sources you are working with: tick sources in the Library and choose "Work with these in the Notebook", then ask across them. The answer is written into the page with citations that open the cited passage. Your highlights and a comparison table can be inserted the same way.
+- **Map** – one concept map linking everything you've studied. The same filters as the Matrix, a "shared concepts only" view for large libraries, a layout by year, and a panel that says what each concept means and which sources use it.
 - **Search** – `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a pasted link. In Review, `Space` shows the answer and `1` `2` `3` grade it.
 - Highlights and notes on PDFs, articles and transcripts; snip a figure or equation to have it explained; chat with citations; BibTeX; Markdown export with `[[wikilinks]]`; light and dark themes.
 
