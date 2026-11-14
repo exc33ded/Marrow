@@ -19,6 +19,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@2.4.6/dist/table.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@1.5.2/dist/inline-code.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@1.4.0/dist/marker.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/editorjs-drag-drop@1.1.16/dist/bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/editorjs-undo@2.0.28/dist/bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
@@ -144,18 +146,44 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .pickbar{padding:8px 12px;border:1px solid var(--acc);border-radius:4px;background:var(--acc-bg);margin-bottom:8px}
 .card input[type=checkbox]{width:16px;height:16px;flex:none;accent-color:var(--acc)}
 /* notebook: a list of pages, a page of blocks, and a bench that works across the page's sources */
-.nb{display:grid;grid-template-columns:250px minmax(0,1fr);height:100%}
-.nbside{border-right:1px solid var(--line);padding:22px 12px;overflow:auto;background:var(--panel)}
+.nb{display:grid;grid-template-columns:248px minmax(0,1fr);height:100%}
+.nbside{padding:12px 8px;overflow:auto;background:var(--panel);border-right:1px solid var(--line);font-size:14px}
+.nbside .lbl{font:500 11px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 10px 4px}
+.nbside #nbq{border:0;background:none;padding:6px 10px;font-size:14px} .nbside #nbq:focus-visible{outline:0;background:var(--bg)}
+.prow{display:flex;align-items:center;gap:8px;height:30px;padding:0 4px 0 10px;border-radius:4px;cursor:pointer;color:var(--muted);font-weight:500}
+.prow:hover{background:var(--bg)} .prow.on{background:var(--bg);color:var(--ink);font-weight:600}
+.prow .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .prow .ico{width:18px;text-align:center;flex:none}
+.prow .x{opacity:0} .prow:hover .x,.prow .x:focus-visible{opacity:1}
 .nbmain{overflow:auto;display:flex;flex-direction:column;min-height:0}
-.nbpage{max-width:800px;width:100%;margin:0 auto;padding:44px 60px 30px;flex:1}
-.nbmeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 14px;font-size:13px;color:var(--muted)}
-.nbmeta input{width:180px;padding:.25em .6em;font-size:13px} .nbmeta button{min-height:30px;padding:.15em .7em;font-size:13px}
-.srcchip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:3px 2px 3px 8px;background:var(--panel);max-width:270px;color:var(--ink)}
+.nbtop{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:4px;min-height:44px;padding:0 14px;font-size:13.5px;color:var(--muted);background:var(--bg)}
+.nbtop button{border:0;background:none;min-height:28px;padding:2px 8px;font-size:13.5px;color:var(--muted)} .nbtop button:hover{background:var(--line);color:var(--ink)}
+.nbpage{max-width:790px;width:100%;margin:0 auto;padding:36px 60px 0;flex:1}
+.pico{font-size:62px;line-height:1.1;background:none;border:0;padding:2px 6px;min-height:0;margin:0 0 4px -8px} .pico:hover{background:var(--line)}
+.addico{border:0;background:none;color:var(--muted);font-size:13.5px;padding:2px 6px;min-height:0;margin-left:-6px;opacity:0;transition:opacity .15s} .nbpage:hover .addico,.addico:focus-visible{opacity:1} .addico:hover{background:var(--line)}
+.icons{display:grid;grid-template-columns:repeat(8,34px);gap:2px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);width:max-content;margin-bottom:8px;animation:pop .16s var(--e)}
+.icons button{border:0;background:none;min-height:0;height:34px;padding:0;font-size:20px} .icons button:hover{background:var(--line)} .icons button:last-child{grid-column:span 8;font-size:13px;color:var(--muted)}
+.props{margin:8px 0 14px;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.prop{display:flex;align-items:flex-start;min-height:34px} .prop>span{width:140px;flex:none;color:var(--muted);display:flex;gap:8px;align-items:center;padding:7px 0}
+.prop>div{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:34px;min-width:0}
+.prop input{border:0;background:none;padding:6px 8px;font-size:14px;border-radius:4px} .prop input:hover,.prop input:focus{background:var(--line)} .prop input:focus-visible{outline:0}
+.prop .add{border:0;background:none;color:var(--muted);min-height:28px;padding:2px 8px;font-size:14px} .prop .add:hover{background:var(--line);color:var(--ink)}
+.srcchip{display:inline-flex;gap:6px;align-items:center;border-radius:4px;padding:3px 2px 3px 8px;background:var(--line);max-width:260px;color:var(--ink)}
 .srcchip a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;color:inherit} .srcchip a:hover{color:var(--acc)}
-.bench{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:12px 60px 14px;z-index:3} .bench>div{max-width:680px;margin:0 auto}
-.bench form{display:flex;gap:8px;margin-bottom:8px}
-#ed{font-size:16.5px;line-height:1.65} #ed .codex-editor__redactor{padding-bottom:140px!important}
-#ed .ce-block__content,#ed .ce-toolbar__content{max-width:100%} #ed h2{font-size:26px} #ed h3{font-size:21px} #ed h4{font-size:18px}
+/* the ask bar floats at the foot of the page; its ready-made requests appear while it has focus */
+.askbar{position:sticky;bottom:16px;z-index:5;width:min(640px,calc(100% - 40px));margin:20px auto 16px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 34px #0003;padding:5px}
+.askbar form{display:flex;gap:6px;align-items:center;padding-left:10px;color:var(--acc)} .askbar input{border:0;background:none;padding:.5em .3em} .askbar input:focus-visible{outline:0} .askbar form button{border-radius:7px}
+.askbar .acts{display:none;flex-wrap:wrap;gap:6px;padding:8px 6px 9px;border-bottom:1px solid var(--line);margin-bottom:5px} .askbar:focus-within .acts{display:flex}
+.toc{position:sticky;top:64px;height:0;align-self:flex-end;width:190px;margin-right:16px;font-size:12.5px;display:none} .toc a{display:block;padding:3px 0;color:var(--muted);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .toc a:hover{color:var(--acc)} .toc .l3{padding-left:12px} .toc .l4{padding-left:24px}
+@media (min-width:1500px){.toc{display:block}}
+#ed{font-size:16px;line-height:1.6} #ed .codex-editor__redactor{padding-bottom:170px!important}
+#ed .ce-block__content,#ed .ce-toolbar__content{max-width:100%} #ed .ce-paragraph{padding:3px 0;line-height:1.6}
+#ed .ce-header{padding:.85em 0 3px;margin:0} #ed h2{font-size:30px} #ed h3{font-size:24px} #ed h4{font-size:20px}
+#ed .cdx-list__item{padding:1px 0;line-height:1.6} #ed .cdx-block{padding:3px 0}
+#ed .ce-delimiter{line-height:0;height:auto;padding:12px 0} #ed .ce-delimiter::before{content:"";display:block;height:0;border-top:1px solid var(--line)}
+#ed .inline-code{background:var(--line);color:var(--vid);border-radius:3px;padding:.12em .35em;font-size:.86em} #ed .cdx-marker{background:#ffd60066;color:inherit}
+#ed .callout{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:13px 14px;margin:3px 0} #ed .callout>span{font-size:19px;line-height:1.35} #ed .callout>div{flex:1;min-width:0}
+#ed details.tgl{margin:3px 0} #ed details.tgl summary{cursor:pointer} #ed details.tgl summary span{font-weight:600;display:inline-block;min-width:60%} #ed details.tgl>div{padding:3px 0 3px 19px;min-height:1.6em}
+#ed [data-ph]:empty::before{content:attr(data-ph);color:var(--muted)}
 #ed [contenteditable]:focus-visible{outline:0} .ce-popover{--max-height:330px}
 #ed a{color:var(--acc)} #ed a[href^="#src:"]{text-decoration:none;border-bottom:1px dotted var(--acc);font-size:.92em}
 #ed .ce-toolbar__plus,#ed .ce-toolbar__settings-btn{color:var(--muted)} #ed .ce-toolbar__plus:hover,#ed .ce-toolbar__settings-btn:hover{background:var(--line)}
@@ -172,7 +200,12 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .item{display:flex;flex-direction:column;padding:9px 11px;border-radius:4px;cursor:pointer;border:1px solid transparent}
 .item:hover{background:var(--panel)} .item.on{border-color:var(--acc);background:var(--acc-bg)}
 .item b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ttl{font:700 38px/1.15 Newsreader,Georgia,serif;border:0;background:none;padding:0;border-radius:0} .ttl:focus-visible{outline:0}
+.ttl{font:700 42px/1.15 Newsreader,Georgia,serif;border:0;background:none;padding:0;border-radius:0}
+#peek{border:1px solid var(--line);border-radius:6px;padding:0;background:var(--panel);color:var(--ink);width:min(700px,92vw);max-height:82vh;box-shadow:0 24px 80px #0007}
+#peek[open]{animation:pop .2s var(--e)} #peek::backdrop{background:#0b0f0d8c} .pk{padding:26px 32px 22px} .pk h3{font-size:22px;margin-top:.5em} .pk h3 a{color:inherit;text-decoration:none}
+.peekbody{font:19px/1.62 Newsreader,Georgia,serif;margin:18px 0 22px}
+.runhead label{display:flex;gap:8px;align-items:center} .runhead select{font:500 12px "Schibsted Grotesk",sans-serif;letter-spacing:0;text-transform:none;padding:1px 6px;min-height:0;border-radius:4px;background:var(--panel);color:var(--ink);max-width:220px}
+.card.flat form,form.card{cursor:default} form.card{gap:8px} .mx td .add{border:0;background:none;color:var(--muted);min-height:0;padding:2px 0;font-size:12.5px} .mx td .add:hover{color:var(--acc)} .ttl:focus-visible{outline:0}
 #cy{height:420px;border:1px solid var(--line);border-radius:4px;background:var(--panel)} #cy.big{height:calc(100vh - 290px);min-height:380px}
 /* reader */
 #reader{display:grid;grid-template-columns:minmax(0,1fr) 480px;min-height:0;height:100%}
@@ -301,6 +334,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 <input type="file" id="resFile" accept="application/json" hidden>
 <datalist id="projects"></datalist>
 <dialog id="pal" aria-label="Jump to anything"><input id="palq" autocomplete="off" placeholder="Jump to a source, a note or a page. Or paste a link to add it." aria-label="Search everything"><div id="pall"></div></dialog>
+<dialog id="peek" aria-label="Reading a matrix cell"></dialog>
 <div id="status" role="status"></div>
 <div id="toast" role="status"></div>
 
@@ -408,7 +442,7 @@ const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: ''
 const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'compass'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
 const TABS = [['brief', 'Brief'], ['read', 'Read'], ['teach', 'Teach'], ['cards', 'Cards'], ['map', 'Map'], ['notes', 'Notes'], ['ask', 'Ask']];
 const byId = id => lib.find(p => p.id === id);
-const projects = () => [...new Set([...lib, ...notes].map(x => x.project).filter(Boolean))].sort();
+const projects = () => [...new Set([...lsGet('projects', []), ...[...lib, ...notes].map(x => x.project)].filter(Boolean))].sort(); // a project exists once it is created, before it has any sources
 const inScope = () => lib.filter(p => !F.project || p.project === F.project);
 // The matrix and the map share one set of filters, so narrowing 200 sources down in one narrows the other.
 const S = { q: '', kind: '', y0: '', y1: '', sort: 'added' }, M = { shared: null, by: 'cluster' }, picks = new Set();
@@ -422,16 +456,19 @@ function scoped() {
 const sel = (act, opts, cur, label) => `<select data-act="${act}" aria-label="${label}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 const filterBar = sort => `<div class="fbar"><input type="search" data-s="q" value="${esc(S.q)}" placeholder="Filter by title, author, tag or concept" aria-label="Filter sources">
   ${[['', 'All'], ['pdf', 'Papers'], ['web', 'Articles'], ['video', 'Videos']].map(([v, l]) => `<button class="chip ${S.kind === v ? 'on' : ''}" data-act="skind" data-v="${v}">${l}</button>`).join('')}
-  ${sel('fproject', [['', 'All projects'], ...projects().map(x => [x, x])], F.project, 'Project')}
   <label class="muted">Year <input type="number" data-s="y0" value="${esc(S.y0)}" placeholder="from" aria-label="From year"> to <input type="number" data-s="y1" value="${esc(S.y1)}" placeholder="to" aria-label="To year"></label>
   ${sort ? sel('ssort', [['added', 'Newest added'], ['new', 'Year, newest first'], ['old', 'Year, oldest first'], ['title', 'Title A to Z']], S.sort, 'Sort') : ''}</div>`;
+// The project switcher shown at the top of every page. Choosing a project scopes the library, matrix, map, review and notebook to it.
+const projSel = () => sel('setproject', [['', 'All projects'], ...projects().map(x => [x, x]), ['+', '+ New project…']], F.project, 'Project');
 const lsGet = (k, d) => { try { return JSON.parse(localStorage[k]) ?? d; } catch { return d; } }, lsSet = (k, v) => { try { localStorage[k] = JSON.stringify(v); } catch {} };
 // Matrix columns: the five briefing fields, any columns the reader added (kept on each source as p.cols), and "My take".
-let mxHide = new Set(lsGet('mxHide', [])), mxCustom = lsGet('mxCols', []);
+// Each project has its own matrix: which columns exist and which are hidden is remembered per project ('' is "all projects").
+const mxAll = lsGet('mx', {}), mxP = () => mxAll[F.project] ||= { cols: [], hide: [] }, mxKeep = () => lsSet('mx', mxAll);
+let filling = null; // the column an AI fill is running on, so it can be stopped
 const mxCols = () => [...MX.map(([label, key]) => ({ label, key })),
-  ...[...new Set([...mxCustom, ...lib.flatMap(p => Object.keys(p.cols || {}))])].map(label => ({ label, key: 'c:' + label, custom: label })), { label: 'My take', key: 'take' }];
+  ...[...new Set([...mxP().cols, ...inScope().flatMap(p => Object.keys(p.cols || {}))])].map(label => ({ label, key: 'c:' + label, custom: label })), { label: 'My take', key: 'take' }];
 const mxVal = (p, c) => c.custom ? p.cols?.[c.custom] || '' : c.key === 'take' ? p.take || '' : p.brief[c.key] || '';
-const mxShown = () => mxCols().filter(c => !mxHide.has(c.key));
+const mxShown = () => mxCols().filter(c => !mxP().hide.includes(c.key));
 const short = p => { const a = p.meta?.authors || []; return a.length ? a[0].split(' ').pop() + (a.length > 1 ? ' et al.' : '') + (p.meta.year ? ' ' + p.meta.year : '') : p.title.slice(0, 30); };
 const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 const byline = p => { const a = p.meta?.authors || []; return [a.slice(0, 3).join(', ') + (a.length > 3 ? ' et al.' : ''), p.meta?.year, p.meta?.venue || (p.kind === 'web' ? hostOf(p.url) : '')].filter(Boolean).join(' · '); };
@@ -534,6 +571,7 @@ const blocksMd = bs => bs.map(({ type, data: d }) =>
   : type === 'list' ? d.items.map((it, i) => (d.style === 'ordered' ? i + 1 + '. ' : d.style === 'checklist' ? `- [${it.meta?.checked ? 'x' : ' '}] ` : '- ') + unhtml(it.content ?? it)).join('\n')
   : type === 'quote' ? '> ' + unhtml(d.text) + (d.caption ? '\n> ' + unhtml(d.caption) : '')
   : type === 'code' ? '```\n' + d.code + '\n```' : type === 'delimiter' ? '---' : type === 'math' ? `$$${d.tex}$$`
+  : type === 'callout' ? '> 💡 ' + unhtml(d.text) : type === 'toggle' ? `**${unhtml(d.title)}**\n\n${unhtml(d.text)}`
   : type === 'table' ? d.content.map((r, i) => '| ' + r.map(unhtml).join(' | ') + ' |' + (i ? '' : '\n|' + r.map(() => ' --- |').join(''))).join('\n')
   : unhtml(d.text)).join('\n\n');
 if (location.hash === '#test') { // self-check: open /#test and look at the console
@@ -906,30 +944,39 @@ const SAMPLES = [['pdf', 'Attention Is All You Need', 'Vaswani et al. · 2017 ·
   ['video', 'But what is a neural network?', '3Blue1Brown · a 19-minute lecture', 'https://www.youtube.com/watch?v=aircAruvnKk']];
 const PAGE = {
   home() {
-    const h = new Date().getHours(), d = due(lib).length, started = lib.filter(mastery), count = k => lib.filter(p => p.kind === k).length;
-    const cont = lib.filter(p => p.opened && !p.done).sort((a, b) => b.opened - a.opened).slice(0, 6), fresh = lib.filter(p => !p.opened).slice(0, 6);
-    if (!lib.length) return `<div class="wrap"><h1 class="hero">Your research desk.</h1>
+    const h = new Date().getHours(), all = inScope(), d = due(all).length, started = all.filter(mastery), count = k => all.filter(p => p.kind === k).length;
+    const byOpen = ps => [...ps].sort((a, b) => (b.opened || 0) - (a.opened || 0)), next = byOpen(all.filter(p => p.opened && !p.done))[0], plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+    const newProj = `<form data-f="newproj" class="card flat"><b>New project</b><input name="p" required maxlength="60" autocomplete="off" placeholder="e.g. Hydrology" aria-label="New project name"><button class="pri">Create project</button></form>`;
+    if (!lib.length && !projects().length) return `<div class="wrap"><h1 class="hero">Your research desk.</h1>
       <p class="muted lead">Papers, articles and lectures in one place, read in a way that makes them stick.</p>${ADDBAR}
       <div class="sec"><h3>Start with one of these</h3><small class="muted">or paste your own link above, or drop a PDF anywhere</small></div>
-      <div class="grid">${SAMPLES.map(([k, t, by, v]) => `<button class="card" data-act="sample" data-v="${v}"><span class="kind ${k}">${ic(KIND[k][1], 13)}${KIND[k][0]}</span><h4>${t}</h4><small class="muted">${by}</small></button>`).join('')}</div>${HOW}</div>`;
-    return `<div class="wrap"><h1 class="hero">${h < 5 ? 'Still up?' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'}</h1>
-      <p class="muted lead">${cont[0] ? `Next up: <a href="#" data-open="${esc(cont[0].id)}">${esc(cont[0].title)}</a> · ${step(cont[0]).replace(/^Next: /, '')}` : 'One desk for everything you read, watch and think about.'}</p>${ADDBAR}
+      <div class="grid">${SAMPLES.map(([k, t, by, v]) => `<button class="card" data-act="sample" data-v="${v}"><span class="kind ${k}">${ic(KIND[k][1], 13)}${KIND[k][0]}</span><h4>${t}</h4><small class="muted">${by}</small></button>`).join('')}</div>
+      <div class="sec"><h3>Or set up a project first</h3><small class="muted">a project keeps its own sources, matrix, map and notebook pages</small></div><div class="grid">${newProj}</div>${HOW}</div>`;
+    // Every source is shown under the project it belongs to, so nothing floats without a home.
+    const group = (name, ps, key, note = '') => `<div class="sec"><h3>${esc(name)}</h3><small class="muted">${plural(ps.length, 'source')}${note}</small><span class="sp"></span>${key ? `<a href="#" data-act="setproject" data-v="${esc(key)}">Open this project →</a>` : ''}</div>
+      <div class="grid">${byOpen(ps).slice(0, key ? 4 : 80).map(card).join('')}</div>`;
+    const projCard = n => { const ps = lib.filter(p => p.project === n), st = ps.filter(mastery), pg = notes.filter(x => x.project === n).length, dd = due(ps).length;
+      return `<button class="card" data-act="setproject" data-v="${esc(n)}"><span class="kind">${ic('layers', 13)}Project</span><h4>${esc(n)}</h4><small class="muted">${plural(ps.length, 'source')} · ${plural(pg, 'page')}${dd ? ' · ' + plural(dd, 'card') + ' due' : ''}</small><span class="sp"></span><div class="bar" style="width:100%"><i style="width:${st.length ? Math.round(st.reduce((a, p) => a + mastery(p), 0) / st.length) : 0}%"></i></div></button>`; };
+    const loose = lib.filter(p => !p.project);
+    return `<div class="wrap"><h1 class="hero">${F.project ? esc(F.project) : h < 5 ? 'Still up?' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'}</h1>
+      <p class="muted lead">${next ? `Next up: <a href="#" data-open="${esc(next.id)}">${esc(next.title)}</a> · ${step(next).replace(/^Next: /, '')}` : F.project ? 'Nothing in this project yet. Paste a link below and it is filed here.' : 'One desk for everything you read, watch and think about.'}</p>${ADDBAR}
       <div class="tiles">
-        <button class="tile" data-view="library"><b>${lib.length}</b>source${lib.length === 1 ? '' : 's'}<small>${[['pdf', 'paper'], ['web', 'article'], ['video', 'video']].map(([k, l]) => `${count(k)} ${l}${count(k) === 1 ? '' : 's'}`).join(' · ')}</small></button>
+        <button class="tile" data-view="library"><b>${all.length}</b>source${all.length === 1 ? '' : 's'}<small>${[['pdf', 'paper'], ['web', 'article'], ['video', 'video']].map(([k, l]) => plural(count(k), l)).join(' · ')}</small></button>
         <button class="tile" data-view="review"><b>${d}</b>card${d === 1 ? '' : 's'} due<small>${d ? 'Review now →' : 'All caught up'}</small></button>
         <div class="tile"><b>${streak()}</b>day streak<small>Days in a row you studied</small></div>
         <div class="tile"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b>mastery<small>Average across the ${started.length} you have started</small></div>
         <div class="tile"><small>Last 12 weeks</small>${heat()}</div>
       </div>` +
-      (cont.length ? `<div class="sec"><h3>Pick up where you left off</h3></div><div class="grid">${cont.map(card).join('')}</div>` : '') +
-      (fresh.length ? `<div class="sec"><h3>Not opened yet</h3></div><div class="grid">${fresh.map(card).join('')}</div>` : '') + `</div>`;
+      (F.project ? (all.length ? group('Sources in this project', all) : '') + `<p><a href="#" data-act="setproject" data-v="">← All projects</a></p>`
+        : `<div class="sec"><h3>Projects</h3><small class="muted">each keeps its own sources, matrix, map and notebook pages</small></div><div class="grid">${projects().map(projCard).join('')}${newProj}</div>` +
+          projects().filter(n => lib.some(p => p.project === n)).map(n => group(n, lib.filter(p => p.project === n), n)).join('') +
+          (loose.length ? group('Not in a project yet', loose, '', ' · tick them in the Library to move them into one') : '')) + `</div>`;
   },
   library() {
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`;
     return `<div class="wrap"><div class="row"><h1>Library</h1><span class="sp"></span><button data-act="backup">Download backup</button><button data-act="restore">Restore from backup</button><button data-act="biball">Export .bib</button></div>${ADDBAR}
       <div class="row filters"><input id="q" type="search" value="${esc(F.q)}" placeholder="Search titles, tags and full text" aria-label="Search the library">
         ${[['', 'All'], ['pdf', 'Papers'], ['web', 'Articles'], ['video', 'Videos']].map(([v, l]) => `<button class="chip ${F.kind === v ? 'on' : ''}" data-act="fkind" data-v="${v}">${l}</button>`).join('')}
-        <select data-act="fproject" aria-label="Project">${opt('', 'All projects', F.project)}${projects().map(x => opt(x, x, F.project)).join('')}</select>
         <select data-act="fstatus" aria-label="Status">${[['', 'Any status'], ['open', 'In progress'], ['done', 'Finished']].map(([v, l]) => opt(v, l, F.status)).join('')}</select></div>
       <div id="libList" class="rows"></div><div id="hits"></div></div>`;
   },
@@ -953,28 +1000,34 @@ const PAGE = {
           ${r.url ? `<a class="btn" href="${esc(r.url)}" target="_blank" rel="noopener">Open ↗</a>` : ''}</div>`).join('') + `</div>`) + `</div>`;
   },
   review() {
-    return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(lib, true)}
+    return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(inScope(), true)}
       <div class="sec"><h3>Last 12 weeks</h3><small class="muted">${streak()} day streak</small></div>${heat()}</div>`;
   },
   matrix() {
     return `<div class="wrap wide"><div class="row"><h1>Literature matrix</h1><span class="sp"></span>
         <button data-act="mxwork">Work with these in the Notebook</button><button data-act="mxcsv">Export CSV</button><button data-act="mxmd">Export Markdown</button><button class="pri" data-act="synth" ${working ? 'disabled' : ''}>Draft a synthesis</button></div>
       <p class="muted">One row per analyzed source. Show only the columns you need, add your own, and click a cell to read it in full. Click a column heading to see that column alone.</p>${filterBar(true)}
-      <div class="cols"><span class="muted">Columns</span>${mxCols().map(c => `<button class="chip ${mxHide.has(c.key) ? '' : 'on'}" data-act="mxcol" data-v="${esc(c.key)}">${esc(c.label)}</button>`).join('')}
+      <div class="cols"><span class="muted">Columns</span>${mxCols().map(c => `<button class="chip ${mxP().hide.includes(c.key) ? '' : 'on'}" data-act="mxcol" data-v="${esc(c.key)}">${esc(c.label)}</button>`).join('')}
         <form data-f="mxadd"><input name="c" required maxlength="40" autocomplete="off" placeholder="Add a column, e.g. Dataset" aria-label="New column name"><button>Add column</button></form></div>
       <div id="mxBody"></div></div>`;
   },
   notebook() {
-    const n = notes.find(x => x.id === N) || notes[0]; N = n?.id;
-    return `<div class="nb"><aside class="nbside"><div class="row"><h3 style="margin:0">Notebook</h3><span class="sp"></span><button class="pri" data-act="nbnew">+ New page</button></div>
-        <input id="nbq" type="search" placeholder="Find a page" aria-label="Find a page" style="margin:12px 0 8px"><div id="nbList"></div></aside>
-      <div class="nbmain">` + (n ? `<div class="nbpage"><input class="ttl" data-k="nbtitle" value="${esc(n.title)}" placeholder="Give this page a title" aria-label="Page title">
-          <div class="nbmeta"><label>Project <input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="none"></label><span class="sp"></span><button data-act="nbexport">Export .md</button><button data-act="nbdel">Delete page</button></div>
-          <div id="nbsrc" class="nbmeta"></div><div id="ed"></div></div>
-        <div class="bench"><div><form data-f="work"><input name="q" autocomplete="off" placeholder="Ask across this page's sources. The answer is written into the page, with citations." aria-label="Ask across this page's sources"><button class="pri">Ask</button></form>
-          <div class="row">${WORK.map(([l, q]) => `<button class="chip" data-act="work" data-q="${esc(q)}">${l}</button>`).join('')}<button class="chip" data-act="nbhl">Insert my highlights</button><button class="chip" data-act="nbtable">Insert comparison table</button></div></div></div>`
-        : `<div class="nbpage"><h1>Your notebook</h1><p class="muted lead">A page is where you work with your sources. Put the papers you are thinking about on a page, ask across them, and the answer is written into the page with citations that open the exact passage. Then write around it.</p>
-          <p><button class="pri" data-act="nbnew">Start a page</button></p><p class="muted">You can also tick sources in the Library and choose “Work with these in the Notebook”.</p></div>`) + `</div></div>`;
+    const pool = notes.filter(x => !F.project || x.project === F.project), n = pool.find(x => x.id === N) || pool[0]; N = n?.id;
+    const side = `<aside class="nbside"><div style="padding:0 4px 8px">${projSel().replace('<select', '<select style="width:100%"')}</div><input id="nbq" type="search" placeholder="Search pages" aria-label="Search pages"><div class="prow" tabindex="0" data-act="nbnew"><span class="ico">＋</span><span class="t">New page</span></div><div id="nbList"></div></aside>`;
+    if (!n) return `<div class="nb">${side}<div class="nbmain"><div class="nbpage"><h1>Your notebook</h1><p class="muted lead">A page is where you work with your sources. Put the papers you are thinking about on a page, ask across them, and the answer is written into the page with citations that open the exact passage. Then write around it.</p>
+      <p><button class="pri" data-act="nbnew">Start a page</button></p><p class="muted">You can also tick sources in the Library and choose “Work with these in the Notebook”.</p></div></div></div>`;
+    const d = docOf(n);
+    return `<div class="nb">${side}<div class="nbmain">
+      <div class="nbtop"><span>Notebook</span><span>/</span><span id="nbcrumb"></span><span class="sp"></span><span id="nbwhen"></span><button data-act="nbexport">Export</button><button data-act="nbdel">Delete</button></div>
+      <div id="toc" class="toc"></div>
+      <div class="nbpage">${d.icon ? `<button class="pico" data-act="nbicon" aria-label="Change the page icon">${esc(d.icon)}</button>` : `<button class="addico" data-act="nbicon">☺ Add icon</button>`}<div id="icons"></div>
+        <input class="ttl" data-k="nbtitle" value="${esc(n.title)}" placeholder="Untitled" aria-label="Page title">
+        <div class="props"><div class="prop"><span>${ic('layers', 15)}Project</span><div><input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="Empty" aria-label="Project"></div></div>
+          <div class="prop"><span>${ic('book', 15)}Sources</span><div id="nbsrc"></div></div></div>
+        <div id="ed"></div></div>
+      <div class="askbar"><div class="acts">${WORK.map(([l, q]) => `<button class="chip" data-act="work" data-q="${esc(q)}">${l}</button>`).join('')}<button class="chip" data-act="nbhl">Insert my highlights</button><button class="chip" data-act="nbtable">Insert comparison table</button></div>
+        <form data-f="work">${ic('search', 17)}<input name="q" autocomplete="off" placeholder="Ask across this page's sources…" aria-label="Ask across this page's sources"><button class="pri">Ask</button></form></div>
+    </div></div>`;
   },
   map() {
     const on = lib.filter(p => p.concepts.length).length, shared = M.shared ?? on > 6;
@@ -988,7 +1041,7 @@ const PAGE = {
 function libRows() {
   if (!$('#libList')) return;
   const f = F.q.toLowerCase(), ps = inScope().filter(p => (!F.kind || p.kind === F.kind) && (!F.status || (F.status === 'done') === !!p.done) && [p.title, p.project, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f));
-  $('#libList').innerHTML = (picks.size ? `<div class="row pickbar"><b>${picks.size} selected</b><span class="sp"></span><button class="pri" data-act="workwith">Work with ${picks.size === 1 ? 'it' : 'these'} in the Notebook</button><button data-act="unpick">Clear selection</button></div>` : '') +
+  $('#libList').innerHTML = (picks.size ? `<div class="row pickbar"><b>${picks.size} selected</b><span class="sp"></span>${sel('moveto', [['?', 'Move to project…'], ...projects().map(x => [x, x]), ['', 'No project']], '?', 'Move to project')}<button class="pri" data-act="workwith">Work with ${picks.size === 1 ? 'it' : 'these'} in the Notebook</button><button data-act="unpick">Clear selection</button></div>` : '') +
     ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><input type="checkbox" data-act="pick" data-id="${esc(p.id)}" ${picks.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
     <div class="grow"><b>${esc(p.title)}</b><br><small class="muted">${esc(byline(p))}</small> ${(p.tags || []).map(t => `<span class="tag" data-act="ftag" data-v="${esc(t)}">${esc(t)}</span>`).join(' ')}</div>
     ${p.project ? `<span class="tag proj" data-act="fproject" data-v="${esc(p.project)}">${esc(p.project)}</span>` : ''}${p.done ? '<span class="tag ok">Finished</span>' : ''}${ring(p)}
@@ -1019,7 +1072,7 @@ function render() {
     dropEd();
     $('#page').innerHTML = PAGE[view]();
     const at = NAV.findIndex(x => x[0] === view); // a journal's running head: where you are, how much is here, today's date
-    $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><span>Marrow · ${String(at + 1).padStart(2, '0')} ${NAV[at][1]}</span><span>${lib.length} source${lib.length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>`);
+    $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><span>Marrow · ${String(at + 1).padStart(2, '0')} ${NAV[at][1]}</span><label>Project ${projSel()}<span>· ${inScope().length} source${inScope().length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></label></div>`);
     window.renderMathInElement?.($('#page'), MATH);
     if (view === 'library') libRows();
     if (view === 'matrix') mxTable();
@@ -1042,9 +1095,9 @@ function render() {
 function mxTable() {
   const box = $('#mxBody'); if (!box) return;
   const all = scoped(), ps = all.filter(p => p.brief), cols = mxShown();
-  box.innerHTML = ps.length ? `<div class="mxwrap"><table class="mx"><tr><th>Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Have the AI fill the empty cells from each source's text">Fill with AI</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">✕</button>` : ''}</th>`).join('')}</tr>` +
+  box.innerHTML = ps.length ? `<div class="mxwrap"><table class="mx"><tr><th>Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">✕</button>` : ''}</th>`).join('')}</tr>` +
     ps.map(p => `<tr><td><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
-      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p.colsrc?.[c.custom] ? `<small>${cite(p, p.colsrc[c.custom])}</small>` : ''}`
+      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p.colsrc?.[c.custom] ? `<small>${cite(p, p.colsrc[c.custom])}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
       : `<div class="cell" data-act="mxrow">${md(mxVal(p, c), p)}</div>`) + `</td>`).join('') + `</tr>`).join('') + `</table></div>` +
       (all.length > ps.length ? `<p class="muted">${all.length - ps.length} more ${all.length - ps.length === 1 ? 'source is' : 'sources are'} not analyzed yet and not shown.</p>` : '')
     : `<p class="box">${all.length ? 'These sources are not analyzed yet. Open one and its row appears here once the briefing is ready.' : lib.length ? 'No sources match these filters. Clear a filter to see more.' : 'Nothing here yet. Add a source and its row appears once its briefing is ready.'}</p>`;
@@ -1192,11 +1245,12 @@ async function migrate() {
 // ---------- notebook: pages of blocks that carry the sources you are working with ----------
 // A page's `note` field holds JSON: { blocks: [Editor.js blocks], sources: [ids] }. Older pages and AI drafts are Markdown and are converted when opened.
 const docOf = n => n.doc ||= (() => {
-  try { const j = JSON.parse(n.note); if (Array.isArray(j?.blocks)) return { blocks: j.blocks, sources: j.sources || [] }; } catch {}
+  try { const j = JSON.parse(n.note); if (Array.isArray(j?.blocks)) return { blocks: j.blocks, sources: j.sources || [], icon: j.icon || '' }; } catch {}
   return { blocks: mdBlocks(n.note || ''), sources: [] };
 })();
 const putDoc = n => { n.note = JSON.stringify(docOf(n)); n.updated = Date.now(); return saveNote(n); };
 const pageSrcs = n => docOf(n).sources.map(byId).filter(Boolean);
+const ICONS = ['📄', '📚', '🧪', '🔬', '🧠', '💡', '📝', '📊', '🧬', '⚙️', '🔭', '🗺️', '📌', '❓', '✅', '🧩', '📐', '🔗', '🗂️', '⏳', '🏁', '✍️', '🌱', '💧'];
 const WORK = [['Compare them', 'Compare these sources: what each one claims, how their methods differ, and where their results agree or conflict.'],
   ['Find disagreements', 'Where do these sources disagree or reach different conclusions? Set the conflicting claims side by side.'],
   ['Find the gaps', 'What do these sources leave unanswered? List the open questions and untested assumptions, and say which source each comes from.'],
@@ -1221,28 +1275,85 @@ function dropEd() {
   const old = ed, id = edN, dirty = edDirty; clearTimeout(edT); ed = edN = null; edDirty = false;
   if (old) (dirty ? keepEd(old, id) : Promise.resolve()).then(() => old.destroy?.());
 }
+const RICH = { b: true, i: true, code: true, mark: true, br: true, a: { href: true } }, clean = h => DOMPurify.sanitize(String(h || ''), { ALLOWED_TAGS: ['b', 'i', 'code', 'mark', 'br', 'a'], ALLOWED_ATTR: ['href', 'class'] });
+const editable = (html, ph) => { const d = document.createElement('div'); d.contentEditable = 'true'; d.dataset.ph = ph; d.innerHTML = clean(html); return d; };
+class Callout { // a boxed aside with an icon
+  static get toolbox() { return { title: 'Callout', icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0-3 11.2V17h6v-2.8A6 6 0 0 0 12 3zM9.5 21h5"/></svg>' }; }
+  static get sanitize() { return { text: RICH }; }
+  constructor({ data }) { this.data = data; }
+  render() { const w = document.createElement('div'); w.className = 'callout'; w.innerHTML = '<span>💡</span>'; w.append(this.el = editable(this.data.text, 'Something worth setting apart')); return w; }
+  save() { return { text: this.el.innerHTML }; }
+}
+class Toggle { // a heading line that folds the text under it away
+  static get toolbox() { return { title: 'Toggle', icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l10 7-10 7z"/></svg>' }; }
+  static get sanitize() { return { title: RICH, text: RICH }; }
+  static get enableLineBreaks() { return true; }
+  constructor({ data }) { this.data = data; }
+  render() {
+    const w = document.createElement('details'); w.className = 'tgl'; w.open = this.data.open !== false; w.innerHTML = '<summary><span contenteditable="true" data-ph="Toggle"></span></summary>';
+    this.t = w.querySelector('span'); this.t.innerHTML = clean(this.data.title); w.append(this.b = editable(this.data.text, 'Hidden until opened')); this.w = w;
+    w.firstChild.onkeyup = e => e.key === ' ' && e.preventDefault(); // a space typed in the heading must not fold it
+    return w;
+  }
+  save() { return { title: this.t.innerHTML, text: this.b.innerHTML, open: this.w.open }; }
+}
 function mountEd() {
   const n = curNote(); if (!n || !window.EditorJS || !$('#ed')) return;
   edN = n.id;
-  ed = new EditorJS({
-    holder: 'ed', data: { blocks: docOf(n).blocks }, placeholder: 'Write here, or press / for headings, lists, tables and math',
-    tools: { header: { class: Header, inlineToolbar: true, config: { levels: [2, 3, 4], defaultLevel: 2 } }, list: { class: EditorjsList, inlineToolbar: true }, quote: { class: Quote, inlineToolbar: true },
+  const me = ed = new EditorJS({
+    holder: 'ed', data: { blocks: docOf(n).blocks }, placeholder: 'Write, press / for blocks, or @ to cite a source',
+    tools: { header: { class: Header, inlineToolbar: true, config: { levels: [2, 3, 4], defaultLevel: 2 } }, list: { class: EditorjsList, inlineToolbar: true }, toggle: Toggle, callout: Callout, quote: { class: Quote, inlineToolbar: true },
       table: { class: Table, inlineToolbar: true }, code: CodeTool, math: MathBlock, delimiter: Delimiter, inlineCode: InlineCode, marker: Marker },
-    onChange: () => { edDirty = true; clearTimeout(edT); edT = setTimeout(keepEd, 900); },
+    onReady: () => { if (me !== ed) return; try { window.DragDrop && new DragDrop(me); window.Undo && new Undo({ editor: me }); } catch {} nbToc(); }, // blocks can be dragged by their handle; Ctrl Z undoes
+    onChange: () => { edDirty = true; clearTimeout(edT); edT = setTimeout(() => { keepEd(); nbToc(); }, 900); },
   });
+  // "@" at the start of a word cites a source: pick one and a link to it lands at the caret.
+  $('#ed').onkeydown = e => {
+    if (e.key !== '@' || !e.target.isContentEditable) return;
+    const s = getSelection(), r = s.rangeCount && s.getRangeAt(0), before = r && r.startContainer.textContent.slice(0, r.startOffset);
+    if (!r || (before && !/\s$/.test(before))) return; // part of an email address, not a mention
+    e.preventDefault();
+    pickSource('Cite a source', id => {
+      const p = byId(id), d = docOf(curNote()); $('#pal').close();
+      s.removeAllRanges(); s.addRange(r); document.execCommand('insertHTML', false, `<a href="#src:${p.id}:">${esc(short(p))}</a>&nbsp;`);
+      if (!d.sources.includes(id)) { d.sources.push(id); nbSrc(); nbSide(); }
+    });
+  };
 }
+const ago = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : new Date(t).toLocaleDateString(); };
 function nbSide() {
   const el = $('#nbList'); if (!el) return;
-  const q = ($('#nbq')?.value || '').toLowerCase();
-  el.innerHTML = notes.filter(x => (x.title || '').toLowerCase().includes(q)).map(x => { const k = docOf(x).sources.length; return `<div class="item ${x.id === N ? 'on' : ''}" tabindex="0" data-act="nbopen" data-id="${esc(x.id)}"><b>${esc(x.title || 'Untitled page')}</b><small class="muted">${esc([new Date(x.updated).toLocaleDateString(), x.project, k ? k + ' source' + (k > 1 ? 's' : '') : ''].filter(Boolean).join(' · '))}</small></div>`; }).join('')
-    || `<p class="muted">${notes.length ? 'No page has that in its title.' : 'No pages yet.'}</p>`;
+  const q = ($('#nbq')?.value || '').toLowerCase(), shown = notes.filter(x => (!F.project || x.project === F.project) && (x.title || '').toLowerCase().includes(q)), groups = [...new Set(shown.map(x => x.project || ''))].sort();
+  el.innerHTML = groups.map(g => `<div class="lbl">${esc(g || 'Pages')}</div>` + shown.filter(x => (x.project || '') === g).map(x => `<div class="prow ${x.id === N ? 'on' : ''}" tabindex="0" data-act="nbopen" data-id="${esc(x.id)}" title="${esc(x.title || 'Untitled')}"><span class="ico">${esc(docOf(x).icon || '📄')}</span><span class="t">${esc(x.title || 'Untitled')}</span><button class="x" data-act="nbdel" data-id="${esc(x.id)}" aria-label="Delete ${esc(x.title || 'this page')}">✕</button></div>`).join('')).join('')
+    || `<p class="muted" style="padding:10px">${notes.length ? 'No page has that in its title.' : 'No pages yet.'}</p>`;
+  const n = curNote(); if (!n) return;
+  if ($('#nbcrumb')) $('#nbcrumb').textContent = (n.project ? n.project + ' / ' : '') + (n.title || 'Untitled');
+  if ($('#nbwhen')) $('#nbwhen').textContent = 'Edited ' + ago(n.updated);
 }
 function nbSrc() {
   const el = $('#nbsrc'), n = curNote(); if (!el || !n) return;
-  const ps = pageSrcs(n);
-  el.innerHTML = `<span>${ps.length ? 'Working with' : 'No sources on this page yet.'}</span>` + ps.map(p => `<span class="srcchip"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}</span><a href="#" data-open="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</a><button class="x" data-act="nbunsrc" data-id="${esc(p.id)}" aria-label="Take ${esc(p.title)} off this page">✕</button></span>`).join('') +
-    `<button data-act="nbaddsrc">+ Add sources</button>`;
+  el.innerHTML = pageSrcs(n).map(p => `<span class="srcchip"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}</span><a href="#" data-open="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</a><button class="x" data-act="nbunsrc" data-id="${esc(p.id)}" aria-label="Take ${esc(p.title)} off this page">✕</button></span>`).join('') + `<button class="add" data-act="nbaddsrc">+ Add sources</button>`;
 }
+function nbToc() { // an outline of the page's headings, shown in the margin on wide screens
+  const el = $('#toc'); if (!el) return;
+  const hs = [...document.querySelectorAll('#ed h2,#ed h3,#ed h4')].filter(h => h.textContent.trim());
+  el.innerHTML = hs.length > 1 ? hs.map((h, i) => `<a href="#" data-act="tocgo" data-i="${i}" class="l${h.tagName[1]}">${esc(h.textContent)}</a>`).join('') : '';
+}
+// The palette in pick mode: Enter hands the chosen source to `fn` and the list stays open until `fn` closes it or Esc is pressed.
+function pickSource(placeholder, fn) { palPick = fn; $('#palq').value = ''; $('#palq').placeholder = placeholder; palI = 0; palette(); $('#pal').showModal(); }
+// A matrix cell, popped out for reading. Arrow keys walk across columns and down sources.
+let peek = null;
+function showPeek() {
+  const { ps, cols, r, c } = peek, p = ps[r], col = cols[c];
+  $('#peek').innerHTML = `<div class="pk" tabindex="-1" style="outline:0"><div class="k" style="margin-top:0">${esc(col.label)} · source ${r + 1} of ${ps.length}</div><h3><a href="#" data-open="${esc(p.id)}">${esc(p.title)}</a></h3><small class="muted">${esc(byline(p))}</small>
+    <div class="peekbody">${md(mxVal(p, col) || 'Nothing written here yet.', p)}</div><div class="row muted"><small>← → columns · ↑ ↓ sources · Esc closes</small><span class="sp"></span><button data-open="${esc(p.id)}">Open the source</button></div></div>`;
+  window.renderMathInElement?.($('#peek'), MATH); $('#peek .pk').focus();
+}
+$('#peek').onkeydown = e => {
+  const [dr, dc] = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key] || []; if (dr == null) return;
+  e.preventDefault(); peek.r = Math.min(peek.ps.length - 1, Math.max(0, peek.r + dr)); peek.c = Math.min(peek.cols.length - 1, Math.max(0, peek.c + dc)); showPeek();
+};
+$('#peek').onclick = e => { if (e.target.id === 'peek' || e.target.closest('[data-open],[data-page]')) $('#peek').close(); };
 // Blocks go in through the live editor when the page is open, so the caret and undo history survive; otherwise straight into the stored page.
 async function addBlocks(n, blocks) {
   if (ed && edN === n.id) {
@@ -1287,6 +1398,11 @@ function ask(q, img) {
 
 // ---------- actions ----------
 const curNote = () => notes.find(x => x.id === N);
+async function fillCell(p, c) { // one matrix cell, answered from the source's own text and tied to a sentence in it
+  await text(p);
+  const j = await aiJSON(`You fill one cell of a literature-review table. The column is "${c}". From the source below, give what belongs in that column for this source. JSON: {"answer":"at most 40 words, or 'Not stated' if the source does not say","quote":"one sentence copied VERBATIM from the source that supports the answer, or ''"}. Plain text. Never guess.`, fullText(p));
+  (p.cols ||= {})[c] = String(j.answer || 'Not stated'); (p.colsrc ||= {})[c] = findQuote(p, j.quote); save(p);
+}
 async function discover(q) {
   disc.q = q; disc.busy = true; render();
   try { disc.rows = await api('discover?q=' + encodeURIComponent(q)); } catch (e) { toast('The paper search failed (' + e.message + '). Try again.'); }
@@ -1322,7 +1438,8 @@ $('#pal').onclick = e => { const b = e.target.closest('[data-pal]'); if (b) palR
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); return ACT.palette(); }
   const t = e.target;
-  if (e.ctrlKey || e.metaKey || e.altKey || $('#pal').open || /INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
+  if (e.key === 'Enter' && t.classList?.contains('ttl')) { e.preventDefault(); return ed?.focus(); } // from the title straight into the page
+  if (e.ctrlKey || e.metaKey || e.altKey || $('#pal').open || $('#peek').open || /INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
   if (e.key === '/') { e.preventDefault(); return ACT.palette(); }
   if (e.key === 'Enter' && t.matches('[tabindex][data-open],[tabindex][data-act]')) return t.click();
   const root = view === 'read' ? $('#body') : $('#page');
@@ -1373,7 +1490,17 @@ const ACT = {
   restore: () => $('#resFile').click(),
   biball: () => lib.length ? dl('marrow-library.bib', lib.map(bib).join('\n\n'), 'text/plain') : toast('Nothing in the library yet.'),
   fkind: el => { F.kind = el.dataset.v; render(); },
-  fproject: el => { F.project = el.dataset.v ?? el.value; if (view !== 'matrix' && view !== 'map') view = 'library'; render(); },
+  setproject: el => {
+    const v = el.dataset.v ?? el.value;
+    if (v === '+') { F.project = ''; go('home'); return setTimeout(() => $('form[data-f=newproj] input')?.focus(), 400); }
+    F.project = v; lsSet('project', v); picks.clear(); N = null; enter($('#page')); render(); $('#page').scrollTop = 0;
+  },
+  fproject: el => ACT.setproject(el),
+  moveto: el => { // file the ticked sources under a project
+    if (el.value === '?') return;
+    for (const id of picks) { const p = byId(id); p.project = el.value; save(p); }
+    toast(`Moved ${picks.size} source${picks.size === 1 ? '' : 's'} to ${el.value ? '“' + el.value + '”' : 'no project'}.`); picks.clear(); render();
+  },
   skind: el => { S.kind = el.dataset.v; render(); },
   ssort: el => { S.sort = el.value; render(); },
   pick: el => { picks[el.checked ? 'add' : 'delete'](el.dataset.id); libRows(); },
@@ -1410,33 +1537,35 @@ const ACT = {
   // matrix
   mxcsv: () => dl(`matrix-${fname(F.project || 'library')}.csv`, '﻿' + csv([['Source', 'By', ...mxShown().map(c => c.label)], ...mxRows()]), 'text/csv'),
   mxmd: () => dl(`matrix-${fname(F.project || 'library')}.md`, mxRows().map(r => `## ${r[0]}\n*${r[1]}*\n\n` + mxShown().flatMap((c, i) => r[i + 2] ? [`**${c.label}.** ${r[i + 2]}`] : []).join('\n\n')).join('\n\n---\n\n'), 'text/markdown'),
-  mxcol: el => { const k = el.dataset.v; mxHide[mxHide.has(k) ? 'delete' : 'add'](k); lsSet('mxHide', [...mxHide]); render(); },
+  mxcol: el => { const k = el.dataset.v, m = mxP(); m.hide = m.hide.includes(k) ? m.hide.filter(x => x !== k) : [...m.hide, k]; mxKeep(); render(); },
   mxsolo: el => { // show one column alone; click it again to bring the rest back
     const k = el.dataset.v, others = mxCols().map(c => c.key).filter(x => x !== k);
-    mxHide = new Set(others.every(x => mxHide.has(x)) ? [] : others); lsSet('mxHide', [...mxHide]); render();
+    mxP().hide = others.every(x => mxP().hide.includes(x)) ? [] : others; mxKeep(); render();
   },
-  mxrow: el => el.closest('tr').classList.toggle('open'),
+  mxrow: el => { const td = el.closest('td'); peek = { ps: scoped().filter(p => p.brief), cols: mxShown(), r: td.parentElement.rowIndex - 1, c: td.cellIndex - 1 }; showPeek(); $('#peek').showModal(); },
   mxdrop: el => {
     const c = el.dataset.v;
     if (!confirm(`Remove the “${c}” column and everything written in it? This cannot be undone.`)) return;
-    mxCustom = mxCustom.filter(x => x !== c); lsSet('mxCols', mxCustom);
-    for (const p of lib) if (p.cols && c in p.cols) { delete p.cols[c]; delete p.colsrc?.[c]; save(p); }
+    mxP().cols = mxP().cols.filter(x => x !== c); mxKeep();
+    for (const p of inScope()) if (p.cols && c in p.cols) { delete p.cols[c]; delete p.colsrc?.[c]; save(p); }
     render();
   },
   mxfill: el => {
+    // Fills only the empty cells of the rows on screen, one request per source, and can be stopped between sources.
+    if (filling) { filling = null; return toast('Stopping after the cell being written.'); }
     const c = el.dataset.v, ps = scoped().filter(p => p.brief && !(p.cols?.[c] || '').trim());
     if (!ps.length) return toast('Every row shown already has something in this column.');
     if (working) return toast('Still working on the last request. Try again when it finishes.');
+    if (ps.length > 5 && !confirm(`Fill ${ps.length} empty cells in “${c}”?\n\nThat is one AI request per source, so roughly ${Math.ceil(ps.length / 3)} minutes. You can stop it at any time, fill a single cell from the cell itself, or narrow the filters first to fill fewer.`)) return;
+    filling = c;
     run(`Filling “${c}”…`, async () => {
       let i = 0;
-      for (const p of ps) {
-        working = `Filling “${c}”: ${++i} of ${ps.length}`; renderRail(); await text(p);
-        const j = await aiJSON(`You fill one cell of a literature-review table. The column is "${c}". From the source below, give what belongs in that column for this source. JSON: {"answer":"at most 40 words, or 'Not stated' if the source does not say","quote":"one sentence copied VERBATIM from the source that supports the answer, or ''"}. Plain text. Never guess.`, fullText(p));
-        (p.cols ||= {})[c] = String(j.answer || 'Not stated'); (p.colsrc ||= {})[c] = findQuote(p, j.quote); save(p);
-        if (!$('#mxBody')?.contains(document.activeElement)) mxTable();
-      }
+      try { for (const p of ps) { if (filling !== c) break; working = `Filling “${c}”: ${++i} of ${ps.length}`; renderRail(); await fillCell(p, c); if (!$('#mxBody')?.contains(document.activeElement)) mxTable(); } }
+      finally { filling = null; }
     }, null);
+    mxTable();
   },
+  mxfill1: el => { const p = byId(el.dataset.id), c = el.dataset.v; if (working) return toast('Still working on the last request. Try again when it finishes.'); run(`Filling “${c}” for one source…`, () => fillCell(p, c), null); },
   mxwork: () => {
     const ids = scoped().filter(p => p.brief).map(p => p.id);
     if (!ids.length) return toast('No analyzed sources match these filters.');
@@ -1459,17 +1588,17 @@ const ACT = {
   nbfrom: () => newPage([P.id], P.title),
   nbgo: el => { N = el.dataset.id; go('notebook'); },
   nbopen: el => { N = el.dataset.id; render(); },
-  nbdel: async () => {
-    const n = curNote(); if (!n || !confirm(`Delete the page “${n.title || 'Untitled page'}”? This cannot be undone.`)) return;
-    clearTimeout(nbT); clearTimeout(edT); edDirty = false;
+  nbdel: async el => {
+    const n = el?.dataset.id ? notes.find(x => x.id === el.dataset.id) : curNote(); if (!n || !confirm(`Delete the page “${n.title || 'Untitled'}”? This cannot be undone.`)) return;
+    if (n.id === N) { clearTimeout(nbT); clearTimeout(edT); edDirty = false; }
     try { await api('notes/' + n.id, { method: 'DELETE' }); } catch (e) { return toast('Could not delete the page (' + e.message + '). Try again.'); }
-    notes = notes.filter(x => x !== n); N = null; render();
+    notes = notes.filter(x => x !== n); if (n.id === N) N = null; render();
   },
+  nbicon: () => { const el = $('#icons'); el.innerHTML = el.innerHTML ? '' : `<div class="icons">${ICONS.map(x => `<button data-act="nbseticon" data-v="${x}">${x}</button>`).join('')}<button data-act="nbseticon" data-v="">Remove icon</button></div>`; },
+  nbseticon: async el => { const n = curNote(); if (edDirty) await keepEd(); docOf(n).icon = el.dataset.v; putDoc(n); dropEd(); render(); }, // the page is redrawn with its new icon, after the editor's text is saved
+  tocgo: el => [...document.querySelectorAll('#ed h2,#ed h3,#ed h4')].filter(h => h.textContent.trim())[+el.dataset.i]?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
   nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`, 'text/markdown'); },
-  nbaddsrc: () => { // the palette, in pick mode: Enter ticks a source on or off this page and stays open for the next
-    palPick = id => { const s = docOf(curNote()).sources, i = s.indexOf(id); i < 0 ? s.push(id) : s.splice(i, 1); putDoc(curNote()); nbSrc(); nbSide(); };
-    $('#palq').value = ''; $('#palq').placeholder = 'Choose the sources to work with on this page'; palI = 0; palette(); $('#pal').showModal();
-  },
+  nbaddsrc: () => pickSource('Choose the sources to work with on this page', id => { const s = docOf(curNote()).sources, i = s.indexOf(id); i < 0 ? s.push(id) : s.splice(i, 1); putDoc(curNote()); nbSrc(); nbSide(); }),
   nbunsrc: el => { const n = curNote(), s = docOf(n).sources; s.splice(s.indexOf(el.dataset.id), 1); putDoc(n); nbSrc(); nbSide(); },
   work: el => work(el.dataset.q),
   nbhl: () => {
@@ -1508,7 +1637,8 @@ const FORM = {
   },
   disc: f => discover(f.q.value.trim()),
   work: f => { work(f.q.value); f.q.value = ''; },
-  mxadd: f => { const c = f.c.value.trim(); if (!c) return; if (!mxCols().some(x => x.label.toLowerCase() === c.toLowerCase())) { mxCustom.push(c); lsSet('mxCols', mxCustom); } mxHide.delete('c:' + c); render(); },
+  mxadd: f => { const c = f.c.value.trim(); if (!c) return; if (!mxCols().some(x => x.label.toLowerCase() === c.toLowerCase())) mxP().cols.push(c); mxP().hide = mxP().hide.filter(x => x !== 'c:' + c); mxKeep(); render(); },
+  newproj: f => { const v = f.p.value.trim(); if (!v) return; lsSet('projects', [...new Set([...lsGet('projects', []), v])]); ACT.setproject({ dataset: { v } }); toast(`Project “${v}” created. Sources you add now are filed in it.`); },
   follow: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); b.disabled = true; toast('Looking for the feed…');
     try {
@@ -1638,6 +1768,7 @@ $('#sel').onclick = e => {
 // ---------- boot ----------
 try {
   ({ items: lib, notes, activity, feeds = [] } = await api('library'));
+  F.project = lsGet('project', ''); if (!projects().includes(F.project)) F.project = '';
   await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
 } catch (e) { toast('Could not reach the Marrow server (' + e.message + '). Check that it is still running, then reload this page.'); }
 enter($('#page')); render();
