@@ -3,126 +3,226 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Marrow — read papers to the bone</title>
+<title>Marrow — your research desk</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b4460f'/><text x='16' y='23' font-size='20' font-family='Georgia' font-weight='700' text-anchor='middle' fill='white'>M</text></svg>">
+<script>try { document.documentElement.dataset.theme = localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); } catch {}</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
 <style>
-:root{--bg:#faf7f2;--panel:#fffdf9;--ink:#221f1a;--muted:#7a7265;--line:#e6dfd3;--acc:#b4460f;--acc-bg:#fbeadd;--ok:#2f7d4f;--pdf:#ece6db}
-@media (prefers-color-scheme:dark){:root{--bg:#16140f;--panel:#1e1b15;--ink:#ebe5d9;--muted:#9a917f;--line:#34302a;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#0f0e0b}}
+:root{--bg:#f6f2ea;--panel:#fffdf8;--ink:#1f1c17;--muted:#746c5f;--line:#e4dccd;--acc:#b4460f;--acc-bg:#f9e6d6;--ok:#2f7d4f;--pdf:#e9e2d5;--web:#2a6a9c;--vid:#b3261e;--sh:0 1px 2px #0000000f,0 8px 24px #0000000d;color-scheme:light}
+[data-theme=dark]{--bg:#131210;--panel:#1b1916;--ink:#ece6da;--muted:#9c9382;--line:#322e27;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#0d0c0a;--web:#7fb6e0;--vid:#f2857c;--sh:0 1px 2px #0006,0 8px 24px #0004;color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
-h1,h2,h3,h4{font-family:"Iowan Old Style",Georgia,serif;margin:.2em 0 .4em;line-height:1.25}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;grid-template-columns:78px minmax(0,1fr);grid-template-rows:minmax(0,1fr);overflow:hidden;transition:background .2s,color .2s}
+h1,h2,h3,h4,.q{font-family:Fraunces,"Iowan Old Style",Georgia,serif;margin:.2em 0 .4em;line-height:1.2}
+h1{font-size:30px;letter-spacing:-.4px}
 a{color:var(--acc)}
-button,input,textarea{font:inherit;color:inherit}
-button{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.45em .9em;cursor:pointer;min-height:36px}
-button:hover{border-color:var(--acc)}
-button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button,input,textarea,select{font:inherit;color:inherit}
+button,.btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.45em .9em;cursor:pointer;min-height:36px;text-decoration:none;color:inherit;white-space:nowrap;transition:background .15s,border-color .15s,transform .05s}
+button:hover,.btn:hover{border-color:var(--acc)} button:active{transform:translateY(1px)}
+button.pri{background:linear-gradient(180deg,#d65f1f,#b4460f);border:0;color:#fff;font-weight:600;box-shadow:0 2px 10px #b4460f55}
 button:disabled{opacity:.5;cursor:wait}
-input,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.55em .7em}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:.55em .75em}
+select{width:auto}
 textarea{min-height:110px;resize:vertical}
 :focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-.muted{color:var(--muted)} .row{display:flex;gap:.5em;flex-wrap:wrap;align-items:center}
-#app{display:grid;grid-template-columns:250px 1fr 440px;height:100%}
-aside{background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow:auto;display:flex;flex-direction:column;gap:10px}
-.logo{font:700 22px Georgia,serif;letter-spacing:-.5px} .logo span{color:var(--acc)}
-#list{display:flex;flex-direction:column;gap:4px}
-.item{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
-.item:hover{background:var(--bg)} .item.on{border-color:var(--acc);background:var(--acc-bg)}
-.item b{flex:1;font-weight:500;font-size:13.5px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
-.pct{font-size:11px;font-weight:700;color:var(--ok);min-width:30px;text-align:right}
-.x{border:0;background:none;padding:0 4px;min-height:0;color:var(--muted)}
+.muted{color:var(--muted)} .row{display:flex;gap:.5em;flex-wrap:wrap;align-items:center} .sp{flex:1}
+code{background:var(--line);padding:0 .3em;border-radius:4px;font-size:.9em}
+blockquote{margin:.3em 0;padding:.2em .8em;border-left:3px solid var(--acc);color:var(--muted);font-size:13.5px}
+b.h{display:block;font:700 18px Fraunces,Georgia,serif;margin:.9em 0 .3em} b.h:first-child{margin-top:0}
+.pl{display:block;margin:.35em 0} .gap{display:block;height:.35em}
+ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-top:1px solid var(--line);margin:1em 0}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}}
+.wrap,#body>*,article,.vid{animation:rise .28s ease-out}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.cover{--h:20;height:112px;border-radius:11px;margin:-5px -5px 2px;background:linear-gradient(135deg,hsl(var(--h) 60% 90%),hsl(calc(var(--h) + 45) 55% 80%)) center/cover;display:grid;place-items:center;color:hsl(var(--h) 45% 38%);position:relative}
+[data-theme=dark] .cover{background-image:linear-gradient(135deg,hsl(var(--h) 35% 24%),hsl(calc(var(--h) + 45) 40% 15%));color:hsl(var(--h) 55% 72%)}
+.cover .kind{position:absolute;left:8px;top:8px;background:var(--panel);padding:3px 9px;border-radius:99px;box-shadow:var(--sh)} .cover .ring{position:absolute;right:8px;top:8px;box-shadow:var(--sh)}
+.cover.shot::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(#0000 40%,#0006)}
+.step{font-weight:600;color:var(--acc)}
+.bar{height:4px;border-radius:9px;background:var(--line);overflow:hidden} .bar i{display:block;height:100%;background:var(--ok);border-radius:9px}
+.tldr{font:600 18px/1.5 Fraunces,Georgia,serif;background:var(--acc-bg);border-radius:14px;padding:14px 16px;margin:14px 0}
+.fact{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:2px 14px 12px;margin:10px 0;box-shadow:var(--sh)} .fact .k{margin-top:12px} .fact.key{border-color:var(--acc)}
+.terms{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px} .term{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:13.5px;line-height:1.45} .term b{display:block;margin-bottom:2px}
+#prog{height:3px;background:var(--line);flex:none} #prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .1s}
+.wrap.narrow .box{padding:26px 28px} .wrap.narrow .q{font-size:25px;margin:.5em 0 .7em} .wrap.narrow .box button{min-width:92px}
+/* rail */
+#rail{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;overflow:auto}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(160deg,#d65f1f,#9c3a0a);color:#fff;font:700 24px Fraunces,Georgia,serif;display:grid;place-items:center;margin-bottom:10px;flex:none}
+#nav{display:contents}
+#rail button{border:0;background:none;width:66px;padding:8px 0 6px;display:grid;justify-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);border-radius:12px;position:relative;min-height:0;flex:none}
+#rail button:hover{color:var(--ink);background:var(--bg)} #rail button.on{background:var(--acc-bg);color:var(--acc)}
+#rail .n{position:absolute;top:2px;right:8px;background:var(--acc);color:#fff;border-radius:99px;font-size:10px;line-height:16px;padding:0 5px}
+[data-theme=dark] #rail .n{color:#1b1916}
+/* pages */
+#page{overflow:auto;min-width:0}
+.wrap{max-width:1060px;margin:0 auto;padding:36px 28px 90px} .wrap.narrow{max-width:680px} .wrap.wide{max-width:1500px}
+.hero{font-size:40px;margin:0} .lead{font-size:16.5px;margin:.2em 0 1.4em}
+.addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:var(--sh);margin:0 0 22px}
+.addbar input{border:0;background:none;font-size:15.5px;min-width:0} .addbar input:focus-visible{outline:0} .addbar:focus-within{border-color:var(--acc)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:26px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--sh);text-align:left;white-space:normal;min-height:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.tile b{font:700 34px/1 Fraunces,Georgia,serif;margin-bottom:6px} .tile small{color:var(--muted)}
+.heat{display:grid;grid-template-rows:repeat(7,auto);grid-template-columns:repeat(12,1fr);grid-auto-flow:column;gap:3px;margin-top:8px;width:100%;max-width:190px}
+.heat i{border-radius:3px;aspect-ratio:1;background:color-mix(in srgb,var(--ok) calc(var(--a)*100%),var(--line))}
+.sec{display:flex;align-items:baseline;gap:10px;margin:26px 0 10px} .sec h3{margin:0;font-size:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--sh);cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:transform .15s,border-color .15s;min-width:0}
+.card:hover{border-color:var(--acc);transform:translateY(-2px)}
+.card h4{font-size:16.5px;margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.card.flat{cursor:default} .card.flat:hover{transform:none;border-color:var(--line)}
+.rows{display:flex;flex-direction:column;gap:8px}
+.rows .card{flex-direction:row;align-items:center;gap:12px;padding:10px 14px} .rows .card:hover{transform:none}
+.grow{flex:1;min-width:0} .grow b{font-weight:600}
+.kind{display:inline-flex;gap:5px;align-items:center;font:700 11px Inter,system-ui;text-transform:uppercase;letter-spacing:.07em;color:var(--acc)} .kind.web{color:var(--web)} .kind.video{color:var(--vid)}
+.tag{font:600 11px Inter,system-ui;background:var(--acc-bg);color:var(--acc);border-radius:99px;padding:2px 9px;cursor:pointer;white-space:nowrap;display:inline-block}
+.tag.proj{background:none;border:1px solid var(--line);color:var(--muted)} .tag.ok{background:none;border:1px solid var(--ok);color:var(--ok);cursor:default}
+.chip{border-radius:99px;min-height:32px;padding:.2em .9em;font-size:13.5px} .chip.on{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);font-weight:600}
+.filters{margin:0 0 14px} .filters #q{flex:1;min-width:220px;width:auto}
+.x{border:0;background:none;padding:0 6px;min-height:0;color:var(--muted)}
+mark{background:#ffd60070;color:inherit;border-radius:2px}
+.ring{--p:0;--in:var(--panel);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 11px Inter,system-ui;flex:none;
+  background:radial-gradient(closest-side,var(--in) 74%,transparent 76%),conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0)}
+.clamp{overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.mxwrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--sh);max-height:calc(100vh - 200px)}
+.mx{border-collapse:separate;border-spacing:0;font-size:13.5px}
+.mx th,.mx td{border-bottom:1px solid var(--line);padding:10px 12px;vertical-align:top;text-align:left;min-width:190px}
+.mx th{position:sticky;top:0;background:var(--panel);font:700 11px Inter,system-ui;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);z-index:2}
+.mx td:first-child,.mx th:first-child{position:sticky;left:0;background:var(--panel);min-width:210px;max-width:230px;z-index:1;border-right:1px solid var(--line)} .mx th:first-child{z-index:3}
+.mx textarea{min-height:90px;font-size:13px}
+.nb{display:grid;grid-template-columns:270px minmax(0,1fr);gap:26px}
+.item{display:flex;flex-direction:column;padding:9px 11px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.item:hover{background:var(--panel)} .item.on{border-color:var(--acc);background:var(--acc-bg)}
+.item b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ttl{font:700 26px Fraunces,Georgia,serif;border:0;background:none;padding:0;margin-bottom:8px}
+.nbedit textarea{min-height:46vh;margin-top:10px;font-size:15px;line-height:1.6}
+#cy{height:420px;border:1px solid var(--line);border-radius:14px;background:var(--panel)} #cy.big{height:calc(100vh - 250px);min-height:380px}
+/* reader */
+#reader{display:grid;grid-template-columns:minmax(0,1fr) 480px;min-height:0;height:100%}
 main{display:flex;flex-direction:column;min-width:0;min-height:0}
-header{display:flex;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel);min-height:52px}
-header h3{flex:1;margin:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header{display:flex;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel);min-height:54px}
+header h3{flex:1;margin:0;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mob{display:none}
-#pdf{flex:1;overflow:auto;background:var(--pdf);padding:12px}
+#tools{padding:6px 14px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:nowrap}
+#tools input{max-width:210px} #tools button{padding:.3em .7em}
+#doc{flex:1;overflow:auto;background:var(--pdf);padding:12px}
 .page{position:relative;margin:0 auto 12px;background:#fff;box-shadow:0 1px 6px #0003}
 .page canvas{display:block}
-#empty{max-width:640px;margin:6vh auto;padding:0 16px}
-#empty ol{padding-left:1.2em} #empty li{margin:.5em 0}
+article{max-width:740px;margin:8px auto 60px;padding:34px 40px 60px;background:var(--panel);border-radius:16px;box-shadow:var(--sh);font:calc(17.5px*var(--z,1))/1.72 Georgia,"Iowan Old Style",serif;overflow-wrap:break-word}
+article h1{font-size:1.9em} article h2{font-size:1.4em;margin-top:1.4em} article h3{font-size:1.2em;margin-top:1.2em}
+article img,article svg,article video{max-width:100%;height:auto;border-radius:8px} article figure{margin:1em 0} article figcaption{font-size:.8em;color:var(--muted)}
+article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;font-size:.78em;line-height:1.5} article table{border-collapse:collapse;font-size:.85em;display:block;overflow:auto} article td,article th{border:1px solid var(--line);padding:4px 8px}
+.blk{scroll-margin:38vh;border-radius:6px} .blk.hit{background:#ff7a0030} .blk.flash{animation:fl 1.8s}
+@keyframes fl{0%,60%{background:var(--acc-bg);box-shadow:0 0 0 6px var(--acc-bg)}}
+.vid{max-width:860px;margin:0 auto}
+#yt{position:sticky;top:-12px;z-index:4;background:var(--pdf);padding:12px 0 10px}
+#yt iframe,#player{width:100%;height:auto;aspect-ratio:16/9;max-height:48vh;border:0;border-radius:14px;display:block;background:#000}
+.seg{display:flex;gap:12px;padding:7px 10px;font-size:calc(15.5px*var(--z,1));line-height:1.6} .seg.now{background:var(--acc-bg)}
+.ts{user-select:none;font:600 12px/2.1 Inter,system-ui;color:var(--acc);min-width:46px;text-decoration:none;flex:none}
+.pad{padding:18px}
+::highlight(c1){background:#ffd60070} ::highlight(c2){background:#6fdc8c80} ::highlight(c3){background:#ff8fb180}
+::highlight(ul){text-decoration:underline;text-decoration-color:#e0531a;text-decoration-thickness:2.5px}
 #panel{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-#tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);flex:none}
-#tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:.7em .6em;white-space:nowrap;color:var(--muted)}
-#tabs button.on{color:var(--acc);border-color:var(--acc);font-weight:600}
-#status{padding:8px 14px;background:var(--acc-bg);font-size:13.5px;flex:none}
-#status:empty{display:none}
-#status::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:8px;animation:sp 1s linear infinite;vertical-align:-1px}
-@keyframes sp{to{transform:rotate(360deg)}}
-#body{flex:1;overflow:auto;padding:14px}
-.box{border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--bg)}
+#tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);flex:none;padding:8px 10px;align-items:center}
+#tabs button{border:0;border-radius:99px;background:none;padding:.35em .5em;font-size:13.5px;min-height:34px;display:flex;gap:5px;align-items:center;color:var(--muted)}
+#tabs button.on{background:var(--acc-bg);color:var(--acc);font-weight:600}
+#tabs i{font:700 11px Inter,system-ui;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--muted)}
+#tabs .on i{background:var(--acc);color:#fff} #tabs .done i{background:var(--ok);color:#fff}
+#body{flex:1;overflow:auto;padding:14px;background:var(--bg)}
+.box{border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px;background:var(--panel);box-shadow:var(--sh)}
 .box.done{border-left:4px solid var(--ok)}
 .box h4{margin:0 0 .3em;font-size:15.5px}
-.k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;margin:1em 0 .1em}
-.badge{font:700 12px system-ui;color:var(--ok);float:right}
-blockquote{margin:.3em 0;padding:.2em .8em;border-left:3px solid var(--acc);color:var(--muted);font-size:13.5px}
-.q{font:600 17px/1.4 Georgia,serif}
-.msg{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.k{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;background:var(--acc-bg);border-radius:6px;padding:2px 8px;margin:1.3em 0 .4em}
+.badge{font:700 12px Inter,system-ui;color:var(--ok);float:right}
+.q{font:600 19px/1.4 Fraunces,Georgia,serif}
+.msg{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
 .msg.user{background:var(--acc-bg);border-color:transparent;margin-left:15%}
-code{background:var(--line);padding:0 .3em;border-radius:4px;font-size:.9em}
-#cy{height:420px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
-#sel{position:fixed;z-index:20;display:none;background:var(--ink);border-radius:10px;padding:4px;gap:2px;box-shadow:0 4px 16px #0005}
-#sel button{background:none;border:0;color:var(--bg);min-height:34px}
-#sel button:hover{background:#fff3}
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;display:none;z-index:30;max-width:90vw}
-dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;width:min(520px,92vw);padding:18px}
-dialog::backdrop{background:#0008}
+.num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc-bg);color:var(--acc);font:700 12px Inter,system-ui;margin-right:6px;vertical-align:2px}
+.done .num{background:var(--ok);color:#fff}
 progress{width:100%;height:6px;accent-color:var(--ok)}
-#tools{padding:6px 14px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:nowrap}
-#tools input{max-width:210px} #tools button{padding:.3em .7em;white-space:nowrap}
-.textLayer span.hl{background:#ffd60070;cursor:pointer} .textLayer span.hit{background:#ff7a0080}
-.tag{font:600 11px system-ui;background:var(--acc-bg);color:var(--acc);border-radius:99px;padding:1px 8px;cursor:pointer;white-space:nowrap}
 .warn{color:#b58900;font-size:12.5px}
+.textLayer span.hl{background:#ffd60070;cursor:pointer} .textLayer span.hit{background:#ff7a0080}
+.textLayer span.c2{background:#6fdc8c80} .textLayer span.c3{background:#ff8fb180}
+.textLayer span.ul{background:none;box-shadow:inset 0 -2.5px 0 #e0531a;cursor:pointer}
+.dot{width:22px;height:22px;min-height:0!important;padding:0;border-radius:50%!important;margin:6px 4px;border:2px solid #fff8!important}
+.dot.c1{background:#ffd600!important} .dot.c2{background:#6fdc8c!important} .dot.c3{background:#ff8fb1!important}
+.note.c1{border-left:4px solid #ffd600} .note.c2{border-left:4px solid #6fdc8c} .note.c3{border-left:4px solid #ff8fb1} .note.ul{border-left:4px solid #e0531a}
+.mbar{margin:6px 0;font-size:13px} .mbar summary{cursor:pointer;color:var(--acc)}
+.mbar button{min-height:30px;padding:.1em .55em;margin:4px 4px 0 0}
+.mprev:not(:empty){border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin:6px 0}
+.mprev:not(:empty)::before{content:"Preview";display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+details.cardrow summary{cursor:pointer;font-weight:600;list-style-position:outside;margin-left:1em}
 body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer-events:none} body.snip #snipBtn{background:var(--acc);color:#fff}
 #snipbox{position:absolute;border:2px dashed var(--acc);background:#b4460f22;pointer-events:none;z-index:5}
+#sel{position:fixed;z-index:20;display:none;background:#221f1a;border-radius:12px;padding:4px;gap:2px;box-shadow:0 4px 16px #0005}
+#sel button{background:none;border:0;color:#faf7f2;min-height:34px} #sel button:hover{background:#fff3}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;display:none;z-index:30;max-width:90vw}
+#status{position:fixed;left:92px;bottom:16px;z-index:25;background:var(--acc-bg);color:var(--ink);border:1px solid var(--acc);border-radius:99px;padding:7px 14px;font-size:13.5px;box-shadow:var(--sh);max-width:min(520px,80vw)}
+#status:empty{display:none}
+#status::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;vertical-align:-1px}
+@keyframes spin{to{transform:rotate(360deg)}}
 @media (max-width:900px){
-  #app{grid-template-columns:1fr}
-  .mob{display:inline-block}
-  aside{position:fixed;inset:0 18% 0 0;z-index:15;transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 40px #0006}
-  body.menu aside{transform:none}
-  #panel{position:fixed;inset:52px 0 0 0;z-index:10;display:none;border:0}
+  body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+  #rail{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px;justify-content:space-between} .logo,#rail .sp{display:none}
+  #rail button{width:54px}
+  .wrap{padding:22px 16px 60px} .hero{font-size:32px}
+  .addbar{flex-wrap:wrap} .addbar input{flex:1 1 100%}
+  .nb{grid-template-columns:1fr}
+  #reader{grid-template-columns:1fr} .mob{display:inline-block}
+  header #doneBtn,header #orig{display:none}
+  article{padding:22px 18px 40px}
+  #panel{position:fixed;inset:54px 0 62px 0;z-index:10;display:none;border:0}
   body.study #panel{display:flex}
+  #status{left:12px;bottom:74px}
 }
 </style>
 </head>
 <body>
-<div id="app">
-  <aside>
-    <div class="logo">Mar<span>row</span></div>
-    <button class="pri" id="upBtn">+ Add PDF</button>
-    <input type="file" id="file" accept="application/pdf" multiple hidden>
-    <form id="arxiv" class="row" style="flex-wrap:nowrap"><input name="ax" placeholder="arXiv link or ID" aria-label="arXiv link or ID"><button>Get</button></form>
-    <button id="dueBtn">Review due cards</button>
-    <input id="search" type="search" placeholder="Search library" aria-label="Search library">
-    <div id="list"></div>
-    <div class="row" style="margin-top:auto"><button id="bakBtn">Backup</button><button id="resBtn">Restore</button><button id="bibBtn">.bib</button></div>
-    <input type="file" id="resFile" accept="application/json" hidden>
-    <small class="muted">Stored in this browser. Use Backup to protect or move your library. Drop PDFs anywhere.</small>
-  </aside>
+<nav id="rail" aria-label="Sections">
+  <div class="logo" title="Marrow">M</div>
+  <div id="nav"></div>
+  <span class="sp"></span>
+  <button id="themeBtn" data-act="theme"></button>
+</nav>
+<div id="page"></div>
+<div id="reader" hidden>
   <main>
     <header>
-      <button class="mob" id="menuBtn" aria-label="Library">☰</button>
-      <h3 id="title">Marrow</h3>
-      <span id="mast" class="pct"></span>
-      <button class="mob" id="viewBtn">Paper ⇄ Study</button>
+      <button data-view="library" aria-label="Back to library">←</button>
+      <span id="kindic"></span>
+      <h3 id="title"></h3>
+      <span id="mast"></span>
+      <button id="doneBtn" data-act="done"></button>
+      <a id="orig" class="btn" target="_blank" rel="noopener">Original ↗</a>
+      <button class="mob" id="viewBtn">Source ⇄ Study</button>
     </header>
     <div id="tools" class="row">
-      <input id="find" type="search" placeholder="Find in paper ⏎" aria-label="Find in paper"><small id="findn" class="muted"></small><span style="flex:1"></span>
-      <button id="zo" aria-label="Zoom out">−</button><button id="zi" aria-label="Zoom in">+</button><button id="snipBtn" title="Drag a box around a figure, table or equation to have it explained">Snip figure</button>
+      <input id="find" type="search" placeholder="Find in this source ⏎" aria-label="Find in this source"><small id="findn" class="muted"></small><span class="sp"></span>
+      <button id="tnote">+ Note at this moment</button>
+      <button id="zo" aria-label="Smaller">−</button><button id="zi" aria-label="Larger">+</button>
+      <button id="snipBtn" title="Drag a box around a figure, table or equation to have it explained">Snip figure</button>
     </div>
-    <div id="pdf"></div>
+    <div id="prog"><i></i></div>
+    <div id="doc"></div>
   </main>
   <section id="panel">
     <div id="tabs"></div>
-    <div id="status"></div>
     <div id="body"></div>
   </section>
 </div>
-<div id="sel"><button data-s="explain">Explain</button><button data-s="note">Highlight</button><button data-s="card">Make card</button></div>
-<dialog id="rv"><div id="rvBody"></div><p style="text-align:right;margin:12px 0 0"><button id="rvClose">Close</button></p></dialog>
+<div id="sel"><button data-s="hl" data-c="1" class="dot c1" aria-label="Highlight yellow"></button><button data-s="hl" data-c="2" class="dot c2" aria-label="Highlight green"></button><button data-s="hl" data-c="3" class="dot c3" aria-label="Highlight pink"></button><button data-s="ul"><u>Underline</u></button><button data-s="note">Note</button><button data-s="explain">Explain</button><button data-s="card">Card</button></div>
+<input type="file" id="file" accept="application/pdf" multiple hidden>
+<input type="file" id="resFile" accept="application/json" hidden>
+<datalist id="projects"></datalist>
+<div id="status" role="status"></div>
 <div id="toast" role="status"></div>
 
 <script type="module">
@@ -132,59 +232,111 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-// ponytail: tiny markdown (bold, code, bullets, page links). Swap in a real renderer + KaTeX if math-heavy answers matter.
-const md = s => esc(s).replace(/\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]/g, m => m.replace(/\n/g, ' ')) // keep display math on one line so KaTeX sees it whole
-  .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>')
-  .replace(/\bp\.\s?(\d+)/g, '<a href="#" data-page="$1">p.$1</a>').replace(/^\s*[-*] /gm, '• ').replace(/\n/g, '<br>');
+const IC = {
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z', book: 'M4 19.5V5a2 2 0 0 1 2-2h13v14H6a2 2 0 0 0 0 4h13', search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.3-4.3',
+  layers: 'M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 18l10 5 10-5', table: 'M3 5h18v14H3zM3 10h18M3 15h18M9 5v14', pen: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  graph: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
+  sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4', moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+  file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z', play: 'M3 5h18v14H3zM10 9l5 3-5 3z',
+};
+const ic = (k, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[k]}"/></svg>`;
+const KIND = { pdf: ['Paper', 'file'], web: ['Article', 'globe'], video: ['Video', 'play'] };
+const clock = t => t == null ? '' : (t >= 3600 ? Math.floor(t / 3600) + ':' + String(Math.floor(t / 60) % 60).padStart(2, '0') : Math.floor(t / 60)) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+// The AI always sees and cites [p.N] markers. What N means to the reader depends on the source: a page, a paragraph, or a moment in a video.
+const loc = (p, n) => !p || p.kind === 'pdf' ? 'p.' + n : p.kind === 'web' ? '¶' + n : clock(p.times?.[n - 1]) || '#' + n;
+const cite = (p, n) => `<a href="#" data-page="${+n}" data-pid="${esc(p.id)}">${esc(loc(p, +n))}</a>`;
+// ponytail: tiny markdown (headings, bold, code, bullets, source links). Swap in a real renderer if notes need tables or nested lists.
+const inline = (s, p) => s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\bp\.\s?(\d+)/g, (m, n) => p ? cite(p, n) : m);
+function md(s, p = P) {
+  const lines = esc(s).replace(/\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]/g, m => m.replace(/\n/g, ' ')).split('\n'); // keep display math on one line so KaTeX sees it whole
+  if (lines.length === 1) return inline(lines[0], p);
+  let out = '', open = '';
+  const close = () => { if (open) out += `</${open}>`; open = ''; };
+  for (const line of lines) {
+    const h = line.match(/^#{1,4} (.+)$/), li = line.match(/^\s*(?:[-*•]|(\d+)[.)]) (.+)$/);
+    if (li) { const t = li[1] ? 'ol' : 'ul'; if (open !== t) { close(); out += `<${t}>`; open = t; } out += `<li>${inline(li[2], p)}</li>`; continue; }
+    close();
+    out += h ? `<b class="h">${inline(h[1], p)}</b>` : line.trim() === '---' ? '<hr>' : line.trim() ? `<span class="pl">${inline(line, p)}</span>` : '<span class="gap"></span>';
+  }
+  close(); return out;
+}
 const list = a => (a || []).length ? '<ul>' + a.map(x => `<li>${md(x)}</li>`).join('') + '</ul>' : '<p class="muted">—</p>';
 let toastT;
-const toast = m => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 5000); };
+const toast = m => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 6000); };
+const dl = (name, text, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); };
+const fname = s => String(s).replace(/[^\w ]+/g, '').trim().slice(0, 60) || 'marrow';
 
-// ---------- storage (IndexedDB: paper records + raw PDFs kept apart so saves stay small) ----------
-const db = new Promise((ok, no) => {
-  const r = indexedDB.open('marrow', 1);
-  r.onupgradeneeded = () => { r.result.createObjectStore('papers', { keyPath: 'id' }); r.result.createObjectStore('pdfs'); };
-  r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error);
-});
-const idb = async (store, mode, fn) => { const d = await db; return new Promise((ok, no) => { const q = fn(d.transaction(store, mode).objectStore(store)); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); }); };
-const save = p => idb('papers', 'readwrite', s => s.put(p));
+// ---------- storage: everything lives in the server's SQLite database ----------
+const JH = { 'Content-Type': 'application/json' };
+async function api(path, opts) {
+  const r = await fetch('/api/' + path, opts), isJ = r.headers.get('content-type')?.includes('json');
+  if (!r.ok) throw new Error(isJ ? (await r.json()).error : r.statusText);
+  return isJ ? r.json() : r.arrayBuffer();
+}
+const send = (method, path, body) => api(path, { method, headers: JH, body: JSON.stringify(body) });
+// Saves are queued so an older save can never land after a newer one. The source text (parts) is only sent when it changes.
+let saving = Promise.resolve();
+const save = (p, parts) => {
+  const { pages, parts: _, ...rest } = p, body = JSON.stringify(parts ? { ...rest, parts } : rest);
+  return saving = saving.then(() => api('items/' + p.id, { method: 'PUT', headers: JH, body })).catch(e => toast('Could not save: ' + e.message));
+};
+const saveNote = n => n && send('PUT', 'notes/' + n.id, n).catch(e => toast('Could not save the note: ' + e.message));
+const text = async p => p.pages || (p.parts = await api(`items/${p.id}/parts`), p.pages = p.parts.map(x => x.body));
+const log = (kind, p) => { activity.push(Date.now()); send('POST', 'activity', { kind, item_id: p?.id }).catch(() => {}); };
 
 // ---------- AI ----------
 async function ai(messages) {
-  const r = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages }) });
-  const j = await r.json();
-  if (!r.ok) throw new Error('AI is unavailable right now (' + j.error + '). Try again in a moment.');
-  return j.text;
+  try { return (await send('POST', 'ai', { messages })).text; }
+  catch (e) { throw new Error('AI is unavailable right now (' + e.message + '). Try again in a moment.'); }
 }
 async function aiJSON(system, user) {
   const t = await ai([{ role: 'system', content: system + '\nReturn ONLY one valid JSON object. No markdown fences, no commentary.' }, { role: 'user', content: user }]);
   try { return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); }
   catch { throw new Error('The AI returned a malformed answer. Please try again.'); }
 }
-// ponytail: whole paper goes in the prompt, capped at ~40k tokens. Chunk + retrieve if books/theses need support.
+// ponytail: the whole source goes in the prompt, capped at ~40k tokens. Chunk + retrieve if books/theses/3-hour lectures need support.
 const fullText = p => p.pages.map((t, i) => `[p.${i + 1}] ${t}`).join('\n').slice(0, 150000);
 
-const SYS_ANALYZE = `You are an expert research mentor preparing a student to deeply master a paper. Read the paper (page markers look like [p.N]) and produce JSON:
-{"title":"paper title","authors":["Full Name"],"year":"YYYY","venue":"journal/conference or arXiv",
+const SYS_ANALYZE = `You are an expert research mentor preparing a student to deeply master a source: a research paper, a web article, or the transcript of a talk or lecture. Markers like [p.N] number its pages, paragraphs or transcript chunks; wherever "page" is asked for, give that number N. Produce JSON:
+{"title":"title of the source","authors":["Full Name"],"year":"YYYY","venue":"journal/conference, site or channel",
 "tldr":"2 plain sentences",
 "problem":"what gap or question it addresses and why it matters",
 "idea":"the core insight, stated so a smart outsider gets it",
-"method":"how they did it, concretely",
-"results":"the main findings with the key numbers",
+"method":"how they did it or argued it, concretely",
+"results":"the main findings or claims with the key numbers",
 "limitations":"honest weaknesses, assumptions, what is not shown",
 "prerequisites":[{"term":"","explain":"one plain sentence"}],
-"sections":[{"title":"","page":1,"gist":"what to look for while reading this part","question":"a checkpoint question testing understanding (why/how), answerable from this part"}],
+"sections":[{"title":"","page":1,"gist":"what to look for in this part","question":"a checkpoint question testing understanding (why/how), answerable from this part"}],
 "concepts":[{"name":"short noun phrase","def":"one sentence"}],
 "links":[{"from":"concept name","to":"concept name","label":"verb phrase"}],
-"cards":[{"q":"","a":"short answer","quote":"one sentence copied VERBATIM from the paper that proves the answer"}],
-"references":[{"title":"exact title as written in the paper's reference list","why":"why reading it helps understand this paper"}]}
-Rules: plain text only, no LaTeX. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in reading order, covering the whole paper, page = page where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
+"cards":[{"q":"","a":"short answer","quote":"one sentence copied VERBATIM from the source that proves the answer"}],
+"references":[{"title":"exact title as written in the source's reference list","why":"why reading it helps understand this source"}]}
+Rules: plain text only, no LaTeX. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
 
 // ---------- state ----------
-let papers = [], P = null, tab = 'brief', working = '', shown = false, mapAll = false, pdfDoc = null, io = null, cy = null;
-const TABS = [['brief', '1 · Brief'], ['read', '2 · Read'], ['teach', '3 · Teach'], ['cards', '4 · Cards'], ['map', 'Map'], ['notes', 'Notes'], ['ask', 'Ask']];
-const due = ps => ps.flatMap(p => p.cards.map((c, i) => ({ p, c, i }))).filter(x => (x.c.due || 0) <= Date.now()).sort((a, b) => (a.c.due || 0) - (b.c.due || 0));
+let feeds = [], news = null, newsAt = 0;
+let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askAll = false, pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT;
 let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
+const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: '', rows: null, busy: false };
+const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'search'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
+const TABS = [['brief', 'Brief'], ['read', 'Read'], ['teach', 'Teach'], ['cards', 'Cards'], ['map', 'Map'], ['notes', 'Notes'], ['ask', 'Ask']];
+const byId = id => lib.find(p => p.id === id);
+const projects = () => [...new Set([...lib, ...notes].map(x => x.project).filter(Boolean))].sort();
+const inScope = () => lib.filter(p => !F.project || p.project === F.project);
+const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+const byline = p => { const a = p.meta?.authors || []; return [a.slice(0, 3).join(', ') + (a.length > 3 ? ' et al.' : ''), p.meta?.year, p.meta?.venue || (p.kind === 'web' ? hostOf(p.url) : '')].filter(Boolean).join(' · '); };
+// Equation input: buttons insert LaTeX at the cursor; anything between $…$ is previewed live under the field.
+const MATHKEYS = [['x²', '^{2}'], ['xₙ', '_{n}'], ['a/b', '\\frac{a}{b}'], ['√', '\\sqrt{x}'], ['∑', '\\sum_{i=1}^{n}'], ['∫', '\\int_{a}^{b}'], ['α', '\\alpha'], ['β', '\\beta'], ['θ', '\\theta'], ['λ', '\\lambda'], ['σ', '\\sigma'], ['≤', '\\le'], ['≈', '\\approx'], ['·', '\\cdot'], ['∞', '\\infty'], ['→', '\\to']];
+const mathKeys = `<details class="mbar"><summary>∑ Add math</summary>${MATHKEYS.map(([l, s]) => `<button type="button" data-ins="${esc(s)}">${l}</button>`).join('')}<br><small class="muted">Or type LaTeX between dollar signs, e.g. $E = mc^2$</small></details>`;
+const mathBar = mathKeys + '<div class="mprev"></div>';
+function insertMath(btn) {
+  const prev = btn.closest('.mbar').previousElementSibling, t = prev.matches('form') ? prev.q : prev, s = btn.dataset.ins;
+  const at = t.selectionStart ?? t.value.length, inside = (t.value.slice(0, at).match(/\$/g) || []).length % 2; // odd count = cursor is already inside $…$
+  const add = inside ? s : `$${s}$`, pos = at + add.length - (inside ? 0 : 1);
+  t.value = t.value.slice(0, at) + add + t.value.slice(at); t.focus(); t.setSelectionRange(pos, pos);
+  t.dispatchEvent(new Event('input', { bubbles: true }));
+}
+const due = ps => ps.flatMap(p => p.cards.map((c, i) => ({ p, c, i }))).filter(x => (x.c.due || 0) <= Date.now()).sort((a, b) => (a.c.due || 0) - (b.c.due || 0));
 // Progress is three measured things, shown separately; the single number is just their weighted blend.
 const parts = p => {
   const s = p.sections, c = p.cards;
@@ -196,73 +348,188 @@ const parts = p => {
 };
 const mastery = p => { const m = parts(p); return Math.round(m.read * .4 + m.teach * .35 + m.keep * .25); };
 const breakdown = p => { const m = parts(p); return `Checkpoints ${m.read}% · Teach-back ${m.teach}% · Cards retained ${m.keep}%`; };
+const ring = p => `<span class="ring" style="--p:${mastery(p)}" title="${esc(breakdown(p))}">${mastery(p)}</span>`;
 // Grounding: AI claims must point at a real sentence. Matching ignores spacing, punctuation, hyphenation and ligatures.
 const norm = s => String(s || '').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g, '');
-function findQuote(p, quote) { // -> page number containing the quote, or 0
+const ckey = s => norm(String(s).replace(/\(.*?\)/g, '')).replace(/s$/, ''); // "Self-Attention", "self attention (SA)", "Self-attentions" merge
+const tkey = p => norm(p.title).slice(0, 40);
+// How sources in the library connect: one cites the other (found when a source is analyzed), they share concepts, or they share a tag.
+function related(p) {
+  const mine = new Set(p.concepts.map(c => ckey(c.name)));
+  return lib.filter(q => q !== p).map(q => {
+    const shared = q.concepts.filter(c => mine.has(ckey(c.name))).map(c => c.name), tags = (q.tags || []).filter(x => (p.tags || []).includes(x));
+    const cites = (p.cites || []).includes(q.id), cited = (q.cites || []).includes(p.id);
+    const why = [cites && 'cited in this source', cited && 'cites this source', shared.length && `${shared.length} shared concept${shared.length > 1 ? 's' : ''}: ${shared.slice(0, 3).join(', ')}`, tags.length && `tag: ${tags.join(', ')}`].filter(Boolean);
+    return { q, why, score: (cites || cited ? 5 : 0) + shared.length + tags.length * 2 };
+  }).filter(x => x.score).sort((a, b) => b.score - a.score);
+}
+function findQuote(p, quote) { // -> number of the part containing the quote (it may run into the next part), or 0
   const q = norm(quote); if (q.length < 20) return 0;
   const head = q.slice(0, 60), tail = q.slice(-60);
-  return p.pages.findIndex(t => { const h = norm(t); return h.includes(head) && h.includes(tail); }) + 1;
+  return p.pages.findIndex((t, i) => { const h = norm(t), h2 = h + norm(p.pages[i + 1]); return h.includes(q.slice(0, 20)) && h2.includes(head) && h2.includes(tail); }) + 1;
 }
-const dl = (name, text, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); };
 // Spaced repetition (SM-2 style). g: 0 again, 1 good, 2 easy.
 function grade(c, g) {
   c.ease = Math.max(1.3, (c.ease || 2.5) + [-.2, 0, .15][g]);
   c.ivl = g === 0 ? 0 : c.ivl ? Math.round(c.ivl * c.ease * (g === 2 ? 1.3 : 1)) : (g === 2 ? 3 : 1);
   c.due = Date.now() + c.ivl * 864e5;
 }
+// A pasted transcript (YouTube's "Show transcript" panel, SRT, VTT or plain text) -> chunks of roughly 40 seconds.
+function parseTranscript(raw) {
+  const out = []; let t = null;
+  for (const line of raw.split(/\n|(?<=[.!?])\s+/)) {
+    const s = line.trim(), m = s.match(/^\[?((?:\d+:)?\d{1,2}:\d{2})(?:[.,]\d+)?\]?(?:\s*-->.*)?\s*(.*)$/);
+    if (m) t = m[1].split(':').reduce((a, x) => a * 60 + +x, 0);
+    const body = m ? m[2] : s;
+    if (!body || /^\d+$|^WEBVTT/.test(body)) continue;
+    const last = out.at(-1);
+    if (last && last.body.length < 500 && (t == null || t - last.t < 40)) last.body += ' ' + body; else out.push({ t, body });
+  }
+  return out;
+}
+// Readability's output -> a flat list of block elements, so every paragraph, heading, figure and list gets a number.
+const LEAF = 'P,H1,H2,H3,H4,H5,H6,PRE,UL,OL,DL,BLOCKQUOTE,FIGURE,TABLE,IMG,HR';
+const blocks = el => [...el.children].flatMap(c => c.matches(LEAF) || !c.querySelector(LEAF) ? [c] : blocks(c));
+const PURE = { FORBID_TAGS: ['style', 'form', 'input', 'button', 'iframe', 'video', 'audio'], FORBID_ATTR: ['style', 'class', 'id'] };
+window.DOMPurify?.addHook('afterSanitizeAttributes', n => {
+  if (n.tagName === 'A') { n.target = '_blank'; n.rel = 'noopener noreferrer'; }
+  if (n.tagName === 'IMG') { n.loading = 'lazy'; n.referrerPolicy = 'no-referrer'; }
+});
 if (location.hash === '#test') { // self-check: open /#test and look at the console
   const c = {}; grade(c, 1); console.assert(c.ivl === 1, 'first good = 1 day'); grade(c, 1); console.assert(c.ivl === 3, 'second good grows');
-  grade(c, 0); console.assert(c.ivl === 0 && c.due <= Date.now(), 'again = due now'); console.assert(md('<b> p.3').includes('&lt;b&gt;') && md('p.3').includes('data-page="3"'), 'md escapes + links');
-  const fp = { pages: ['intro text', 'We ﬁnd that self-atten-\ntion layers are faster than recurrent layers.'] };
-  console.assert(findQuote(fp, 'we find that self-attention layers are faster than recurrent layers') === 2, 'quote found despite ligature/hyphenation');
+  grade(c, 0); console.assert(c.ivl === 0 && c.due <= Date.now(), 'again = due now');
+  console.assert(md('<b> p.3', { id: 'x', kind: 'pdf' }).includes('&lt;b&gt;') && md('p.3', { id: 'x', kind: 'pdf' }).includes('data-page="3"'), 'md escapes + links');
+  console.assert(md('see p.2', { id: 'x', kind: 'video', times: [0, 75] }).includes('>1:15<') && md('p.2', null) === 'p.2', 'citations show timestamps for videos');
+  console.assert(md('# T\n- a\n- **b**\n1. c\ntext', null) === '<b class="h">T</b><ul><li>a</li><li><b>b</b></li></ul><ol><li>c</li></ol><span class="pl">text</span>', 'md lists and headings');
+  const fp = { pages: ['intro text', 'We ﬁnd that self-atten-\ntion layers are faster than', 'recurrent layers.'] };
+  console.assert(findQuote(fp, 'we find that self-attention layers are faster than recurrent layers') === 2, 'quote found despite ligature/hyphenation/part break');
   console.assert(findQuote(fp, 'attention layers are slower than convolutional layers in all cases') === 0, 'invented quote rejected');
+  const tr = parseTranscript('0:00\nhello there\n0:05\nthis is a talk\n1:10\nsecond part\n\n2\n00:02:00,000 --> 00:02:04,000\nfrom an srt file');
+  console.assert(tr.length === 3 && tr[0].t === 0 && tr[0].body === 'hello there this is a talk' && tr[1].t === 70 && tr[2].t === 120 && tr[2].body === 'from an srt file', 'transcript parsed', tr);
+  console.assert(parseTranscript('One. Two! ' + 'word '.repeat(150) + '. Three.').length === 2 && clock(3725) === '1:02:05' && clock(65) === '1:05', 'untimed text is chunked; clock formats');
+  const d = document.createElement('div'); d.innerHTML = '<div><p>a</p><div><h2>b</h2><ul><li><p>c</p></li></ul></div></div><span>d</span>';
+  console.assert(blocks(d).map(x => x.tagName).join() === 'P,H2,UL,SPAN', 'article flattened to blocks');
+  const fd = parseFeed('<feed xmlns="http://www.w3.org/2005/Atom"><title>Blog</title><entry><title>Post</title><link href="/a"/><updated>2026-01-02T00:00:00Z</updated><summary>&lt;p&gt;Hi there&lt;/p&gt;</summary></entry></feed>');
+  const fr = parseFeed('<rss><channel><title>R</title><item><title>One</title><link>https://x.org/1</link><description>d</description></item></channel></rss>');
+  console.assert(fd.title === 'Blog' && fd.items[0].link === '/a' && fd.items[0].summary === 'Hi there' && fd.items[0].date > 0 && fr.items[0].link === 'https://x.org/1' && parseFeed('<html><p>no</html>') === null, 'feeds parsed', fd, fr);
   console.log('self-check done');
 }
 
-// Runs an AI job against the paper it started on, even if the user switches papers meanwhile.
-async function run(label, fn) {
-  const p = P; working = label; render();
+// Runs an AI job against the source it started on, even if the user moves elsewhere meanwhile.
+async function run(label, fn, p = P) {
+  jobs++; working = label; soft();
   try { await fn(p); } catch (e) { toast(e.message); }
-  working = ''; await save(p); render();
+  if (!--jobs) working = '';
+  if (p) await save(p);
+  soft();
 }
+// Re-render after background work, but never under someone who is typing on a page.
+const soft = () => view !== 'read' && $('#page').contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName) ? renderRail() : render();
 
-// ---------- library ----------
-async function addPdf(buf, name, arxiv) {
+// ---------- adding sources ----------
+async function create(kind, title, extra, pp) {
+  const p = { id: crypto.randomUUID(), kind, title: String(title).slice(0, 300), added: Date.now(), project: F.project, tags: [], brief: null, sections: [], concepts: [], links: [], cards: [], notes: [], chat: [], ...extra };
+  await send('PUT', 'items/' + p.id, { ...p, parts: pp });
+  p.parts = pp; p.pages = pp.map(x => x.body); lib.unshift(p);
+  await openItem(p.id);
+  if (p.pages.join('').length >= 500) analyze();
+  else if (kind !== 'video') toast('Very little readable text here (a scanned PDF?). AI features need selectable text.');
+}
+async function addPdf(buf, name, extra = {}) {
   const id = crypto.randomUUID();
-  await idb('pdfs', 'readwrite', s => s.put(buf.slice(0), id)); // copy: pdf.js detaches the buffer it is given
+  await api('files/' + id, { method: 'PUT', body: buf.slice(0) }); // copy: pdf.js detaches the buffer it is given
   const doc = await pdfjsLib.getDocument({ data: buf }).promise, pages = [];
   for (let i = 1; i <= doc.numPages; i++) {
     const tc = await (await doc.getPage(i)).getTextContent();
-    pages.push(tc.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join('').replace(/[ \t]+/g, ' '));
+    pages.push({ body: tc.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join('').replace(/[ \t]+/g, ' ') });
   }
   const meta = await doc.getMetadata().catch(() => null);
-  const p = { id, title: meta?.info?.Title?.trim() || name.replace(/\.pdf$/i, ''), added: Date.now(), arxiv, tags: [], pages, brief: null, sections: [], concepts: [], links: [], cards: [], notes: [], chat: [] };
-  await save(p); papers.unshift(p); await openPaper(id);
-  if (pages.join('').length < 500) return toast('This PDF has no text layer (scanned?). AI features need selectable text.');
-  analyze();
+  await create('pdf', extra.title || meta?.info?.Title?.trim() || name.replace(/\.pdf$/i, ''), { ...extra, id }, pages);
 }
-async function openPaper(id) {
-  P = papers.find(p => p.id === id); tab = P.brief ? 'read' : 'brief'; shown = false;
-  findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = '';
-  document.body.classList.remove('menu'); render();
-  await renderPdf(await idb('pdfs', 'readonly', s => s.get(id)));
+async function addWeb(html, url) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.head.prepend(Object.assign(doc.createElement('base'), { href: url })); // so relative links and images resolve against the article's site
+  const art = new Readability(doc).parse();
+  if (!art || art.textContent.trim().length < 200) throw new Error('Could not find an article on that page. It may need a login or only load with JavaScript.');
+  const root = new DOMParser().parseFromString(DOMPurify.sanitize(art.content, PURE), 'text/html').body;
+  const pp = blocks(root).map(el => ({ body: el.textContent.replace(/\s+/g, ' ').trim(), html: el.outerHTML })).filter(x => x.body || /<img/i.test(x.html));
+  await create('web', art.title || hostOf(url), { url, titled: true, meta: { authors: art.byline ? [art.byline.replace(/^by\s+/i, '').trim()] : [], year: (art.publishedTime || '').slice(0, 4), venue: art.siteName || hostOf(url) } }, pp);
 }
-const analyze = () => run('Reading the paper for you — about a minute. Skim the abstract meanwhile.', async p => {
-  const known = [...new Set(papers.filter(x => x !== p).flatMap(x => x.concepts.map(c => c.name)))].slice(0, 150);
+async function addVideo(vid) {
+  const link = 'https://www.youtube.com/watch?v=' + vid;
+  const o = await api('fetch?url=' + encodeURIComponent('https://www.youtube.com/oembed?format=json&url=' + link)).then(j => JSON.parse(j.html)).catch(() => ({}));
+  await create('video', o.title || 'YouTube video ' + vid, { url: link, vid, titled: true, meta: { authors: o.author_name ? [o.author_name] : [], year: '', venue: 'YouTube' } }, []);
+}
+const ARXIV = /(\d{4}\.\d{4,5}(v\d+)?|[a-z-]+(\.[A-Z]{2})?\/\d{7}(v\d+)?)/;
+// One box takes anything: YouTube link, arXiv ID or link, DOI, or any URL (a PDF becomes a paper, a page becomes an article).
+async function addLink(v, extra, pdfOnly) {
+  v = v.trim();
+  const vid = v.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/)?.[1];
+  const doi = v.match(/^(?:doi:\s*|https?:\/\/(?:dx\.)?doi\.org\/)?(10\.\d{4,9}\/\S+)$/i)?.[1];
+  const ax = doi ? doi.match(/^10\.48550\/arxiv\.(.+)$/i)?.[1] : /^https?:/.test(v) && !/arxiv\.org/.test(v) ? null : v.match(ARXIV)?.[0];
+  const url = vid ? 'https://www.youtube.com/watch?v=' + vid : ax ? 'https://arxiv.org/pdf/' + ax : doi ? 'https://doi.org/' + doi : /^https?:\/\/\S+$/.test(v) ? v : null;
+  if (!url) throw new Error('Paste a link, an arXiv ID or a DOI.');
+  const dup = lib.find(p => p.url === url || (ax && p.arxiv === ax));
+  if (dup) { toast('Already in your library.'); return openItem(dup.id); }
+  if (vid) return addVideo(vid);
+  const r = await fetch('/api/fetch?url=' + encodeURIComponent(url));
+  if (!r.ok) throw new Error((await r.json()).error);
+  if (r.headers.get('content-type').includes('pdf')) return addPdf(await r.arrayBuffer(), ax ? 'arXiv ' + ax : decodeURIComponent(url.split('/').pop()), { url, ...(ax && { arxiv: ax.replace(/v\d+$/, '') }), ...extra });
+  if (pdfOnly) throw new Error('there is no direct PDF at that link');
+  const page = await r.json();
+  return addWeb(page.html, page.url);
+}
+// ---------- following blogs and journals (RSS / Atom) ----------
+function parseFeed(xml) {
+  const d = new DOMParser().parseFromString(String(xml), 'text/xml'), tx = (el, s) => el.querySelector(s)?.textContent.trim() || '';
+  if (d.querySelector('parsererror')) return null;
+  return { title: tx(d, 'channel > title, feed > title'), items: [...d.querySelectorAll('item, entry')].slice(0, 15).map(e => ({
+    title: tx(e, 'title'), link: e.querySelector('link[href]:not([rel]), link[rel=alternate]')?.getAttribute('href') || tx(e, 'link'),
+    date: Date.parse(tx(e, 'pubDate, published, updated')) || 0,
+    summary: new DOMParser().parseFromString(tx(e, 'description, summary, content'), 'text/html').body.textContent.replace(/\s+/g, ' ').trim().slice(0, 260),
+  })) };
+}
+async function getFeed(url) {
+  let j = await api('fetch?url=' + encodeURIComponent(url)), f = parseFeed(j.html);
+  if (!f?.items.length) { // probably a blog's home page: use the feed it advertises
+    const alt = new DOMParser().parseFromString(String(j.html), 'text/html').querySelector('link[rel~=alternate][type*=rss], link[rel~=alternate][type*=atom]')?.getAttribute('href');
+    if (!alt) throw new Error('no feed found at that address');
+    url = new URL(alt, j.url).href; j = await api('fetch?url=' + encodeURIComponent(url)); f = parseFeed(j.html);
+    if (!f?.items.length) throw new Error('that feed is empty or unreadable');
+  }
+  const title = f.title || hostOf(url);
+  return { url, title, items: f.items.flatMap(x => { try { return x.title ? [{ ...x, link: new URL(x.link, j.url).href, feed: title, src: url }] : []; } catch { return []; } }) };
+}
+async function loadNews(force) {
+  if (!force && news && Date.now() - newsAt < 15 * 60e3) return;
+  newsAt = Date.now();
+  const got = await Promise.all(feeds.map(f => getFeed(f.url).catch(() => null)));
+  news = got.flatMap(g => g ? g.items : []).sort((a, b) => b.date - a.date).slice(0, 40);
+  if (view === 'discover') soft();
+}
+const addFiles = async files => { for (const f of files) if (f.type === 'application/pdf') await addPdf(await f.arrayBuffer(), f.name).catch(e => toast('Could not read ' + f.name + ': ' + e.message)); };
+
+const analyze = () => run('Reading it for you — about a minute. Skim the opening meanwhile.', async p => {
+  const known = [...new Set(lib.filter(x => x !== p).flatMap(x => x.concepts.map(c => c.name)))].slice(0, 150);
   const j = await aiJSON(SYS_ANALYZE, fullText(p) + (known.length ? `\n\nEXISTING CONCEPT NAMES: ${known.join('; ')}` : ''));
   if (!j.tldr || !Array.isArray(j.sections)) throw new Error('The AI returned an incomplete analysis. Please retry.');
   p.brief = { tldr: j.tldr, problem: j.problem, idea: j.idea, method: j.method, results: j.results, limitations: j.limitations, prerequisites: j.prerequisites || [] };
-  if (j.title) p.title = j.title;
+  if (j.title && !p.titled) p.title = j.title; // a PDF's embedded title is often junk; a web page's or a search result's is not
   p.sections = j.sections; p.concepts = j.concepts || []; p.links = j.links || [];
-  p.meta = { authors: j.authors || [], year: j.year || '', venue: j.venue || '' };
+  const m = p.meta || {}; // what the source itself said about its authors wins; the AI only fills gaps
+  p.meta = { authors: m.authors?.length ? m.authors : j.authors || [], year: m.year || j.year || '', venue: m.venue || j.venue || '' };
   const all = norm(p.pages.join(' '));
-  p.refs = (j.references || []).filter(r => norm(r.title).length > 10 && all.includes(norm(r.title).slice(0, 40))); // drop references the paper doesn't actually cite
+  p.refs = (j.references || []).filter(r => norm(r.title).length > 10 && all.includes(norm(r.title).slice(0, 40))); // drop references the source doesn't actually cite
   p.cards = (j.cards || []).map(c => ({ q: c.q, a: c.a, quote: c.quote || '', src: findQuote(p, c.quote) }));
+  // Citation links, both ways: titles from the library found in this text, and this title found in the library's text.
+  p.cites = lib.filter(q => q !== p && tkey(q).length > 15 && all.includes(tkey(q))).map(q => q.id);
+  const hits = tkey(p).length > 15 ? await api('search?phrase=1&q=' + encodeURIComponent(p.title.split(/\s+/).slice(0, 8).join(' '))).catch(() => []) : [];
+  for (const q of lib) if (q !== p && hits.some(h => h.item_id === q.id) && !(q.cites ||= []).includes(p.id)) { q.cites.push(p.id); save(q); }
 });
 
-// ---------- PDF viewer (lazy pages, selectable text layer) ----------
+// ---------- reader: PDF pages (lazy, selectable text layer) ----------
 async function renderPdf(buf) {
-  const box = $('#pdf'); box.innerHTML = ''; io?.disconnect();
+  const box = $('#doc'); box.innerHTML = ''; io?.disconnect();
   const doc = pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
   const first = await doc.getPage(1);
   const scale = Math.min(box.clientWidth - 44, 900) * zoom / first.getViewport({ scale: 1 }).width;
@@ -285,348 +552,676 @@ async function drawPage(doc, d, scale) {
   await new pdfjsLib.TextLayer({ textContentSource: page.streamTextContent(), container: tl, viewport: vp }).render();
   paint(d);
 }
-// Highlights are stored as text-span index ranges per page, so they survive zoom and reload.
+// PDF highlights are stored as text-span index ranges per page, so they survive zoom and reload.
 // ponytail: whole spans (line fragments) are painted, not exact characters. Split spans at range offsets if precision matters.
 const spansOf = d => [...d.querySelectorAll('.textLayer span:not(.markedContent)')];
 function paint(d) {
   if (!P) return;
   const sp = spansOf(d), n = +d.dataset.n;
-  sp.forEach(s => s.classList.remove('hl', 'hit'));
-  for (const h of P.notes) if (h.page === n && h.a != null) for (let i = h.a; i <= h.b; i++) sp[i]?.classList.add('hl');
+  sp.forEach(s => s.classList.remove('hl', 'ul', 'c1', 'c2', 'c3', 'hit'));
+  for (const h of P.notes) if (h.page === n && h.a != null) for (let i = h.a; i <= h.b; i++) sp[i]?.classList.add(h.ul ? 'ul' : 'hl', 'c' + (h.c || 1));
   if (findQ) sp.forEach(s => s.textContent.toLowerCase().includes(findQ) && s.classList.add('hit'));
 }
-const paintAll = () => document.querySelectorAll('.page[data-done]').forEach(paint);
-async function rezoom(k) {
-  if (!P) return;
-  zoom = Math.min(3, Math.max(.5, zoom * k));
-  const box = $('#pdf'), top = box.getBoundingClientRect().top, n = [...box.children].find(d => d.getBoundingClientRect().bottom > top)?.dataset.n;
-  await renderPdf(await idb('pdfs', 'readonly', s => s.get(P.id)));
-  document.querySelector(`.page[data-n="${n}"]`)?.scrollIntoView();
+
+// ---------- reader: articles and videos (numbered blocks) ----------
+function renderBlocks(start) {
+  const box = $('#doc'); io?.disconnect(); box.style.setProperty('--z', zoom); nowN = 0;
+  const body = P.parts.map((x, i) => P.kind === 'video'
+    ? `<div class="blk seg" data-n="${i + 1}"><a href="#" class="ts" data-page="${i + 1}">${clock(x.t) || '·'}</a><span>${esc(x.body)}</span></div>`
+    : `<div class="blk" data-n="${i + 1}">${x.html ? DOMPurify.sanitize(x.html, PURE) : `<p>${esc(x.body)}</p>`}</div>`).join('');
+  box.innerHTML = P.kind === 'video'
+    ? `<div class="vid"><div id="yt"><div id="player"></div></div>${body || '<p class="muted pad">No transcript yet. Add one in the Brief tab to unlock the briefing, checkpoints, cards and search. You can already watch and take notes.</p>'}</div>`
+    : `<article><span class="kind web">${ic('globe', 14)}${esc(P.meta?.venue || hostOf(P.url))}</span><h1>${esc(P.title)}</h1><p class="muted">${esc([byline(P), Math.max(1, Math.round(P.pages.join(' ').split(/\s+/).length / 230)) + ' min read'].join(' · '))}</p>${body}</article>`;
+  box.scrollTop = 0;
+  if (P.kind === 'video') player(P.vid, start);
+  paintBlocks();
 }
-function gotoPage(n) { document.body.classList.remove('study'); document.querySelector(`.page[data-n="${n}"]`)?.scrollIntoView({ behavior: 'smooth' }); }
+function player(vid, start) {
+  ytReady ||= new Promise(ok => { window.onYouTubeIframeAPIReady = ok; document.head.append(Object.assign(document.createElement('script'), { src: 'https://www.youtube.com/iframe_api' })); });
+  const p = P;
+  ytReady.then(() => { if (P === p && view === 'read' && $('#player')) yt = new YT.Player('player', { videoId: vid, host: 'https://www.youtube-nocookie.com', playerVars: { playsinline: 1, start: Math.floor(start || 0) } }); });
+}
+const nowPart = () => { const t = yt?.getCurrentTime?.(); let n = 0; if (t != null) P.parts.forEach((x, i) => { if (x.t != null && x.t <= t) n = i + 1; }); return n; };
+setInterval(() => { // follow along: mark the transcript chunk being spoken
+  if (view !== 'read' || P?.kind !== 'video') return;
+  const n = nowPart(); if (n === nowN) return;
+  $('#doc .now')?.classList.remove('now'); $(`#doc .blk[data-n="${n}"]`)?.classList.add('now'); nowN = n;
+}, 1000);
+// Highlights in articles and transcripts are character ranges inside numbered blocks, drawn with the CSS Custom Highlight API (no DOM changes).
+const blkOf = node => (node?.nodeType === 1 ? node : node?.parentElement)?.closest('.blk');
+const offIn = (blk, node, o) => { const r = document.createRange(); r.selectNodeContents(blk); r.setEnd(node, o); return r.toString().length; };
+function pointIn(blk, o) {
+  const w = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { if (o <= n.length) return [n, o]; o -= n.length; }
+  return [blk, blk.childNodes.length];
+}
+function paintBlocks() {
+  document.querySelectorAll('#doc .blk').forEach(b => b.classList.toggle('hit', !!findQ && b.textContent.toLowerCase().includes(findQ)));
+  if (!window.Highlight) return;
+  const H = { c1: new Highlight(), c2: new Highlight(), c3: new Highlight(), ul: new Highlight() };
+  for (const h of P.notes) {
+    const s = h.a != null && $(`#doc .blk[data-n="${h.page}"]`), e = s && $(`#doc .blk[data-n="${h.eb || h.page}"]`); if (!e) continue;
+    const r = new Range(); r.setStart(...pointIn(s, h.a)); r.setEnd(...pointIn(e, h.b));
+    H[h.ul ? 'ul' : 'c' + (h.c || 1)].add(r);
+  }
+  for (const k in H) CSS.highlights.set(k, H[k]);
+}
+const paintAll = () => P?.kind === 'pdf' ? document.querySelectorAll('.page[data-done]').forEach(paint) : P && paintBlocks();
+async function rezoom(k) {
+  zoom = Math.min(3, Math.max(.5, zoom * k));
+  if (P.kind !== 'pdf') return $('#doc').style.setProperty('--z', zoom);
+  const box = $('#doc'), top = box.getBoundingClientRect().top, n = [...box.children].find(d => d.getBoundingClientRect().bottom > top)?.dataset.n;
+  await renderPdf(await api('files/' + P.id));
+  $(`.page[data-n="${n}"]`)?.scrollIntoView();
+}
+function gotoPage(n) {
+  document.body.classList.remove('study');
+  const el = $(`#doc [data-n="${n}"]`), t = P.parts?.[n - 1]?.t;
+  if (P.kind === 'video' && t != null && yt?.seekTo) { yt.seekTo(t, true); yt.playVideo(); }
+  el?.scrollIntoView({ behavior: 'smooth', block: P.kind === 'pdf' ? 'start' : 'center' });
+  if (el?.classList.contains('blk')) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+}
+async function openItem(id, n) {
+  const p = byId(id); if (!p) return;
+  try { await text(p); } catch (e) { return toast('Could not open it: ' + e.message); }
+  CSS.highlights?.clear(); yt = null;
+  P = p; view = 'read'; tab = p.brief ? 'read' : 'brief'; shown = false;
+  findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = '';
+  p.opened = Date.now(); save(p); render();
+  if (p.kind === 'pdf') await api('files/' + id).then(renderPdf).catch(e => { $('#doc').innerHTML = `<p class="muted pad">Could not load the PDF: ${esc(e.message)}</p>`; });
+  else renderBlocks(n && p.parts[n - 1]?.t);
+  if (n) gotoPage(n);
+}
+function go(v) {
+  if (view === 'read') yt?.pauseVideo?.();
+  view = v; shown = false; document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0;
+  if (v === 'discover') loadNews();
+}
 
-// ---------- views ----------
-const EMPTY = `<div id="empty"><h1>Read papers to the bone.</h1>
-<p class="muted">Summaries make you feel like you understand. Marrow makes you actually understand — by having you do the four things that research on learning says work.</p>
-<ol><li><b>Brief.</b> Get the skeleton first: problem, idea, method, results, and the terms you need. Reading with a map is twice as fast.</li>
-<li><b>Read.</b> Go section by section. Each one tells you what to look for, then asks a checkpoint question you answer from memory.</li>
-<li><b>Teach.</b> Explain the paper in your own words. The AI finds the gaps and misconceptions you can't see yourself.</li>
-<li><b>Keep.</b> Flashcards on a spaced schedule and a concept map that links every paper you've read.</li></ol>
-<p>Select any text in a paper to explain it, save a note, or turn it into a card.</p>
-<p><button class="pri" onclick="document.getElementById('file').click()">+ Add your first PDF</button> <span class="muted">or paste an arXiv ID in the sidebar (try 1706.03762)</span></p></div>`;
-
+// ---------- study panel ----------
 function cardsHTML(ps, all) {
   const q = due(ps);
   if (!q.length) return `<div class="box"><b>Nothing due.</b> <span class="muted">Cards come back right before you'd forget them.</span></div>`;
   const { p, c, i } = q[0];
   return `<div class="box"><small class="muted">${q.length} due${all ? ' · ' + esc(p.title) : ''}</small><p class="q">${esc(c.q)}</p>` +
-    (shown ? `<p>${md(c.a)}</p>` + (c.src ? `<blockquote>“${esc(c.quote)}” <a href="#" data-page="${+c.src}">p.${+c.src}</a></blockquote>`
-      : c.quote !== undefined ? `<p class="warn">⚠ Not verified against the paper’s text. Check it before you trust it.</p>` : '') + `<div class="row">${['Again', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-pid="${esc(p.id)}" data-i="${i}" data-g="${g}">${l}</button>`).join('')}</div>`
+    (shown ? `<p>${md(c.a, p)}</p>` + (c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src)}</blockquote>`
+      : c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : '') + `<div class="row">${['Again', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-pid="${esc(p.id)}" data-i="${i}" data-g="${g}">${l}</button>`).join('')}</div>`
       : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer</button>`) + `</div>`;
 }
-
 const VIEW = {
   brief() {
-    const b = P.brief;
-    if (!b) return working ? '<p class="muted">Your briefing will appear here.</p>' : `<p>No briefing yet.</p><button class="pri" data-act="analyze">Analyze this paper</button>`;
-    return `<p class="muted">Read this first. Two minutes here saves twenty in the paper.</p><h2>${esc(P.title)}</h2>
-      <p class="muted">${esc([(P.meta?.authors || []).slice(0, 6).join(', '), P.meta?.year, P.meta?.venue].filter(Boolean).join(' · '))}</p>
-      <input data-k="tags" value="${esc((P.tags || []).join(', '))}" placeholder="Tags, comma separated (e.g. transformers, to-cite)" aria-label="Tags">
-      <p><b>${md(b.tldr)}</b></p>` +
+    const b = P.brief, rel = related(P), verb = P.kind === 'video' ? 'watching' : 'reading';
+    const meta = `<div class="row" style="flex-wrap:nowrap;margin:.6em 0"><input data-k="tags" value="${esc((P.tags || []).join(', '))}" placeholder="Tags, comma separated" aria-label="Tags"><input data-k="project" list="projects" value="${esc(P.project)}" placeholder="Project (e.g. Thesis ch. 2)" aria-label="Project"></div>`;
+    if (!P.pages.length && P.kind === 'video') return `<h2>${esc(P.title)}</h2><p class="muted">${esc(byline(P))}</p>${meta}
+      <div class="box"><h4>Add the transcript</h4><p class="muted">YouTube doesn't hand transcripts to other apps, so bring it over yourself — it takes ten seconds. On <a href="${esc(P.url)}" target="_blank" rel="noopener">the video's page</a>, open the description, choose <b>Show transcript</b>, select all of it, copy, and paste below. Timestamps are kept, so every note, card and answer links to its moment in the video. SRT and VTT text work too.</p>
+      <form data-f="paste"><textarea name="t" required placeholder="0:00&#10;Welcome to the lecture…&#10;0:07&#10;Today we'll look at…"></textarea><p><button class="pri">Save transcript and build the briefing</button></p></form></div>
+      <p class="muted">Without a transcript you can still watch here and keep notes in the Notes tab.</p>`;
+    if (!b) return `<h2>${esc(P.title)}</h2>${meta}` + (working ? '<p class="muted">Your briefing will appear here.</p>' : `<p>No briefing yet.</p><button class="pri" data-act="analyze">Analyze this source</button>`);
+    return `<p class="muted">Start here. Two minutes with the skeleton saves twenty in the source.</p><h2>${esc(P.title)}</h2>
+      <p class="muted">${esc(byline(P))}</p>${meta}<div class="tldr">${md(b.tldr)}</div>` +
       [['The problem', b.problem], ['The core idea', b.idea], ['How they did it', b.method], ['What they found', b.results], ['Where it is weak', b.limitations]]
-        .map(([k, v]) => `<div class="k">${k}</div><div>${md(v)}</div>`).join('') +
-      `<div class="k">Know these before you start</div>` + b.prerequisites.map(x => `<p><b>${esc(x.term)}</b> — ${md(x.explain)}</p>`).join('') +
-      (P.refs?.length ? `<div class="k">Read these to go deeper</div>` + P.refs.map(r => `<p><a target="_blank" rel="noopener" href="https://scholar.google.com/scholar?q=${encodeURIComponent(r.title)}">${esc(r.title)}</a> — ${md(r.why)}</p>`).join('') : '') +
-      `<p><button class="pri" data-act="tab" data-t="read">Start reading →</button></p>`;
+        .map(([k, v], i) => `<div class="fact ${i === 1 ? 'key' : ''}"><div class="k">${k}</div><div>${md(v)}</div></div>`).join('') +
+      `<div class="k">Know these before you start</div><div class="terms">` + b.prerequisites.map(x => `<div class="term"><b>${esc(x.term)}</b>${md(x.explain)}</div>`).join('') + `</div>` +
+      (P.refs?.length ? `<div class="k">Go deeper</div>` + P.refs.map(r => `<p><a target="_blank" rel="noopener" href="https://scholar.google.com/scholar?q=${encodeURIComponent(r.title)}">${esc(r.title)}</a> — ${md(r.why)}</p>`).join('') : '') +
+      (rel.length ? `<div class="k">Connected in your library</div>` + rel.map(({ q, why }) => `<div class="box"><a href="#" data-open="${esc(q.id)}"><b>${esc(q.title)}</b></a><br><small class="muted">${esc(why.join(' · '))}</small></div>`).join('') +
+        `<p><button data-act="askall" ${working ? 'disabled' : ''}>How do these fit together?</button></p>` : '') +
+      `<p><button class="pri" data-act="tab" data-t="read">Start ${verb} →</button></p>`;
   },
   read() {
     const s = P.sections;
     if (!s.length) return VIEW.brief();
     const next = s.findIndex(x => !x.done);
     return `<progress value="${s.filter(x => x.done).length}" max="${s.length}"></progress><small class="muted">${breakdown(P)}</small>
-      <p class="muted">Read a section in the paper, then answer its checkpoint <b>from memory</b>. Struggling to recall is what makes it stick.</p>` +
+      <p class="muted">${P.kind === 'video' ? 'Watch' : 'Read'} a section, then answer its checkpoint <b>from memory</b>. Struggling to recall is what makes it stick.</p>` +
       s.map((x, i) => `<div class="box ${x.done ? 'done' : ''}">${x.done ? `<span class="badge">${x.score}%</span>` : ''}
-        <h4><a href="#" data-page="${+x.page}">${esc(x.title)}</a> <small class="muted">p.${+x.page}</small></h4>
+        <h4><span class="num">${x.done ? '✓' : i + 1}</span><a href="#" data-page="${+x.page}">${esc(x.title)}</a> <small class="muted">${esc(loc(P, +x.page))}</small></h4>
         <div class="muted">Look for: ${md(x.gist)}</div>
         <details ${i === next ? 'open' : ''}><summary>Checkpoint</summary><p><b>${md(x.question)}</b></p>
-        <textarea data-k="sec" data-i="${i}" placeholder="Answer in your own words, without looking back…">${esc(x.answer)}</textarea>
+        <textarea data-k="sec" data-i="${i}" placeholder="Answer in your own words, without looking back…">${esc(x.answer)}</textarea>${mathBar}
         <p><button class="pri" data-act="check" data-i="${i}" ${working ? 'disabled' : ''}>Check my understanding</button></p>
-        ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” <a href="#" data-page="${+x.evPage}">p.${+x.evPage}</a></blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the paper. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
+        ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” ${cite(P, x.evPage)}</blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the source. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
       (next < 0 ? `<p><button class="pri" data-act="tab" data-t="teach">All sections done — now teach it →</button></p>` : '');
   },
   teach() {
     const f = P.feynman || {};
-    return `<h3>Teach it back</h3><p class="muted">Close the paper. Explain it to a smart friend who hasn't read it: what problem, what idea, how it works, what it showed, where it falls short. If you can't explain it simply, you don't understand it yet.</p>
-      <textarea data-k="teach" style="min-height:200px" placeholder="This paper is about…">${esc(f.text)}</textarea>
+    return `<h3>Teach it back</h3><p class="muted">Close the source. Explain it to a smart friend who hasn't seen it: what problem, what idea, how it works, what it showed, where it falls short. If you can't explain it simply, you don't understand it yet.</p>
+      <textarea data-k="teach" style="min-height:200px" placeholder="This is about…">${esc(f.text)}</textarea>${mathBar}
       <p><button class="pri" data-act="teach" ${working ? 'disabled' : ''}>Find my gaps</button></p>` +
       (f.score != null ? `<div class="box done"><span class="badge">${f.score}%</span><div class="k">You got right</div>${list(f.got_right)}<div class="k">You left out</div>${list(f.missing)}
         <div class="k">Misconceptions</div>${list(f.misconceptions)}<div class="k">Do this next</div><div>${md(f.next)}</div></div>` : '');
   },
   cards() {
     return cardsHTML([P]) + `<details><summary>All ${P.cards.length} cards</summary>` +
-      P.cards.map((c, i) => `<div class="box"><button class="x" style="float:right" data-act="delcard" data-i="${i}" aria-label="Delete card">✕</button><b>${esc(c.q)}</b><br>${md(c.a)}</div>`).join('') + `</details>
-      <p class="muted">Tip: select text in the paper → “Make card”.</p>`;
+      `<p class="muted">Answers stay hidden. Tap a question to reveal its answer.</p>` +
+      P.cards.map((c, i) => `<details class="cardrow box"><summary>${esc(c.q)}</summary><p>${md(c.a)}</p>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(P, c.src)}</blockquote>` : ''}<button data-act="delcard" data-i="${i}">Delete card</button></details>`).join('') + `</details>
+      <p class="muted">Tip: select text in the source → “Card”.</p>`;
   },
   map() {
-    return `<label class="row"><input type="checkbox" style="width:auto" data-act="mapall" ${mapAll ? 'checked' : ''}> Whole library — see how your papers connect</label>
-      <div id="cy"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>`;
+    return `<div id="cy"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>
+      <p><button data-view="map">See how it connects to the whole library →</button></p>`;
   },
   notes() {
     return `<div class="row"><button data-act="addnote">+ Note</button><button data-act="export">Export Markdown (Obsidian)</button><button data-act="bib">Copy BibTeX</button></div><p></p>` +
-      (P.notes.length ? '' : '<p class="muted">Select text in the paper and tap “Note” to capture it here.</p>') +
-      P.notes.map((n, i) => `<div class="box"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">✕</button>
-        ${n.quote ? `<blockquote>${esc(n.quote)} <a href="#" data-page="${+n.page}">p.${+n.page}</a></blockquote>` : ''}
+      (P.notes.length ? '' : '<p class="muted">Select text in the source and tap “Note” or a highlight colour to capture it here.</p>') +
+      P.notes.map((n, i) => `<div class="box note ${n.ul ? 'ul' : n.quote ? 'c' + (n.c || 1) : ''}"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">✕</button>
+        ${n.quote || n.page ? `<blockquote>${esc(n.quote)} ${cite(P, n.page)}</blockquote>` : ''}
         <textarea data-k="note" data-i="${i}" style="min-height:60px" placeholder="Your thought…">${esc(n.note)}</textarea></div>`).join('');
   },
   ask() {
     return P.chat.map(m => `<div class="msg ${m.role}">${md(m.content)}</div>`).join('') +
-      (P.chat.length ? '' : `<p class="muted">Ask anything. Answers come from this paper and cite pages.</p><div class="row">` +
-        ['What is the single key insight?', 'What are the weakest points?', 'How would I reproduce this?', 'What should I read next?'].map(q => `<button data-act="ask" data-q="${q}">${q}</button>`).join('') + '</div>') +
-      `<form id="askf" class="row" style="flex-wrap:nowrap;margin-top:12px"><input name="q" placeholder="Ask the paper…" aria-label="Ask the paper" autocomplete="off"><button class="pri" ${working ? 'disabled' : ''}>Ask</button></form>`;
+      (P.chat.length ? '' : `<p class="muted">Ask anything. Answers come from this source and link back to where it says so.</p><div class="row">` +
+        ['What is the single key insight?', 'What are the weakest points?', 'How would I reproduce or apply this?', 'What should I read next?'].map(q => `<button data-act="ask" data-q="${q}" style="white-space:normal;text-align:left">${q}</button>`).join('') + '</div>') +
+      (lib.length > 1 ? `<label class="row muted" style="margin-top:12px"><input type="checkbox" style="width:auto" data-act="askscope" ${askAll ? 'checked' : ''}> Also use my other ${lib.length - 1} source${lib.length > 2 ? 's' : ''} (compare, connect, contrast)</label>` : '') +
+      `<form data-f="ask" class="row" style="flex-wrap:nowrap;margin-top:12px"><input name="q" placeholder="Ask about this source…" aria-label="Ask about this source" autocomplete="off"><button class="pri" ${working ? 'disabled' : ''}>Ask</button></form>${mathBar}`;
   },
 };
 
+// ---------- pages ----------
+const dayKey = t => new Date(t).toDateString();
+function streak() {
+  const days = new Set(activity.map(dayKey)); let n = 0, t = Date.now();
+  if (!days.has(dayKey(t))) t -= 864e5; // today doesn't break a streak until it's over
+  while (days.has(dayKey(t))) { n++; t -= 864e5; }
+  return n;
+}
+function heat() {
+  const c = {}; for (const t of activity) c[dayKey(t)] = (c[dayKey(t)] || 0) + 1;
+  return `<div class="heat">` + Array.from({ length: 84 }, (_, i) => {
+    const d = Date.now() - (83 - i) * 864e5, n = c[dayKey(d)] || 0;
+    return `<i style="--a:${n ? Math.min(1, .3 + n / 12) : 0}" title="${esc(new Date(d).toLocaleDateString())}: ${n} study step${n === 1 ? '' : 's'}"></i>`;
+  }).join('') + `</div>`;
+}
+const ADDBAR = `<form data-f="add" class="addbar"><input name="u" autocomplete="off" aria-label="Add a source" placeholder="Paste a link: article, blog post, YouTube video, arXiv ID, DOI, PDF…"><button class="pri">Add</button><button type="button" data-act="upload">Upload PDF</button></form>`;
+// What to do next with a source, so every card is an invitation rather than a title.
+const step = p => {
+  const s = p.sections, d = s.filter(x => x.done).length, dc = due([p]).length;
+  return p.done ? 'Finished' : !p.brief ? 'Not analyzed yet' : d < s.length ? `Next: checkpoint ${d + 1} of ${s.length}` : p.feynman?.score == null ? 'Next: teach it back' : dc ? `${dc} card${dc > 1 ? 's' : ''} due` : 'All caught up';
+};
+const hue = s => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
+const card = p => `<div class="card" data-open="${esc(p.id)}">
+  <div class="cover ${p.vid ? 'shot' : ''}" style="${p.vid ? `background-image:url(https://i.ytimg.com/vi/${String(p.vid).replace(/[^\w-]/g, '')}/mqdefault.jpg)` : `--h:${hue(p.title)}`}">${p.vid ? '' : ic(KIND[p.kind][1], 36)}<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span>${ring(p)}</div>
+  <h4>${esc(p.title)}</h4><small class="muted">${esc(byline(p))}</small><span class="sp"></span>
+  <div class="row"><small class="step">${step(p)}</small><span class="sp"></span>${p.project ? `<span class="tag proj">${esc(p.project)}</span>` : ''}</div><div class="bar"><i style="width:${mastery(p)}%"></i></div></div>`;
+const HOW = `<div class="box" style="margin-top:8px"><h3>How Marrow works</h3><p class="muted">Summaries make you feel like you understand. Marrow makes you actually understand, with the four things research on learning says work — for a paper, a blog post or a lecture alike.</p>
+<ol><li><b>Brief.</b> Get the skeleton first: problem, idea, method, results, and the terms you need.</li>
+<li><b>Read or watch.</b> Section by section. Each one tells you what to look for, then asks a checkpoint question you answer from memory.</li>
+<li><b>Teach.</b> Explain it in your own words. The AI finds the gaps and misconceptions you can't see yourself.</li>
+<li><b>Keep.</b> Flashcards on a spaced schedule, and a concept map that links everything you've studied.</li></ol>
+<p class="muted">Then step back: compare sources side by side in the Matrix, draft a synthesis, and keep your own thinking in the Notebook. Try pasting <code>1706.03762</code> above.</p></div>`;
+const PAGE = {
+  home() {
+    const h = new Date().getHours(), d = due(lib).length, started = lib.filter(mastery), count = k => lib.filter(p => p.kind === k).length;
+    const cont = lib.filter(p => p.opened && !p.done).sort((a, b) => b.opened - a.opened).slice(0, 6), fresh = lib.filter(p => !p.opened).slice(0, 6);
+    return `<div class="wrap"><h1 class="hero">${h < 5 ? 'Still up?' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'}</h1>
+      <p class="muted lead">One desk for everything you read, watch and think about.</p>${ADDBAR}
+      <div class="tiles">
+        <button class="tile" data-view="library"><b>${lib.length}</b>source${lib.length === 1 ? '' : 's'}<small>${[['pdf', 'paper'], ['web', 'article'], ['video', 'video']].map(([k, l]) => `${count(k)} ${l}${count(k) === 1 ? '' : 's'}`).join(' · ')}</small></button>
+        <button class="tile" data-view="review"><b>${d}</b>card${d === 1 ? '' : 's'} due<small>${d ? 'Review now →' : 'All caught up'}</small></button>
+        <div class="tile"><b>${streak()}</b>day streak<small>Days in a row you studied</small></div>
+        <div class="tile"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b>mastery<small>Average over ${started.length} started</small></div>
+        <div class="tile"><small>Last 12 weeks</small>${heat()}</div>
+      </div>` +
+      (lib.length ? '' : HOW) +
+      (cont.length ? `<div class="sec"><h3>Pick up where you left off</h3></div><div class="grid">${cont.map(card).join('')}</div>` : '') +
+      (fresh.length ? `<div class="sec"><h3>Not opened yet</h3></div><div class="grid">${fresh.map(card).join('')}</div>` : '') + `</div>`;
+  },
+  library() {
+    const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`;
+    return `<div class="wrap"><div class="row"><h1>Library</h1><span class="sp"></span><button data-act="backup">Backup</button><button data-act="restore">Restore</button><button data-act="biball">Export .bib</button></div>${ADDBAR}
+      <div class="row filters"><input id="q" type="search" value="${esc(F.q)}" placeholder="Search titles, tags and full text" aria-label="Search the library">
+        ${[['', 'All'], ['pdf', 'Papers'], ['web', 'Articles'], ['video', 'Videos']].map(([v, l]) => `<button class="chip ${F.kind === v ? 'on' : ''}" data-act="fkind" data-v="${v}">${l}</button>`).join('')}
+        <select data-act="fproject" aria-label="Project">${opt('', 'All projects', F.project)}${projects().map(x => opt(x, x, F.project)).join('')}</select>
+        <select data-act="fstatus" aria-label="Status">${[['', 'Any status'], ['open', 'In progress'], ['done', 'Finished']].map(([v, l]) => opt(v, l, F.status)).join('')}</select></div>
+      <div id="libList" class="rows"></div><div id="hits"></div></div>`;
+  },
+  discover() {
+    const have = new Set(lib.map(tkey));
+    return `<div class="wrap"><h1>Discover</h1><p class="muted lead">Search 250 million scholarly works through OpenAlex. Open-access papers go straight into your library.</p>
+      <form data-f="disc" class="addbar"><input name="q" type="search" value="${esc(disc.q)}" required placeholder="Topic, title or author…" aria-label="Search papers"><button class="pri" ${disc.busy ? 'disabled' : ''}>Search</button></form>` +
+      (disc.busy ? '<p class="muted">Searching…</p>' : !disc.rows ? `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories — anything with a feed</small></div>
+        <form data-f="follow" class="addbar"><input name="u" required autocomplete="off" placeholder="Blog or feed address, e.g. lilianweng.github.io or rss.arxiv.org/rss/cs.LG" aria-label="Blog or feed address"><button>Follow</button></form>
+        <div class="row" style="margin-bottom:14px">${feeds.map(f => `<span class="tag proj">${esc(f.title)} <a href="#" data-act="unfollow" data-v="${esc(f.url)}" aria-label="Unfollow ${esc(f.title)}" style="text-decoration:none">✕</a></span>`).join('')}</div>` +
+        (!feeds.length ? '<p class="muted">Follow the blogs and journals you keep up with. New posts show up here, one click from your library.</p>' : !news ? '<p class="muted">Checking for new posts…</p>' : !news.length ? '<p class="muted">Nothing could be loaded from these feeds right now.</p>' :
+          `<div class="rows">` + news.map((x, i) => `<div class="card flat"><div class="grow"><b>${esc(x.title)}</b><br><small class="muted">${esc([x.feed, x.date ? new Date(x.date).toLocaleDateString() : ''].filter(Boolean).join(' · '))}</small>
+            <div class="muted clamp" style="font-size:13.5px;margin-top:4px">${esc(x.summary)}</div></div>
+            ${have.has(norm(x.title).slice(0, 40)) || lib.some(p => p.url === x.link) ? '<span class="tag ok">In library</span>' : `<button class="pri" data-act="fadd" data-i="${i}">Add</button>`}
+            <a class="btn" href="${esc(x.link)}" target="_blank" rel="noopener">Open ↗</a></div>`).join('') + `</div>`)
+        : !disc.rows.length ? '<p class="muted">Nothing found. Try fewer or different words.</p><p><a href="#" data-act="dclear">← Back to what you follow</a></p>' :
+        `<p><a href="#" data-act="dclear">← Back to what you follow</a></p><div class="rows">` + disc.rows.map((r, i) => `<div class="card flat"><div class="grow"><b>${esc(r.title)}</b><br>
+          <small class="muted">${esc([r.authors.slice(0, 4).join(', ') + (r.authors.length > 4 ? ' et al.' : ''), r.year, r.venue, r.cites + ' citations'].filter(Boolean).join(' · '))}</small>
+          <div class="muted clamp" style="font-size:13.5px;margin-top:4px">${esc(r.abstract)}</div></div>
+          ${have.has(norm(r.title).slice(0, 40)) ? '<span class="tag ok">In library</span>' : r.pdf ? `<button class="pri" data-act="dadd" data-i="${i}">Add</button>` : ''}
+          ${r.url ? `<a class="btn" href="${esc(r.url)}" target="_blank" rel="noopener">Open ↗</a>` : ''}</div>`).join('') + `</div>`) + `</div>`;
+  },
+  review() {
+    return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(lib, true)}
+      <div class="sec"><h3>Last 12 weeks</h3><small class="muted">${streak()} day streak</small></div>${heat()}</div>`;
+  },
+  matrix() {
+    const ps = inScope(), ready = ps.filter(p => p.brief), opt = (v, l) => `<option value="${esc(v)}" ${v === F.project ? 'selected' : ''}>${esc(l)}</option>`;
+    return `<div class="wrap wide"><div class="row"><h1>Literature matrix</h1><span class="sp"></span>
+        <select data-act="fproject" aria-label="Project">${opt('', 'All projects')}${projects().map(x => opt(x, x)).join('')}</select>
+        <button data-act="mxcsv">Export CSV</button><button data-act="mxmd">Export Markdown</button><button class="pri" data-act="synth" ${working ? 'disabled' : ''}>Draft a synthesis</button></div>
+      <p class="muted">Every analyzed source side by side. Add your own take, then let the AI draft a synthesis into your Notebook: themes, disagreements, gaps.</p>` +
+      (ready.length ? `<div class="mxwrap"><table class="mx"><tr>${['Source', 'Problem', 'Core idea', 'Method', 'Findings', 'Limitations', 'My take'].map(h => `<th>${h}</th>`).join('')}</tr>` +
+        ready.map(p => `<tr><td><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><br><small class="muted">${esc(byline(p))}</small></td>` +
+          ['problem', 'idea', 'method', 'results', 'limitations'].map(k => `<td>${md(p.brief[k], p)}</td>`).join('') +
+          `<td><textarea data-k="take" data-id="${esc(p.id)}" placeholder="What do you make of it? How does it bear on your question?">${esc(p.take)}</textarea></td></tr>`).join('') + `</table></div>`
+        : `<p class="box">Nothing analyzed ${F.project ? 'in this project ' : ''}yet. Add a source and its row appears here once the briefing is ready.</p>`) +
+      (ps.length > ready.length ? `<p class="muted">${ps.length - ready.length} source${ps.length - ready.length === 1 ? ' is' : 's are'} not analyzed yet and not shown.</p>` : '') + `</div>`;
+  },
+  notebook() {
+    const n = notes.find(x => x.id === N) || notes[0]; N = n?.id;
+    return `<div class="wrap nb"><div><div class="row"><h1>Notebook</h1><span class="sp"></span><button class="pri" data-act="nbnew">+ New</button></div>` +
+      (notes.map(x => `<div class="item ${x === n ? 'on' : ''}" data-act="nbopen" data-id="${esc(x.id)}"><b>${esc(x.title || 'Untitled')}</b><small class="muted">${esc(new Date(x.updated).toLocaleDateString())}${x.project ? ' · ' + esc(x.project) : ''}</small></div>`).join('')
+        || '<p class="muted">Ideas, meeting notes, drafts and AI syntheses live here. Markdown and $math$ work.</p>') + `</div>
+      <div class="nbedit">` + (n ? `<input class="ttl" data-k="nbtitle" value="${esc(n.title)}" placeholder="Untitled" aria-label="Title">
+        <div class="row"><input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="Project" aria-label="Project" style="max-width:240px"><span class="sp"></span><button data-act="nbexport">Export .md</button><button data-act="nbdel">Delete</button></div>
+        <textarea data-k="nbnote" placeholder="Write…">${esc(n.note)}</textarea>${mathKeys}
+        <div class="k">Preview</div><div id="nbprev" class="box">${md(n.note || '', null)}</div>` : '') + `</div></div>`;
+  },
+  map() {
+    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Every concept from every source. Shared concepts pull sources together. Tap a concept for its meaning, a square to open that source.</p>
+      ${lib.some(p => p.concepts.length) ? `<div id="cy" class="big"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>` : '<p class="box">The map fills in as sources are analyzed.</p>'}</div>`;
+  },
+};
+function libRows() {
+  if (!$('#libList')) return;
+  const f = F.q.toLowerCase(), ps = inScope().filter(p => (!F.kind || p.kind === F.kind) && (!F.status || (F.status === 'done') === !!p.done) && [p.title, p.project, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f));
+  $('#libList').innerHTML = ps.map(p => `<div class="card" data-open="${esc(p.id)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
+    <div class="grow"><b>${esc(p.title)}</b><br><small class="muted">${esc(byline(p))}</small> ${(p.tags || []).map(t => `<span class="tag" data-act="ftag" data-v="${esc(t)}">${esc(t)}</span>`).join(' ')}</div>
+    ${p.project ? `<span class="tag proj" data-act="fproject" data-v="${esc(p.project)}">${esc(p.project)}</span>` : ''}${p.done ? '<span class="tag ok">Finished</span>' : ''}${ring(p)}
+    <button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete">✕</button></div>`).join('') || `<p class="muted">${lib.length ? 'No titles match.' : 'Your library is empty. Paste a link above, or drop a PDF anywhere.'}</p>`;
+  $('#hits').innerHTML = F.hits.length ? `<div class="sec"><h3>Inside your sources</h3><small class="muted">full-text matches</small></div><div class="rows">` + F.hits.map(h => { const p = byId(h.item_id); return !p ? '' : `<div class="card" data-open="${esc(p.id)}" data-n="${+h.n}"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 18)}</span>
+    <div class="grow"><small class="muted">${esc(p.title)}</small><br>${esc(h.s).replace(/\x01/g, '<mark>').replace(/\x02/g, '</mark>')}</div></div>`; }).join('') + `</div>` : '';
+}
+async function ftSearch() {
+  const q = F.q.trim(); F.hits = q.length > 2 ? await api('search?q=' + encodeURIComponent(q)).catch(() => []) : [];
+  if (q === F.q.trim()) libRows();
+}
+
 const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }, { left: '$', right: '$', display: false }] };
-function renderList() {
-  const f = $('#search').value.toLowerCase();
-  $('#list').innerHTML = papers.filter(p => [p.title, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f))
-    .map(p => `<div class="item ${p === P ? 'on' : ''}" data-id="${esc(p.id)}"><b>${esc(p.title)}${(p.tags || []).map(t => ` <span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`).join('')}</b><span class="pct" title="${esc(breakdown(p))}">${mastery(p)}%</span><button class="x" data-del="${esc(p.id)}" aria-label="Delete paper">✕</button></div>`).join('') || '<small class="muted">No papers found.</small>';
-  $('#dueBtn').textContent = `Review due cards (${due(papers).length})`;
+function renderRail() {
+  const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
+  $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}</button>`).join('');
+  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark');
+  $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
+  $('#status').textContent = working;
 }
 function render() {
-  renderList();
-  if ($('#rv').open) $('#rvBody').innerHTML = `<h3>Review</h3>` + cardsHTML(papers, true);
-  $('#panel').style.visibility = P ? '' : 'hidden'; $('#tools').style.display = P ? '' : 'none';
-  if (!P) { $('#title').textContent = 'Marrow'; $('#mast').textContent = ''; $('#pdf').innerHTML = EMPTY; return; }
-  $('#title').textContent = P.title; $('#mast').textContent = mastery(P) + '% progress'; $('#mast').title = breakdown(P);
-  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button data-act="tab" data-t="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('');
-  $('#status').textContent = working;
+  renderRail();
+  const reading = view === 'read' && !!P;
+  $('#reader').hidden = !reading; $('#page').hidden = reading;
+  if (!reading) {
+    if (view === 'read') view = 'library';
+    $('#page').innerHTML = PAGE[view]();
+    window.renderMathInElement?.($('#page'), MATH);
+    if (view === 'library') libRows();
+    if (view === 'map' && $('#cy')) drawMap(lib, true);
+    return;
+  }
+  $('#title').textContent = P.title; $('#kindic').className = 'kind ' + P.kind; $('#kindic').innerHTML = ic(KIND[P.kind][1], 18);
+  const mast = $('#mast'); mast.className = 'ring'; mast.style.setProperty('--p', mastery(P)); mast.textContent = mastery(P); mast.title = breakdown(P);
+  $('#doneBtn').textContent = P.done ? '✓ Finished' : 'Mark finished'; $('#orig').hidden = !P.url; $('#orig').href = P.url || '#';
+  $('#snipBtn').hidden = P.kind !== 'pdf'; $('#tnote').hidden = P.kind !== 'video'; $('#zi').hidden = $('#zo').hidden = P.kind === 'video' && !P.parts.length;
+  const s = P.sections, st = { brief: !!P.brief, read: s.length > 0 && s.every(x => x.done), teach: P.feynman?.score != null, cards: P.cards.length > 0 && P.cards.every(c => c.ivl >= 1) };
+  $('#tabs').innerHTML = TABS.map(([k, l], i) => `${i === 4 ? '<span class="sp"></span>' : ''}<button data-act="tab" data-t="${k}" class="${k === tab ? 'on' : ''} ${st[k] ? 'done' : ''}">${i < 4 ? `<i>${st[k] ? '✓' : i + 1}</i>` : ''}${k === 'read' && P.kind === 'video' ? 'Watch' : l}</button>`).join('');
   $('#body').innerHTML = VIEW[tab]();
   window.renderMathInElement?.($('#body'), MATH);
-  if (tab === 'map') drawMap();
+  if (tab === 'map') drawMap([P], false);
   if (tab === 'ask') $('#body').scrollTop = 1e9;
 }
 
-function drawMap() {
-  const ps = mapAll ? papers : [P], nodes = new Map(), edges = [], key = s => norm(String(s).replace(/\(.*?\)/g, '')).replace(/s$/, ''); // "Self-Attention", "self attention (SA)", "Self-attentions" merge
+function drawMap(ps, all) {
+  const nodes = new Map(), edges = [], key = ckey;
   for (const p of ps) {
-    if (mapAll) nodes.set('paper:' + p.id, { id: 'paper:' + p.id, label: p.title.slice(0, 40), paper: p.id });
+    if (all && p.concepts.length) nodes.set('src:' + p.id, { id: 'src:' + p.id, label: p.title.slice(0, 40), src: p.id });
     for (const c of p.concepts) {
       const n = nodes.get(key(c.name)) || { id: key(c.name), label: c.name, def: c.def, in: [] };
       n.in.push(p.title); nodes.set(n.id, n);
-      if (mapAll) edges.push({ source: 'paper:' + p.id, target: n.id });
+      if (all) edges.push({ source: 'src:' + p.id, target: n.id });
     }
     for (const l of p.links) if (nodes.has(key(l.from)) && nodes.has(key(l.to))) edges.push({ source: key(l.from), target: key(l.to), label: l.label });
   }
-  const css = v => getComputedStyle(document.body).getPropertyValue(v).trim();
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   cy = cytoscape({
     container: $('#cy'), layout: { name: 'cose', animate: false, nodeRepulsion: 40000, idealEdgeLength: 90 },
     elements: [...[...nodes.values()].map(data => ({ data })), ...edges.map(data => ({ data }))],
     style: [
       { selector: 'node', style: { label: 'data(label)', 'font-size': 10, color: css('--ink'), 'background-color': css('--acc'), width: 14, height: 14, 'text-wrap': 'wrap', 'text-max-width': 90, 'text-margin-y': -4 } },
-      { selector: 'node[paper]', style: { 'background-color': css('--ok'), shape: 'round-rectangle', width: 20, height: 20, 'font-weight': 'bold' } },
+      { selector: 'node[src]', style: { 'background-color': css('--ok'), shape: 'round-rectangle', width: 20, height: 20, 'font-weight': 'bold' } },
       { selector: 'edge', style: { width: 1, 'line-color': css('--muted'), 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'target-arrow-color': css('--muted'), 'arrow-scale': .7, label: 'data(label)', 'font-size': 8, color: css('--muted'), 'text-rotation': 'autorotate' } },
     ],
   });
   cy.on('tap', 'node', e => {
     const d = e.target.data();
-    if (d.paper) return openPaper(d.paper);
-    $('#node').innerHTML = `<b>${esc(d.label)}</b><br>${md(d.def)}<br><small class="muted">In: ${esc([...new Set(d.in)].join(' · '))}</small>`;
+    if (d.src) return openItem(d.src);
+    $('#node').innerHTML = `<b>${esc(d.label)}</b><br>${md(d.def, null)}<br><small class="muted">In: ${esc([...new Set(d.in)].join(' · '))}</small>`;
   });
 }
 
+// ---------- export, backup, migration ----------
 function exportMd() {
-  const b = P.brief || {}, L = [`# ${P.title}`, '', `> ${b.tldr || ''}`, ''];
+  const b = P.brief || {}, L = [`# ${P.title}`, '', P.url ? `<${P.url}>` : '', '', `> ${b.tldr || ''}`, ''];
   for (const [k, v] of [['Problem', b.problem], ['Core idea', b.idea], ['Method', b.method], ['Results', b.results], ['Limitations', b.limitations]]) if (v) L.push(`## ${k}`, v, '');
-  L.push('## Reading map'); for (const s of P.sections) L.push(`### ${s.title} (p.${s.page})`, `**Q:** ${s.question}`, s.answer ? `**My answer:** ${s.answer}` : '', s.model ? `**Strong answer:** ${s.model}` : '', '');
+  L.push('## Reading map'); for (const s of P.sections) L.push(`### ${s.title} (${loc(P, s.page)})`, `**Q:** ${s.question}`, s.answer ? `**My answer:** ${s.answer}` : '', s.model ? `**Strong answer:** ${s.model}` : '', '');
   if (P.feynman?.text) L.push('## My explanation', P.feynman.text, '');
-  L.push('## Notes'); for (const n of P.notes) L.push(n.quote ? `> ${n.quote} (p.${n.page})` : '', n.note || '', '');
+  if (P.take) L.push('## My take', P.take, '');
+  L.push('## Notes'); for (const n of P.notes) L.push(n.quote ? `> ${n.quote} (${loc(P, n.page)})` : '', n.note || '', '');
   L.push('## Concepts'); for (const c of P.concepts) L.push(`- [[${c.name}]] — ${c.def}`);
   L.push('', '## Flashcards'); for (const c of P.cards) L.push(`${c.q} :: ${c.a}`);
-  dl(P.title.replace(/[^\w ]+/g, '').slice(0, 60) + '.md', L.join('\n'), 'text/markdown');
+  dl(fname(P.title) + '.md', L.join('\n'), 'text/markdown');
 }
 const bib = p => {
   const a = p.meta?.authors || [], y = p.meta?.year || '';
-  const k = norm((a[0] || 'paper').split(' ').pop() + y + (p.title.match(/[A-Za-z]{4,}/) || [''])[0]);
-  return `@article{${k},\n  title = {${p.title}},\n  author = {${a.join(' and ')}},\n  year = {${y}},\n  ` +
-    (p.arxiv ? `eprint = {${p.arxiv}},\n  archivePrefix = {arXiv}` : `journal = {${p.meta?.venue || ''}}`) + `\n}`;
+  const k = norm((a[0] || 'source').split(' ').pop() + y + (p.title.match(/[A-Za-z]{4,}/) || [''])[0]);
+  return `@${p.kind === 'pdf' ? 'article' : 'misc'}{${k},\n  title = {${p.title}},\n  author = {${a.join(' and ')}},\n  year = {${y}},\n  ` +
+    (p.arxiv ? `eprint = {${p.arxiv}},\n  archivePrefix = {arXiv}` : p.kind === 'pdf' ? `journal = {${p.meta?.venue || ''}}` : `howpublished = {\\url{${p.url}}},\n  note = {${p.meta?.venue || KIND[p.kind][0]}}`) + `\n}`;
 };
-// ponytail: backup is one JSON file with PDFs inlined as data URLs. Fine for dozens of papers; stream a zip if libraries get huge.
+const csv = rows => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+const MX = [['Problem', 'problem'], ['Core idea', 'idea'], ['Method', 'method'], ['Findings', 'results'], ['Limitations', 'limitations']];
+const mxRows = () => inScope().filter(p => p.brief).map(p => [p.title, byline(p), ...MX.map(([, k]) => p.brief[k]), p.take || '']);
+// ponytail: backup is one JSON file with PDFs inlined as data URLs. Fine for dozens of sources; for more, copy the server's data/ folder instead.
 async function backup() {
   const out = [];
-  for (const p of papers) {
-    const buf = await idb('pdfs', 'readonly', s => s.get(p.id));
-    out.push({ ...p, pdf: await new Promise(ok => { const f = new FileReader(); f.onload = () => ok(f.result); f.readAsDataURL(new Blob([buf])); }) });
+  for (const p of lib) {
+    const { pages, parts: _, ...rest } = p, buf = p.kind === 'pdf' ? await api('files/' + p.id).catch(() => null) : null;
+    out.push({ ...rest, parts: await api(`items/${p.id}/parts`), file: buf ? await new Promise(ok => { const f = new FileReader(); f.onload = () => ok(f.result); f.readAsDataURL(new Blob([buf])); }) : undefined });
   }
-  dl('marrow-backup.json', JSON.stringify(out), 'application/json');
+  dl('marrow-backup.json', JSON.stringify({ marrow: 2, items: out, notes }), 'application/json');
+}
+// Takes a backup entry (new or old format) or a record from the old in-browser library, and stores it on the server.
+async function importItem(o) {
+  const { pdf, file = pdf, pages, parts: pp = (pages || []).map(body => ({ body })), ...p } = o;
+  if (!/^[\w-]{1,64}$/.test(p.id) || !p.title || !Array.isArray(pp)) return 0;
+  p.kind ||= 'pdf';
+  if (p.kind === 'pdf') {
+    const buf = file instanceof ArrayBuffer ? file : String(file).startsWith('data:') ? await (await fetch(file)).arrayBuffer() : null;
+    if (!buf) return 0;
+    await api('files/' + p.id, { method: 'PUT', body: buf });
+  }
+  for (const k of ['sections', 'concepts', 'links', 'cards', 'notes', 'chat']) if (!Array.isArray(p[k])) p[k] = [];
+  if (p.arxiv && !p.url) p.url = 'https://arxiv.org/abs/' + p.arxiv;
+  await send('PUT', 'items/' + p.id, { ...p, parts: pp });
+  lib = [p, ...lib.filter(x => x.id !== p.id)];
+  return 1;
 }
 async function restore(file) {
-  const arr = JSON.parse(await file.text()); let n = 0;
-  for (const { pdf, ...p } of Array.isArray(arr) ? arr : []) {
-    if (typeof p.id !== 'string' || !Array.isArray(p.pages) || !String(pdf).startsWith('data:')) continue;
-    const buf = await (await fetch(pdf)).arrayBuffer();
-    await idb('pdfs', 'readwrite', s => s.put(buf, p.id));
-    for (const k of ['sections', 'concepts', 'links', 'cards', 'notes', 'chat']) if (!Array.isArray(p[k])) p[k] = [];
-    await save(p); papers = [p, ...papers.filter(x => x.id !== p.id)]; n++;
-  }
-  if (P) P = papers.find(x => x.id === P.id) || null;
-  toast(`Restored ${n} paper${n === 1 ? '' : 's'}.`); render();
+  const j = JSON.parse(await file.text()), arr = Array.isArray(j) ? j : j.items; let n = 0;
+  if (!Array.isArray(arr)) throw new Error('no sources in the file');
+  for (const o of arr) n += await importItem(o);
+  for (const x of Array.isArray(j.notes) ? j.notes : []) if (/^[\w-]{1,64}$/.test(x.id)) { await saveNote(x); notes = [x, ...notes.filter(y => y.id !== x.id)]; }
+  if (P) P = byId(P.id) || null;
+  toast(`Restored ${n} source${n === 1 ? '' : 's'}.`); render();
+}
+// One-time move from the old version, which kept everything in this browser's IndexedDB. The old data is left untouched.
+async function migrate() {
+  if (localStorage.marrowMigrated || !(await indexedDB.databases?.())?.some(d => d.name === 'marrow')) return;
+  const d = await new Promise((ok, no) => { const r = indexedDB.open('marrow'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+  if (!d.objectStoreNames.contains('papers') || !d.objectStoreNames.contains('pdfs')) return;
+  const all = (s, m) => new Promise((ok, no) => { const q = d.transaction(s).objectStore(s)[m](); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); });
+  const olds = (await all('papers', 'getAll')).filter(o => !byId(o.id)).sort((a, b) => a.added - b.added), keys = await all('pdfs', 'getAllKeys'), bufs = await all('pdfs', 'getAll');
+  const T = olds.map(o => ({ o, text: norm((o.pages || []).join(' ')), key: norm(o.title).slice(0, 40) })); // citation links used to be found on the fly
+  for (const a of T) a.o.cites = T.filter(b => b !== a && b.key.length > 15 && a.text.includes(b.key)).map(b => b.o.id);
+  let n = 0; for (const o of olds) n += await importItem({ ...o, file: bufs[keys.indexOf(o.id)] });
+  localStorage.marrowMigrated = 1;
+  if (n) toast(`Moved ${n} paper${n === 1 ? '' : 's'} from this browser into Marrow's database.`);
 }
 
 function ask(q, img) {
   if (!q.trim() || working) return;
   P.chat.push({ role: 'user', content: q }); tab = 'ask'; document.body.classList.add('study');
   run(img ? 'Looking at the figure…' : 'Thinking…', async p => {
-    const hist = p.chat.slice(-8);
+    const hist = p.chat.slice(-8), others = askAll ? lib.filter(o => o !== p && o.brief).slice(0, 25) : [];
     if (img) hist[hist.length - 1] = { role: 'user', content: [{ type: 'text', text: q }, { type: 'image_url', image_url: { url: img } }] };
-    const text = await ai([{ role: 'system', content: `You are a patient expert tutor helping someone master this paper. Answer from the paper; cite pages like (p.4). If the paper does not say, say so, then give your best general knowledge clearly labelled. Be concise and plain; define jargon; prefer intuition and concrete examples. Write any math as LaTeX inside $...$.\n\nPAPER:\n${fullText(p)}` }, ...hist]);
+    const text = await ai([{ role: 'system', content: `You are a patient expert tutor helping someone master this source (a paper, an article, or a talk transcript). Markers like [p.N] number its parts. Answer from the source and cite the part like (p.4). If the source does not say, say so, then give your best general knowledge clearly labelled. Be concise and plain; define jargon; prefer intuition and concrete examples. Write any math as LaTeX inside $...$.\n\nSOURCE:\n${fullText(p)}` + (others.length ? `\n\nOTHER SOURCES IN THE READER'S LIBRARY (summaries only; name a source by its title when you use it, and say so if a detail would need its full text):\n` + others.map(o => `- "${o.title}" (${o.meta?.year || 'n.d.'}): ${o.brief.tldr} Idea: ${o.brief.idea} Method: ${o.brief.method} Results: ${o.brief.results} Limitations: ${o.brief.limitations}`).join('\n') : '') }, ...hist]);
     p.chat.push({ role: 'assistant', content: text });
   });
 }
 
 // ---------- actions ----------
+const curNote = () => notes.find(x => x.id === N);
 const ACT = {
   tab: el => { tab = el.dataset.t; shown = false; render(); },
+  theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.theme = t; } catch {} render(); },
   analyze,
   show: () => { shown = true; render(); },
-  grade: el => { const p = papers.find(x => x.id === el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; save(p); render(); },
+  grade: el => { const p = byId(el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; log('review', p); save(p); render(); },
   delcard: el => { P.cards.splice(+el.dataset.i, 1); save(P); render(); },
   delnote: el => { P.notes.splice(+el.dataset.i, 1); save(P); render(); paintAll(); },
   bib: () => navigator.clipboard.writeText(bib(P)).then(() => toast('BibTeX copied.'), () => toast(bib(P))),
-  addnote: () => { P.notes.unshift({ note: '' }); save(P); render(); },
-  mapall: el => { mapAll = el.checked; render(); },
+  addnote: () => { P.notes.unshift({ note: '' }); save(P); render(); $('#body textarea')?.focus(); },
+  done: () => { P.done = !P.done; save(P); render(); },
   export: exportMd,
   ask: el => ask(el.dataset.q),
+  askscope: el => { askAll = el.checked; },
+  askall: () => { askAll = true; ask('How does this source relate to the others in my library? Where do they agree, disagree, or build on each other, and what should I read in which order?'); },
   check: el => {
     const i = +el.dataset.i, s = P.sections[i];
     if (!(s.answer || '').trim()) return toast('Write your answer first — even a rough one. The attempt is the point.');
     run('Checking your answer…', async p => {
-      const ctx = p.pages.slice(Math.max(0, s.page - 1), p.sections[i + 1]?.page ?? s.page + 2).join('\n').slice(0, 30000);
-      const j = await aiJSON(`You are a rigorous but encouraging tutor. Grade the student's answer against the paper excerpt. JSON: {"score":0-100,"feedback":"2-4 sentences addressed to the student: what is right, what is wrong or missing","model":"a strong 2-3 sentence answer","evidence":"one sentence copied VERBATIM from the excerpt that supports the strong answer"}. Score understanding, not wording. Plain text, no LaTeX.`,
+      const ctx = p.pages.slice(Math.max(0, s.page - 1), p.sections[i + 1]?.page ?? (p.kind === 'pdf' ? s.page + 2 : p.pages.length)).join('\n').slice(0, 30000);
+      const j = await aiJSON(`You are a rigorous but encouraging tutor. Grade the student's answer against the excerpt from the source. JSON: {"score":0-100,"feedback":"2-4 sentences addressed to the student: what is right, what is wrong or missing","model":"a strong 2-3 sentence answer","evidence":"one sentence copied VERBATIM from the excerpt that supports the strong answer"}. Score understanding, not wording. Plain text, no LaTeX.`,
         `EXCERPT:\n${ctx}\n\nQUESTION: ${s.question}\n\nSTUDENT ANSWER: ${s.answer}`);
       Object.assign(s, { score: Math.round(+j.score || 0), feedback: j.feedback, model: j.model, evidence: j.evidence || '', evPage: findQuote(p, j.evidence), done: true });
+      log('check', p);
     });
   },
   teach: () => {
     if ((P.feynman?.text || '').trim().length < 80) return toast('Give it a real go — at least a few sentences.');
-    run('Comparing your explanation with the paper…', async p => {
-      const j = await aiJSON(`You are a rigorous tutor using the Feynman technique. Compare the student's explanation of the paper with the paper itself. JSON: {"score":0-100,"got_right":["..."],"missing":["important ideas they left out"],"misconceptions":["things they said that are wrong, with the correction"],"next":"one concrete thing to re-read (with page) or do next"}. Be specific and honest; empty arrays are fine.`,
-        `PAPER:\n${fullText(p)}\n\nSTUDENT EXPLANATION:\n${p.feynman.text}`);
+    run('Comparing your explanation with the source…', async p => {
+      const j = await aiJSON(`You are a rigorous tutor using the Feynman technique. Compare the student's explanation with the source itself (markers like [p.N] number its parts). JSON: {"score":0-100,"got_right":["..."],"missing":["important ideas they left out"],"misconceptions":["things they said that are wrong, with the correction"],"next":"one concrete thing to revisit (cite the part like p.4) or do next"}. Be specific and honest; empty arrays are fine.`,
+        `SOURCE:\n${fullText(p)}\n\nSTUDENT EXPLANATION:\n${p.feynman.text}`);
       Object.assign(p.feynman, j, { score: Math.round(+j.score || 0) });
+      log('teach', p);
     });
+  },
+  // library
+  upload: () => $('#file').click(),
+  backup: () => { toast('Preparing the backup…'); backup().catch(e => toast('Backup failed: ' + e.message)); },
+  restore: () => $('#resFile').click(),
+  biball: () => lib.length ? dl('marrow-library.bib', lib.map(bib).join('\n\n'), 'text/plain') : toast('Nothing in the library yet.'),
+  fkind: el => { F.kind = el.dataset.v; render(); },
+  fproject: el => { F.project = el.dataset.v ?? el.value; if (view !== 'matrix') view = 'library'; render(); },
+  fstatus: el => { F.status = el.value; render(); },
+  ftag: el => { F.q = el.dataset.v; render(); ftSearch(); },
+  del: async el => {
+    const p = byId(el.dataset.id);
+    if (!confirm(`Delete “${p.title}” with all its notes and cards?`)) return;
+    try { await api('items/' + p.id, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+    lib = lib.filter(x => x !== p); if (P === p) P = null; render();
+  },
+  dadd: async el => {
+    const r = disc.rows[+el.dataset.i]; el.disabled = true; toast('Fetching the PDF…');
+    try { await addLink(r.pdf, { title: r.title, titled: true, doi: r.doi, meta: { authors: r.authors, year: String(r.year), venue: r.venue } }, true); }
+    catch (e) { toast(`Couldn't fetch it (${e.message}). Use “Open ↗” and add the PDF yourself.`); el.disabled = false; }
+  },
+  dclear: () => { disc.rows = null; disc.q = ''; render(); },
+  fadd: async el => {
+    el.disabled = true; toast('Fetching…');
+    try { await addLink(news[+el.dataset.i].link); } catch (e) { toast(e.message); el.disabled = false; }
+  },
+  unfollow: async el => {
+    const url = el.dataset.v;
+    try { await api('feeds?url=' + encodeURIComponent(url), { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+    feeds = feeds.filter(f => f.url !== url); news = (news || []).filter(x => x.src !== url); render();
+  },
+  // matrix
+  mxcsv: () => dl(`matrix-${fname(F.project || 'library')}.csv`, '﻿' + csv([['Source', 'By', ...MX.map(x => x[0]), 'My take'], ...mxRows()]), 'text/csv'),
+  mxmd: () => dl(`matrix-${fname(F.project || 'library')}.md`, mxRows().map(r => `## ${r[0]}\n*${r[1]}*\n\n` + MX.map(([l], i) => `**${l}.** ${r[i + 2]}`).join('\n\n') + (r[7] ? `\n\n**My take.** ${r[7]}` : '')).join('\n\n---\n\n'), 'text/markdown'),
+  synth: () => {
+    const ps = inScope().filter(p => p.brief).slice(0, 40);
+    if (ps.length < 2) return toast('A synthesis needs at least two analyzed sources.');
+    run('Drafting a synthesis — about a minute…', async () => {
+      const body = await ai([{ role: 'system', content: `You help a researcher write a literature review. From the summaries below (and the researcher's own takes, where given), write a synthesis in Markdown with these sections: ## Themes, ## Where the sources agree, ## Where they disagree or differ in method, ## Gaps and open questions, ## Suggested reading order. Refer to each source as (First author's surname, Year) or by a short title. Compare and connect; do not summarize the sources one by one. Use only what the summaries say and never invent findings, numbers or citations. If the sources are unrelated, say so plainly.` },
+        { role: 'user', content: ps.map(p => `SOURCE: "${p.title}" — ${byline(p)}\nProblem: ${p.brief.problem}\nIdea: ${p.brief.idea}\nMethod: ${p.brief.method}\nFindings: ${p.brief.results}\nLimitations: ${p.brief.limitations}` + (p.take ? `\nResearcher's take: ${p.take}` : '')).join('\n\n') }]);
+      const n = { id: crypto.randomUUID(), title: `Synthesis: ${F.project || 'whole library'}`, project: F.project, note: body + `\n\n---\nDrafted by AI from ${ps.length} briefings. Check every claim against the sources before you build on it.`, updated: Date.now() };
+      notes.unshift(n); await saveNote(n); N = n.id; go('notebook');
+    }, null);
+  },
+  // notebook
+  nbnew: () => { const n = { id: crypto.randomUUID(), title: '', project: F.project, note: '', updated: Date.now() }; notes.unshift(n); N = n.id; saveNote(n); render(); $('.ttl')?.focus(); },
+  nbopen: el => { saveNote(curNote()); N = el.dataset.id; render(); },
+  nbdel: async () => {
+    const n = curNote(); if (!n || !confirm(`Delete “${n.title || 'Untitled'}”?`)) return;
+    clearTimeout(nbT); await api('notes/' + n.id, { method: 'DELETE' }).catch(e => toast(e.message));
+    notes = notes.filter(x => x !== n); N = null; render();
+  },
+  nbexport: () => { const n = curNote(); dl(fname(n.title || 'note') + '.md', `# ${n.title}\n\n${n.note}`, 'text/markdown'); },
+};
+// What typing into a field with data-k changes. Kept in the model so re-renders never lose text.
+const SET = {
+  sec: (v, d) => P.sections[d.i].answer = v,
+  note: (v, d) => P.notes[d.i].note = v,
+  teach: v => (P.feynman ||= {}).text = v,
+  tags: v => P.tags = [...new Set(v.split(',').map(t => t.trim().toLowerCase()).filter(Boolean))],
+  project: v => P.project = v.trim(),
+  take: (v, d) => byId(d.id).take = v,
+  nbtitle: v => curNote().title = v,
+  nbproject: v => curNote().project = v.trim(),
+  nbnote: v => { curNote().note = v; $('#nbprev').innerHTML = md(v, null); window.renderMathInElement?.($('#nbprev'), MATH); },
+};
+const FORM = {
+  ask: f => ask(f.q.value),
+  add: async f => {
+    const v = f.u.value.trim(), b = f.querySelector('button'); if (!v) return;
+    b.disabled = true; toast('Fetching…');
+    try { await addLink(v); } catch (e) { toast(e.message); }
+    b.disabled = false;
+  },
+  disc: async f => {
+    disc.q = f.q.value.trim(); disc.busy = true; render();
+    try { disc.rows = await api('discover?q=' + encodeURIComponent(disc.q)); } catch (e) { toast('Search failed: ' + e.message); }
+    disc.busy = false; if (view === 'discover') render();
+  },
+  follow: async f => {
+    const v = f.u.value.trim(), b = f.querySelector('button'); b.disabled = true; toast('Looking for the feed…');
+    try {
+      const g = await getFeed(/^https?:\/\//.test(v) ? v : 'https://' + v);
+      if (!feeds.some(x => x.url === g.url)) { await send('PUT', 'feeds', { url: g.url, title: g.title }); feeds.push({ url: g.url, title: g.title }); }
+      news = [...(news || []).filter(x => x.src !== g.url), ...g.items].sort((a, b) => b.date - a.date).slice(0, 40);
+      toast(`Following ${g.title}.`); render();
+    } catch (e) { toast('Could not follow that: ' + e.message); b.disabled = false; }
+  },
+  paste: f => {
+    const pp = parseTranscript(f.t.value);
+    if (pp.map(x => x.body).join('').length < 200) return toast("That doesn't look like a full transcript yet.");
+    P.parts = pp; P.pages = pp.map(x => x.body); P.times = pp.map(x => x.t); // times stay on the item so citations show timestamps before the transcript is loaded
+    save(P, pp); render(); renderBlocks(); analyze();
   },
 };
 function onClick(e) {
-  const pg = e.target.closest('[data-page]'); if (pg) { e.preventDefault(); return gotoPage(pg.dataset.page); }
-  const a = e.target.closest('[data-act]'); if (a && !(a.tagName === 'INPUT' && e.type !== 'change')) ACT[a.dataset.act](a);
+  const el = e.target.closest?.('[data-act],[data-page],[data-open],[data-view],[data-ins]'); if (!el) return;
+  const d = el.dataset;
+  if (d.ins) return insertMath(el);
+  if (d.act) { if (/INPUT|SELECT/.test(el.tagName) && e.type !== 'change') return; if (el.tagName === 'A') e.preventDefault(); return ACT[d.act](el); }
+  e.preventDefault();
+  if (d.view) return go(d.view);
+  if (d.open) return openItem(d.open, +d.n || 0);
+  if (view !== 'read' || (d.pid && d.pid !== P.id)) return openItem(d.pid || P.id, +d.page);
+  gotoPage(+d.page);
 }
-$('#panel').onclick = $('#rv').onclick = onClick;
-// Only the sidebar is refreshed here: re-rendering the panel on blur would swallow the click that caused the blur.
-$('#panel').onchange = e => { if (e.target.dataset.act) onClick(e); else { save(P); renderList(); } };
-$('#panel').oninput = e => { // keep typed text in the model so re-renders never lose it
-  const { k, i } = e.target.dataset, v = e.target.value;
-  if (k === 'sec') P.sections[i].answer = v; else if (k === 'note') P.notes[i].note = v; else if (k === 'teach') (P.feynman ||= {}).text = v;
-  else if (k === 'tags') P.tags = [...new Set(v.split(',').map(t => t.trim().toLowerCase()).filter(Boolean))];
-};
-$('#panel').onsubmit = e => { e.preventDefault(); ask(e.target.q.value); };
-
-$('#list').onclick = async e => {
-  const del = e.target.closest('[data-del]');
-  if (del) {
-    const p = papers.find(x => x.id === del.dataset.del);
-    if (!confirm(`Delete “${p.title}” and all its notes and cards?`)) return;
-    await idb('papers', 'readwrite', s => s.delete(p.id)); await idb('pdfs', 'readwrite', s => s.delete(p.id));
-    papers = papers.filter(x => x !== p); if (P === p) P = null; return render();
-  }
-  const tg = e.target.closest('[data-tag]'); if (tg) { $('#search').value = tg.dataset.tag; return renderList(); }
-  const it = e.target.closest('[data-id]'); if (it) openPaper(it.dataset.id);
-};
-$('#search').oninput = renderList;
-$('#bakBtn').onclick = () => backup().catch(e => toast('Backup failed: ' + e.message));
-$('#resBtn').onclick = () => $('#resFile').click();
+document.addEventListener('click', onClick);
+// Fields save when you leave them. Nothing is re-rendered here: that would swallow the click that caused the blur.
+document.addEventListener('change', e => {
+  const d = e.target.dataset;
+  if (d.act) return onClick(e);
+  if (d.k === 'take') save(byId(d.id));
+  else if (d.k?.startsWith('nb')) { clearTimeout(nbT); saveNote(curNote()); renderRail(); }
+  else if (d.k && P) { save(P); renderRail(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target, v = t.value;
+  if (t.id === 'q') { F.q = v; libRows(); clearTimeout(ftT); ftT = setTimeout(ftSearch, 300); return; }
+  const pv = (t.closest('form') || t).nextElementSibling?.nextElementSibling;
+  if (pv?.classList.contains('mprev')) { pv.innerHTML = /\$|\\\(/.test(v) ? md(v) : ''; window.renderMathInElement?.(pv, MATH); }
+  SET[t.dataset.k]?.(v, t.dataset);
+  if (t.dataset.k?.startsWith('nb')) { curNote().updated = Date.now(); clearTimeout(nbT); nbT = setTimeout(() => saveNote(curNote()), 1500); }
+});
+document.addEventListener('submit', e => { const f = e.target.dataset.f; if (f) { e.preventDefault(); FORM[f](e.target); } });
 $('#resFile').onchange = e => e.target.files[0] && restore(e.target.files[0]).catch(err => toast('Not a valid Marrow backup: ' + err.message));
-$('#bibBtn').onclick = () => papers.length ? dl('marrow-library.bib', papers.map(bib).join('\n\n'), 'text/plain') : toast('No papers yet.');
+$('#file').onchange = e => addFiles(e.target.files);
+document.ondragover = e => e.preventDefault();
+document.ondrop = e => { e.preventDefault(); addFiles(e.dataTransfer.files); };
 
-// ---------- reader tools: find, zoom, figure snip ----------
+// ---------- reader tools: find, zoom, figure snip, timestamped notes ----------
 $('#find').onkeydown = e => {
   if (e.key !== 'Enter' || !P) return;
   const q = e.target.value.trim().toLowerCase();
   if (q !== findQ) { findQ = q; findI = 0; findHits = q ? P.pages.flatMap((t, i) => t.toLowerCase().includes(q) ? [i + 1] : []) : []; paintAll(); }
   else findI = (findI + 1) % Math.max(1, findHits.length);
-  $('#findn').textContent = !q ? '' : findHits.length ? `p.${findHits[findI]} · ${findI + 1}/${findHits.length} pages` : 'no matches';
+  $('#findn').textContent = !q ? '' : findHits.length ? `${loc(P, findHits[findI])} · ${findI + 1}/${findHits.length}` : 'no matches';
   if (findHits.length) gotoPage(findHits[findI]);
 };
 $('#zi').onclick = () => rezoom(1.2);
 $('#zo').onclick = () => rezoom(1 / 1.2);
+$('#tnote').onclick = () => { P.notes.unshift({ page: nowPart() || undefined, note: '' }); save(P); tab = 'notes'; document.body.classList.add('study'); render(); $('#body textarea')?.focus(); };
 $('#snipBtn').onclick = () => document.body.classList.toggle('snip') && toast('Drag a box around a figure, table or equation.');
-$('#pdf').onclick = e => { if (e.target.closest('.hl')) { tab = 'notes'; document.body.classList.add('study'); render(); } };
-$('#pdf').onpointerdown = e => {
+$('#viewBtn').onclick = () => document.body.classList.toggle('study');
+$('#doc').onscroll = e => { const d = e.target; $('#prog i').style.width = Math.min(100, d.scrollTop / Math.max(1, d.scrollHeight - d.clientHeight) * 100) + '%'; }; // how far through the source you are
+$('#doc').onclick = e => { if (e.target.closest('.hl,.ul') && !getSelection().toString()) { tab = 'notes'; document.body.classList.add('study'); render(); } };
+$('#doc').onpointerdown = e => {
   const d = e.target.closest('.page'); if (!d || !document.body.classList.contains('snip')) return;
   e.preventDefault(); const r = d.getBoundingClientRect(), box = document.createElement('div');
   box.id = 'snipbox'; d.append(box); try { d.setPointerCapture(e.pointerId); } catch {}
   snip = { d, box, x: e.clientX - r.left, y: e.clientY - r.top };
 };
-$('#pdf').onpointermove = e => {
+$('#doc').onpointermove = e => {
   if (!snip) return;
   const r = snip.d.getBoundingClientRect(); snip.x2 = e.clientX - r.left; snip.y2 = e.clientY - r.top;
   snip.box.style.cssText = `left:${Math.min(snip.x, snip.x2)}px;top:${Math.min(snip.y, snip.y2)}px;width:${Math.abs(snip.x2 - snip.x)}px;height:${Math.abs(snip.y2 - snip.y)}px`;
 };
-$('#pdf').onpointerup = () => {
+$('#doc').onpointerup = () => {
   if (!snip) return;
   const { d, box, x, y, x2, y2 } = snip, c = d.querySelector('canvas'), w = Math.abs(x2 - x), h = Math.abs(y2 - y);
   snip = null; box.remove(); document.body.classList.remove('snip');
   if (!c || !(w > 20 && h > 20)) return;
   const k = c.width / d.clientWidth, o = document.createElement('canvas'); o.width = w * k; o.height = h * k;
   o.getContext('2d').drawImage(c, Math.min(x, x2) * k, Math.min(y, y2) * k, w * k, h * k, 0, 0, w * k, h * k);
-  ask(`Explain this figure, table or equation from p.${d.dataset.n}: what it shows, how to read it, and why it matters for the paper's argument.`, o.toDataURL('image/jpeg', .85));
+  ask(`Explain this figure, table or equation from p.${d.dataset.n}: what it shows, how to read it, and why it matters for the argument.`, o.toDataURL('image/jpeg', .85));
 };
-$('#upBtn').onclick = () => $('#file').click();
-const addFiles = async files => { for (const f of files) if (f.type === 'application/pdf') await addPdf(await f.arrayBuffer(), f.name).catch(e => toast('Could not read ' + f.name + ': ' + e.message)); };
-$('#file').onchange = e => addFiles(e.target.files);
-document.ondragover = e => e.preventDefault();
-document.ondrop = e => { e.preventDefault(); addFiles(e.dataTransfer.files); };
-$('#arxiv').onsubmit = async e => {
-  e.preventDefault(); const v = e.target.elements.ax.value.trim(); if (!v) return;
-  toast('Fetching from arXiv…');
-  try {
-    const r = await fetch('/api/arxiv?id=' + encodeURIComponent(v));
-    if (!r.ok) throw new Error((await r.json()).error);
-    await addPdf(await r.arrayBuffer(), 'arXiv ' + v, v.match(/\d{4}\.\d{4,5}/)?.[0]); e.target.reset();
-  } catch (err) { toast('arXiv: ' + err.message); }
-};
-$('#dueBtn').onclick = () => { shown = false; $('#rv').showModal(); render(); };
-$('#rvClose').onclick = () => $('#rv').close();
-$('#menuBtn').onclick = () => document.body.classList.toggle('menu');
-$("#viewBtn").onclick = () => document.body.classList.toggle("study");
 
 // ---------- selection toolbar ----------
 let picked = null, selT;
 document.addEventListener('selectionchange', () => {
   clearTimeout(selT);
   selT = setTimeout(() => {
-    const s = getSelection(), text = s.toString().replace(/\s+/g, ' ').trim(), page = s.anchorNode?.parentElement?.closest('.page');
-    const bar = $('#sel');
-    if (!page || text.length < 3) return bar.style.display = 'none';
-    const rg = s.getRangeAt(0), idx = spansOf(page).flatMap((x, i) => rg.intersectsNode(x) ? [i] : []);
-    picked = { text: text.slice(0, 2000), page: +page.dataset.n, a: idx[0], b: idx.at(-1) };
+    const s = getSelection(), str = s.toString().replace(/\s+/g, ' ').trim(), bar = $('#sel');
+    const rg = s.rangeCount ? s.getRangeAt(0) : null, page = s.anchorNode?.parentElement?.closest('.page'), b0 = blkOf(rg?.startContainer);
+    if (view !== 'read' || (!page && !b0) || str.length < 3) return bar.style.display = 'none';
+    if (page) { const idx = spansOf(page).flatMap((x, i) => rg.intersectsNode(x) ? [i] : []); picked = { text: str.slice(0, 2000), page: +page.dataset.n, a: idx[0], b: idx.at(-1) }; }
+    else {
+      const b1 = blkOf(rg.endContainer); // a selection that runs out of the text ends with its first block
+      picked = { text: str.slice(0, 2000), page: +b0.dataset.n, a: offIn(b0, rg.startContainer, rg.startOffset), eb: +(b1 || b0).dataset.n, b: b1 ? offIn(b1, rg.endContainer, rg.endOffset) : b0.textContent.length };
+    }
     const r = rg.getBoundingClientRect();
     bar.style.display = 'flex';
-    bar.style.top = Math.max(8, r.top - 48) + 'px'; bar.style.left = Math.max(8, Math.min(innerWidth - 260, r.left)) + 'px';
+    bar.style.top = Math.max(8, r.top - 48) + 'px'; bar.style.left = Math.max(8, Math.min(innerWidth - bar.offsetWidth - 8, r.left)) + 'px';
   }, 250);
 });
 $('#sel').onclick = e => {
-  const k = e.target.dataset.s, { text, page, a, b } = picked; if (!k) return;
+  const btn = e.target.closest('button'), k = btn?.dataset.s, { text: quote, ...at } = picked; if (!k) return;
   getSelection().removeAllRanges();
-  if (k === 'explain') ask(`Explain this passage from p.${page} in plain language, with the intuition behind it:\n"${text}"`);
-  if (k === 'note') { P.notes.unshift({ quote: text, page, a, b, note: '' }); save(P); tab = 'notes'; render(); paintAll(); }
+  const mark = (extra, open) => {
+    P.notes.unshift({ quote, ...at, note: '', ...extra }); save(P); paintAll();
+    if (open) { tab = 'notes'; document.body.classList.add('study'); render(); $('#body textarea')?.focus(); }
+    else { if (tab === 'notes') render(); toast('Saved to this source’s Notes.'); }
+  };
+  if (k === 'hl') mark({ c: +btn.dataset.c });
+  if (k === 'ul') mark({ ul: 1 });
+  if (k === 'note') mark({ c: 1 }, true);
+  if (k === 'explain') ask(`Explain this passage from p.${at.page} in plain language, with the intuition behind it:\n"${quote}"`);
   if (k === 'card') run('Writing a flashcard…', async p => {
-    const j = await aiJSON('Turn the passage into one flashcard that tests the underlying idea. JSON: {"q":"","a":"short answer"}', text);
+    const j = await aiJSON('Turn the passage into one flashcard that tests the underlying idea. JSON: {"q":"","a":"short answer"}', quote);
     p.cards.push({ q: j.q, a: j.a }); toast('Card added: ' + j.q);
   });
 };
 
 // ---------- boot ----------
-papers = (await idb('papers', 'readonly', s => s.getAll())).sort((a, b) => b.added - a.added);
+try {
+  ({ items: lib, notes, activity, feeds = [] } = await api('library'));
+  await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
+} catch (e) { toast('Could not reach the Marrow server: ' + e.message); }
 render();
 </script>
 </body>
