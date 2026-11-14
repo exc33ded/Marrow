@@ -53,6 +53,14 @@ srv.stdout.once('data', async () => {
     await call('settings/key', 'DELETE');
     assert.equal((await call('settings')).body.keyFrom, process.env.OPENROUTER_API_KEY ? 'env' : '', 'a saved key can be deleted');
 
+    const wh = (await call('whisper')).body;
+    assert.equal(wh.models.length, 5); assert.equal(wh.use, '', 'no Whisper model until one is downloaded');
+    assert.equal((await call('whisper?what=model:../../x', 'POST')).status, 400, 'only listed models can be downloaded');
+    assert.equal((await call('whisper/use?id=base.en', 'PUT')).status, 400, 'a model must be downloaded before it is used');
+    assert.equal((await call('transcribe?id=abc', 'POST', Buffer.from('RIFF'))).status, 400, 'transcribing needs Whisper set up');
+    assert.equal((await call('ytaudio?vid=../etc')).status, 400, 'only YouTube video ids');
+    assert.equal((await call('ytsubs?vid=../etc')).status, 400, 'only YouTube video ids');
+
     await call('items/abc', 'DELETE');
     lib = (await call('library')).body;
     assert.equal(lib.items.length, 0); assert.equal(lib.notes.length, 1, 'notebook pages survive');

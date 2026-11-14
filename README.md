@@ -8,7 +8,7 @@ Paste a link into one box, or drop a PDF anywhere:
 
 - **Papers** – a PDF, an arXiv ID or link, a DOI, or any PDF URL.
 - **Articles and blog posts** – any web page, cleaned into a reader view (ads and navigation removed).
-- **Videos** – a YouTube link. The video plays next to its transcript; paste the transcript once (YouTube's "Show transcript" panel, SRT or VTT) and every note, card and AI answer links to its moment in the video.
+- **Videos** – a YouTube link. The video plays next to its transcript; Marrow fetches YouTube's own captions when the video has them, or writes the transcript with Whisper on this computer, and every note, card and AI answer links to its moment in the video. Pasting a transcript (YouTube's "Show transcript" panel, SRT or VTT) still works too.
 - **Discover** – search 250M scholarly works (OpenAlex) and add open-access papers with one click. Follow blogs, journals and arXiv categories by their address (RSS/Atom, found automatically from a blog's home page); new posts are listed there, one click from your library.
 
 ## What you do with it
@@ -45,12 +45,14 @@ Open http://localhost:5173, then open **Settings** (the gear, bottom left) and e
 
 A key can also be supplied in a `.env` file (`cp .env.example .env`, then `node --env-file=.env server.js`); a key saved in Settings takes precedence.
 
+**Transcription.** In Settings, download the *YouTube helper* (yt-dlp) to fetch a video's existing captions with one click, or Whisper to transcribe anything: the Whisper program is fetched from whisper.cpp's GitHub releases on Windows (on a Mac run `brew install whisper-cpp` first), then pick a model and download it from Hugging Face. Videos use YouTube's captions when available and fall back to Whisper; you can also transcribe any audio or video file from a video's page. Audio is decoded in the browser, so no ffmpeg is needed, and Whisper runs on this computer: nothing but the video's captions or sound is fetched, and nothing is uploaded. Everything is stored under `data/whisper/` and can be removed again from Settings.
+
 - `node test.js` checks the server (storage, search, link-fetching rules).
 - Add `#test` to the URL to run the browser self-check (see the console).
 
 ## How it works
 
-- `server.js` – serves the app, stores the library, proxies AI calls (the key never reaches the browser, and only free models are allowed), and fetches the links you add. It listens on this machine only; set `HOST=0.0.0.0` in `.env` to reach it from other devices.
+- `server.js` – serves the app, stores the library, proxies AI calls (the key never reaches the browser, and only free models are allowed), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only; set `HOST=0.0.0.0` in `.env` to reach it from other devices.
 - `index.html` – the whole app.
 - `data/marrow.db` – the SQLite database: `items` (sources), `parts` (their text, indexed with FTS5), `cards`, `notes`, `activity`. PDFs sit next to it in `data/files/`. Copy the `data/` folder to back everything up, or use Backup in the Library for a single portable file.
 

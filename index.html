@@ -144,6 +144,10 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .k,.kind,.mx th,kbd{font-family:"IBM Plex Mono",monospace!important}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px} .mapgrid #node{margin:0;overflow:auto;max-height:calc(100vh - 290px)} .mapgrid #node h3{font-size:19px}
 #mapsrcs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-size:13px} #mapsrcs .chip,.rel .chip{min-height:26px;padding:0 .7em;font-size:12.5px;display:inline-flex;gap:5px;align-items:center} .rel{margin:.35em 0;line-height:1.9}
+.whrow{display:flex;gap:6px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line)} .whrow:first-child{border-top:0;padding-top:0}
+.whrow>div:first-child{flex:1 1 260px;min-width:0} .whrow small{display:block;margin-top:2px} .whrow code{font-size:12px}
+.whact{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .whact small{margin:0} .whact progress{width:180px} .set .whuse{display:inline-flex;gap:8px;align-items:center;cursor:pointer;margin:0;font:inherit;color:inherit} .set .whuse input{width:auto;margin:0}
+.okk{color:var(--ok);font-weight:600;font-size:13px} #txbox progress{flex:1;max-width:420px}
 #node blockquote{margin:.4em 0;font-size:13px} #node .acts{display:flex;gap:6px;flex-wrap:wrap;margin:.8em 0}
 .pickbar{padding:8px 12px;border:1px solid var(--acc);border-radius:4px;background:var(--acc-bg);margin-bottom:8px}
 .card input[type=checkbox],.mx input[type=checkbox]{width:16px;height:16px;flex:none;accent-color:var(--acc)}
@@ -553,6 +557,80 @@ function parseTranscript(raw) {
   }
   return out;
 }
+// ---------- transcription with Whisper on this computer (set up in Settings) ----------
+// The browser decodes any audio or video it can play and resamples it to 16 kHz, so the server needs no ffmpeg. Channels are mixed to mono.
+const wav16 = chans => {
+  const n = chans[0].length, v = new DataView(new ArrayBuffer(44 + n * 2)), str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 16000, true); v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { let s = 0; for (const c of chans) s += c[i]; v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, s / chans.length)) * 32767, true); }
+  return v.buffer;
+};
+const toWav = async buf => { const a = await new OfflineAudioContext(1, 1, 16000).decodeAudioData(buf); return wav16([...Array(a.numberOfChannels)].map((_, i) => a.getChannelData(i))); };
+let wh = null, tx = null; // Whisper's state from the server; the transcription under way
+const txOffer = p => {
+  if (tx?.id === p.id) return `<div class="box" id="txbox">${txInner()}</div>`;
+  if (!wh) return '';
+  const caps = wh.ytdlp.have, wpr = wh.program.have && wh.use, name = wh.models.find(m => m.id === wh.use)?.name;
+  if (!caps && !wpr) return `<div class="box"><h4>Get the transcript</h4><p class="muted">Download the YouTube helper or Whisper in <a href="#" data-view="settings">Settings</a> and Marrow writes the transcript for you, with timestamps: YouTube's own captions when it has them, or Whisper on this computer.</p></div>`;
+  return `<div class="box"><h4>Get the transcript</h4><p class="muted">${caps && wpr ? `YouTube's own captions when it has them; ${esc(name || 'Whisper')} on this computer otherwise. Nothing is uploaded.`
+    : caps ? `YouTube's own captions, with timestamps. Nothing leaves your computer.`
+    : `Whisper (${esc(name)}) writes the transcript with timestamps, on this computer.`}</p><div class="row">${caps ? '<button class="pri" data-act="txyt">Transcribe this video</button>' : ''}${wpr ? '<button data-act="txfile">Transcribe an audio or video file…</button>' : ''}</div>` +
+    (caps && !wpr ? `<p class="muted" style="margin-bottom:0">For a video without captions, download Whisper in <a href="#" data-view="settings">Settings</a>.</p>` : '') + `</div>`;
+};
+const loadWh = () => api('whisper').then(x => { wh = x; return x; });
+const txInner = () => `<h4>Transcribing on this computer</h4><p class="muted">${esc(tx.stage)}</p><div class="row"><progress ${tx.pct == null ? '' : `max="100" value="${tx.pct}"`}></progress>${tx.pct == null ? '' : `<b>${tx.pct}%</b>`}<span class="sp"></span><button data-act="txstop">Stop</button></div>`;
+const bytes = b => b >= 1e9 ? (b / 1e9).toFixed(2) + ' GB' : Math.round(b / 1e6) + ' MB';
+// One line per download: what it is, then a Download button, its progress, or Delete.
+const whRow = (key, title, note, x, size) => {
+  const j = x.job, act = j?.error ? `<span class="warn">Failed: ${esc(j.error)}</span><button data-act="whget" data-v="${key}">Try again</button>`
+    : j ? `<progress max="${j.total || 1}" value="${j.unpacking ? j.total : j.got}"></progress><small class="muted">${j.unpacking ? 'Unpacking…' : j.total ? `${bytes(j.got)} of ${bytes(j.total)} · ${Math.floor(j.got / j.total * 100)}%` : bytes(j.got)}</small>${j.unpacking ? '' : `<button data-act="whdel" data-v="${key}" data-stop="1">Cancel</button>`}`
+    : x.have ? `<span class="okk">✓ Ready</span>` + (x.mine === false ? '<small class="muted">installed on this computer</small>' : `<button data-act="whdel" data-v="${key}">Delete</button>`)
+    : size ? `<button class="pri" data-act="whget" data-v="${key}">Download · ${bytes(size)}</button>` : '';
+  return `<div class="whrow"><div><b>${title}</b><small class="muted">${note}</small></div><div class="whact">${act}</div></div>`;
+};
+function whBox() {
+  if (!wh) return '<p class="muted">Loading…</p>';
+  const W = wh.platform === 'win32', used = wh.models.filter(m => m.have).reduce((a, m) => a + m.size, 0);
+  return whRow('program', 'Whisper program', W ? 'whisper.cpp, about 9 MB. Runs the models.' : wh.program.have ? 'whisper.cpp, found on this computer.' : 'Install it once from a terminal: <code>brew install whisper-cpp</code> (Mac) or build <a href="https://github.com/ggml-org/whisper.cpp" target="_blank" rel="noopener">whisper.cpp</a> (Linux), then reopen Settings.', wh.program, W && 9e6) +
+    whRow('ytdlp', 'YouTube helper', 'yt-dlp, about 24 MB. Fetches a video\'s captions, or its sound for Whisper. Optional: you can transcribe a file instead.', wh.ytdlp, 24e6) +
+    `<div class="k">Models</div>` + wh.models.map(m => whRow('model:' + m.id, (m.have ? `<label class="whuse"><input type="radio" name="whuse" data-act="whuse" data-v="${m.id}" ${wh.use === m.id ? 'checked' : ''} aria-label="Use ${esc(m.name)}"> ` : '') + esc(m.name) + (m.have ? '</label>' : '') + (wh.use === m.id ? ' <span class="okk">in use</span>' : ''), `${bytes(m.size)} · ${esc(m.note)}`, m, m.size)).join('') +
+    `<p class="muted" style="margin:12px 0 0">${used ? `Models take ${bytes(used)} in data/whisper. ` : ''}Models come from Hugging Face (ggerganov/whisper.cpp); the program and the helper from their GitHub releases.</p>`;
+}
+let whT;
+const paintWh = () => { const b = $('#whbox'); if (b) b.innerHTML = whBox(); clearTimeout(whT); // keep watching while anything downloads
+  if (view === 'settings' && [wh?.program, wh?.ytdlp, ...(wh?.models || [])].some(x => x?.job && !x.job.error)) whT = setTimeout(() => loadWh().then(paintWh).catch(() => {}), 700); };
+const paintTx = () => { const b = $('#txbox'); if (b) b.innerHTML = txInner(); };
+async function transcribeIt(p, file) {
+  const me = tx = { id: p.id, stage: file ? 'Reading ' + file.name + '…' : 'Looking for captions on YouTube…', pct: null }, live = () => tx === me, noWhisper = () => !wh?.program.have || !wh?.use;
+  render();
+  try {
+    let segs;
+    if (!file && wh?.ytdlp.have) {
+      try { segs = (await api('ytsubs?vid=' + p.vid)).segs; }
+      catch (e) { if (noWhisper()) throw new Error(`${e.message}. Download Whisper in Settings to transcribe the video's sound instead.`); }
+      if (!live()) return;
+    }
+    if (!segs?.length) {
+      if (noWhisper()) throw new Error(wh?.ytdlp.have ? 'this video has no captions on YouTube' : 'download the YouTube helper or Whisper in Settings first');
+      me.stage = file ? 'Preparing the audio…' : 'No captions, so I am fetching the sound. A minute or two for a long video.'; paintTx();
+      const buf = file ? await file.arrayBuffer() : await api('ytaudio?vid=' + p.vid);
+      if (!live()) return; me.stage = 'Preparing the audio…'; paintTx();
+      const wav = await toWav(buf).catch(() => { throw new Error('this browser could not read that file as audio'); });
+      if (!live()) return; me.stage = 'Starting Whisper…'; paintTx();
+      await api('transcribe?id=' + p.id, { method: 'POST', body: wav });
+      me.stage = `Whisper (${wh?.models.find(m => m.id === wh.use)?.name || 'local'}) is listening. Long videos take a while; you can keep working.`; me.pct = 0; paintTx();
+      let j; do { await new Promise(r => setTimeout(r, 1000)); if (!live()) return; j = await api('transcribe?id=' + p.id); me.pct = j.pct ?? me.pct; paintTx(); } while (!j.segs && !j.error);
+      if (j.error) throw new Error(j.error);
+      segs = j.segs;
+    }
+    const pp = parseTranscript(segs.map(s => clock(s.t) + '\n' + s.body).join('\n'));
+    if (!pp.length) throw new Error('the transcript came back empty');
+    p.parts = pp; p.pages = pp.map(x => x.body); p.times = pp.map(x => x.t);
+    await save(p, pp); tx = null;
+    if (P === p) { render(); renderBlocks(); analyze(); } else toast(`The transcript of “${p.title}” is ready. Open it to build the briefing.`);
+  } catch (e) { if (live()) { tx = null; toast('Could not transcribe: ' + e.message); render(); } }
+}
 // Readability's output -> a flat list of block elements, so every paragraph, heading, figure and list gets a number.
 const LEAF = 'P,H1,H2,H3,H4,H5,H6,PRE,UL,OL,DL,BLOCKQUOTE,FIGURE,TABLE,IMG,HR';
 const blocks = el => [...el.children].flatMap(c => c.matches(LEAF) || !c.querySelector(LEAF) ? [c] : blocks(c));
@@ -607,6 +685,8 @@ if (location.hash === '#test') { // self-check: open /#test and look at the cons
   const tr = parseTranscript('0:00\nhello there\n0:05\nthis is a talk\n1:10\nsecond part\n\n2\n00:02:00,000 --> 00:02:04,000\nfrom an srt file');
   console.assert(tr.length === 3 && tr[0].t === 0 && tr[0].body === 'hello there this is a talk' && tr[1].t === 70 && tr[2].t === 120 && tr[2].body === 'from an srt file', 'transcript parsed', tr);
   console.assert(parseTranscript('One. Two! ' + 'word '.repeat(150) + '. Three.').length === 2 && clock(3725) === '1:02:05' && clock(65) === '1:05', 'untimed text is chunked; clock formats');
+  const wv = new DataView(wav16([new Float32Array([0, 1, -2]), new Float32Array([0, 0, 0])]));
+  console.assert(wv.byteLength === 50 && wv.getUint32(24, true) === 16000 && wv.getInt16(46, true) === 16383 && wv.getInt16(48, true) === -32767, 'WAV: 16 kHz, channels mixed, clipped');
   const d = document.createElement('div'); d.innerHTML = '<div><p>a</p><div><h2>b</h2><ul><li><p>c</p></li></ul></div></div><span>d</span>';
   console.assert(blocks(d).map(x => x.tagName).join() === 'P,H2,UL,SPAN', 'article flattened to blocks');
   const fd = parseFeed('<feed xmlns="http://www.w3.org/2005/Atom"><title>Blog</title><entry><title>Post</title><link href="/a"/><updated>2026-01-02T00:00:00Z</updated><summary>&lt;p&gt;Hi there&lt;/p&gt;</summary></entry></feed>');
@@ -854,6 +934,7 @@ function go(v) {
   vt(() => { document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0; });
   if (v === 'discover') loadNews();
   if (v === 'settings') api('settings').then(c => { cfg = c; if (view === 'settings') render(); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
+  if (v === 'settings') loadWh().then(paintWh).catch(e => toast('Could not check Whisper (' + e.message + ').'));
 }
 
 // ---------- study panel ----------
@@ -876,10 +957,10 @@ const VIEW = {
   brief() {
     const b = P.brief, rel = related(P), verb = P.kind === 'video' ? 'watching' : 'reading';
     const meta = `<div class="row" style="flex-wrap:nowrap;margin:.6em 0"><input data-k="tags" value="${esc((P.tags || []).join(', '))}" placeholder="Tags, comma separated" aria-label="Tags"><input data-k="project" list="projects" value="${esc(P.project)}" placeholder="Project (e.g. Thesis ch. 2)" aria-label="Project"></div>`;
-    if (!P.pages.length && P.kind === 'video') return `<h2>${esc(P.title)}</h2><p class="muted">${esc(byline(P))}</p>${meta}
-      <div class="box"><h4>Add the transcript</h4><p class="muted">YouTube doesn't hand transcripts to other apps, so bring it over yourself — it takes ten seconds. On <a href="${esc(P.url)}" target="_blank" rel="noopener">the video's page</a>, open the description, choose <b>Show transcript</b>, select all of it, copy, and paste below. Timestamps are kept, so every note, card and answer links to its moment in the video. SRT and VTT text work too.</p>
+    if (!P.pages.length && P.kind === 'video') { const ready = wh && (wh.ytdlp.have || (wh.program.have && wh.use)); return `<h2>${esc(P.title)}</h2><p class="muted">${esc(byline(P))}</p>${meta}${txOffer(P)}
+      <div class="box"><h4>${ready ? 'Or paste' : 'Add'} the transcript</h4><p class="muted">You can also paste a transcript you already have: on <a href="${esc(P.url)}" target="_blank" rel="noopener">the video's page</a>, open the description, choose <b>Show transcript</b>, select all of it, and copy. Timestamps are kept, so every note, card and answer links to its moment in the video. SRT and VTT text work too.</p>
       <form data-f="paste"><textarea name="t" required placeholder="0:00&#10;Welcome to the lecture…&#10;0:07&#10;Today we'll look at…"></textarea><p><button class="pri">Save transcript and build the briefing</button></p></form></div>
-      <p class="muted">Without a transcript you can still watch here and keep notes in the Notes tab.</p>`;
+      <p class="muted">Without a transcript you can still watch here and keep notes in the Notes tab.</p>`; }
     if (!b) return `<h2>${esc(P.title)}</h2>${meta}` + (working ? `<p class="muted">Writing your briefing: the skeleton of the argument, checkpoints, a concept map and flashcards.</p>${SKEL}` : `<p>No briefing yet.</p><button class="pri" data-act="analyze">Analyze this source</button>`);
     return `<p class="muted">Start here. Two minutes with the skeleton saves twenty in the source.</p><h2>${esc(P.title)}</h2>
       <p class="muted">${esc(byline(P))}</p>${meta}<div class="tldr">${md(b.tldr)}</div>` +
@@ -1049,7 +1130,8 @@ const PAGE = {
         <label class="row"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow models that cost money. Without this, OpenRouter is only asked for models ending in “:free”.</label>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
         <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600"></p>
-      </form>`) + `</div>`;
+      </form>`) + `<h2 style="margin-top:1.6em">Transcription</h2><p class="muted lead">Videos use YouTube's own captions when they have them. For anything else, Whisper, OpenAI's open-source speech model, writes the transcript on this computer; nothing is uploaded anywhere. Download the YouTube helper for captions, and the program plus one model for Whisper. Bigger models are more accurate and slower.</p>
+      <div id="whbox" class="box set">${whBox()}</div></div>`;
   },
   review() {
     return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(inScope(), true)}
@@ -1657,6 +1739,16 @@ const ACT = {
   mapshared: el => { M.shared = !!el.dataset.v; render(); },
   mapby: el => { M.by = el.dataset.v; render(); },
   mapfit: () => cy?.animate({ fit: { padding: 30 } }, { duration: 300 }),
+  whget: async el => { try { wh = await api('whisper?what=' + encodeURIComponent(el.dataset.v), { method: 'POST' }); } catch (e) { toast('Could not start the download: ' + e.message); } paintWh(); },
+  whdel: async el => {
+    const k = el.dataset.v, m = wh.models.find(x => 'model:' + x.id === k), name = m?.name || (k === 'program' ? 'the Whisper program' : 'the YouTube helper');
+    if (!el.dataset.stop && !(await sure(`Delete ${name}?`, `It frees ${bytes(m?.size || (k === 'program' ? 9e6 : 24e6))}. Transcripts you already have stay. You can download it again any time.`))) return;
+    try { wh = await api('whisper?what=' + encodeURIComponent(k), { method: 'DELETE' }); } catch (e) { toast('Could not delete it: ' + e.message); } paintWh();
+  },
+  whuse: async el => { try { wh = await api('whisper/use?id=' + encodeURIComponent(el.dataset.v), { method: 'PUT' }); toast('New transcriptions use ' + wh.models.find(m => m.id === wh.use).name + '.'); } catch (e) { toast(e.message); } paintWh(); },
+  txyt: () => transcribeIt(P),
+  txfile: () => { const p = P, i = Object.assign(document.createElement('input'), { type: 'file', accept: 'audio/*,video/*' }); i.onchange = () => i.files[0] && transcribeIt(p, i.files[0]); i.click(); },
+  txstop: () => { const id = tx?.id; tx = null; api('transcribe?id=' + id, { method: 'DELETE' }).catch(() => {}); render(); },
   mapsel: el => { const n = cy?.$id(el.dataset.v); if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
   mapfocus: el => { const n = cy.$id(el.dataset.v), keep = n.closedNeighborhood().closedNeighborhood().not('[solo]'); cy.elements().not(keep).style('display', 'none'); mapLayout(keep, 'tree', n); n.emit('tap'); },
   mapall: () => view === 'map' ? drawBig() : render(),
@@ -1948,6 +2040,7 @@ try {
   await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
 } catch (e) { toast('Could not reach the Marrow server (' + e.message + '). Check that it is still running, then reload this page.'); }
 enter($('#page')); render();
+loadWh().then(() => view === 'read' && tab === 'brief' && P?.kind === 'video' && !P.pages.length && render()).catch(() => {}); // a video without a transcript offers Whisper
 </script>
 </body>
 </html>
