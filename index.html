@@ -461,13 +461,15 @@ const filterBar = sort => `<div class="fbar"><input type="search" data-s="q" val
 // The project switcher shown at the top of every page. Choosing a project scopes the library, matrix, map, review and notebook to it.
 const projSel = () => sel('setproject', [['', 'All projects'], ...projects().map(x => [x, x]), ['+', '+ New project…']], F.project, 'Project');
 const lsGet = (k, d) => { try { return JSON.parse(localStorage[k]) ?? d; } catch { return d; } }, lsSet = (k, v) => { try { localStorage[k] = JSON.stringify(v); } catch {} };
-// Matrix columns: the five briefing fields, any columns the reader added (kept on each source as p.cols), and "My take".
+// Matrix columns: the five briefing fields, any columns the reader added, and "My take".
+// A column added inside a project is stored on its sources as p.cols; one added under "All projects" as p.colsAll. So a column never leaks from one into the other.
+const CS = () => F.project ? 'cols' : 'colsAll', CQ = () => F.project ? 'colsrc' : 'colsrcAll';
 // Each project has its own matrix: which columns exist and which are hidden is remembered per project ('' is "all projects").
 const mxAll = lsGet('mx', {}), mxP = () => mxAll[F.project] ||= { cols: [], hide: [] }, mxKeep = () => lsSet('mx', mxAll);
 let filling = null; // the column an AI fill is running on, so it can be stopped
 const mxCols = () => [...MX.map(([label, key]) => ({ label, key })),
-  ...[...new Set([...mxP().cols, ...inScope().flatMap(p => Object.keys(p.cols || {}))])].map(label => ({ label, key: 'c:' + label, custom: label })), { label: 'My take', key: 'take' }];
-const mxVal = (p, c) => c.custom ? p.cols?.[c.custom] || '' : c.key === 'take' ? p.take || '' : p.brief[c.key] || '';
+  ...[...new Set([...mxP().cols, ...inScope().flatMap(p => Object.keys(p[CS()] || {}))])].map(label => ({ label, key: 'c:' + label, custom: label })), { label: 'My take', key: 'take' }];
+const mxVal = (p, c) => c.custom ? p[CS()]?.[c.custom] || '' : c.key === 'take' ? p.take || '' : p.brief[c.key] || '';
 const mxShown = () => mxCols().filter(c => !mxP().hide.includes(c.key));
 const short = p => { const a = p.meta?.authors || []; return a.length ? a[0].split(' ').pop() + (a.length > 1 ? ' et al.' : '') + (p.meta.year ? ' ' + p.meta.year : '') : p.title.slice(0, 30); };
 const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
@@ -967,7 +969,8 @@ const PAGE = {
         <div class="tile"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b>mastery<small>Average across the ${started.length} you have started</small></div>
         <div class="tile"><small>Last 12 weeks</small>${heat()}</div>
       </div>` +
-      (F.project ? (all.length ? group('Sources in this project', all) : '') + `<p><a href="#" data-act="setproject" data-v="">← All projects</a></p>`
+      (F.project ? (all.length ? group('Sources in this project', all) : '') + `<details class="box" style="margin-top:26px"><summary>Project settings</summary><form data-f="renproj" class="row" style="margin:12px 0"><input name="p" required maxlength="60" autocomplete="off" value="${esc(F.project)}" aria-label="Project name" style="max-width:320px"><button>Rename project</button></form>
+          <p class="muted">Deleting a project keeps its sources and notebook pages; they become unfiled.</p><button data-act="delproj">Delete this project</button></details><p><a href="#" data-act="setproject" data-v="">← All projects</a></p>`
         : `<div class="sec"><h3>Projects</h3><small class="muted">each keeps its own sources, matrix, map and notebook pages</small></div><div class="grid">${projects().map(projCard).join('')}${newProj}</div>` +
           projects().filter(n => lib.some(p => p.project === n)).map(n => group(n, lib.filter(p => p.project === n), n)).join('') +
           (loose.length ? group('Not in a project yet', loose, '', ' · tick them in the Library to move them into one') : '')) + `</div>`;
@@ -1097,7 +1100,7 @@ function mxTable() {
   const all = scoped(), ps = all.filter(p => p.brief), cols = mxShown();
   box.innerHTML = ps.length ? `<div class="mxwrap"><table class="mx"><tr><th>Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">✕</button>` : ''}</th>`).join('')}</tr>` +
     ps.map(p => `<tr><td><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
-      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p.colsrc?.[c.custom] ? `<small>${cite(p, p.colsrc[c.custom])}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
+      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p[CQ()]?.[c.custom] ? `<small>${cite(p, p[CQ()][c.custom])}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
       : `<div class="cell" data-act="mxrow">${md(mxVal(p, c), p)}</div>`) + `</td>`).join('') + `</tr>`).join('') + `</table></div>` +
       (all.length > ps.length ? `<p class="muted">${all.length - ps.length} more ${all.length - ps.length === 1 ? 'source is' : 'sources are'} not analyzed yet and not shown.</p>` : '')
     : `<p class="box">${all.length ? 'These sources are not analyzed yet. Open one and its row appears here once the briefing is ready.' : lib.length ? 'No sources match these filters. Clear a filter to see more.' : 'Nothing here yet. Add a source and its row appears once its briefing is ready.'}</p>`;
@@ -1378,8 +1381,16 @@ function work(q) {
     const share = Math.floor(150000 / ps.length);
     const ctx = ps.map((p, i) => (`=== SOURCE S${i + 1}: "${p.title}" (${byline(p)}) ===\n` + (p.brief ? `Summary: ${p.brief.tldr}\n` : '') + (p.take ? `Reader's take: ${p.take}\n` : '') +
       p.notes.filter(x => x.quote || x.note).map(x => `Reader highlighted${x.page ? ' [p.' + x.page + ']' : ''}: ${x.quote ? '"' + x.quote + '" ' : ''}${x.note || ''}`).join('\n') + '\nText:\n' + fullText(p)).slice(0, share)).join('\n\n');
-    const out = await ai([{ role: 'system', content: `You are a research collaborator writing straight into a researcher's notebook. Work only from the sources below; markers like [p.N] number each source's parts. Cite every claim in square brackets with the source and part, like [S1 p.4], or [S2] when no part applies, one source per bracket. In the prose itself name a source by its first author or a short title, never as "S1". Never invent findings, numbers or citations; if the sources do not say, say so plainly. Write Markdown: short paragraphs and bullet lists, "## " headings only when they help. No preamble, no closing remarks.\n\n${ctx}` }, { role: 'user', content: q }]);
-    const links = s => inl(s).replace(/\[S(\d+)(?:[\s,;]*p\.\s?(\d+))?\]/g, (m, i, k) => { const p = ps[i - 1]; return p ? `(<a href="#src:${p.id}:${k || ''}">${esc(short(p))}${k ? ', ' + esc(loc(p, +k)) : ''}</a>)` : m; }).replace(/\bS(\d+)\b(?![^<]*<\/a>)/g, (m, i) => ps[i - 1] ? esc(short(ps[i - 1])) : m);
+    const out = await ai([{ role: 'system', content: `You are a research collaborator writing straight into a researcher's notebook. Work only from the sources below; markers like [p.N] number each source's parts. Cite every claim in square brackets with the source and part, like [S1 p.4], or [S2] when no part applies, one source per bracket, never a part number on its own like [p.4]. In the prose itself name a source by its first author or a short title, never as "S1". Never invent findings, numbers or citations; if the sources do not say, say so plainly. Write Markdown: short paragraphs and bullet lists, "## " headings only when they help. No preamble, no closing remarks.\n\n${ctx}` }, { role: 'user', content: q }]);
+    // Citations become links. A bare [p.4] with no source number belongs to the source last cited or, failing that, the only one named in that paragraph.
+    let last = ps.length === 1 ? 0 : -1;
+    const names = ps.map(p => [(p.meta?.authors?.[0] || '').split(' ').pop(), p.title.slice(0, 24)].filter(x => x.length > 2));
+    const link = (p, k) => `(<a href="#src:${p.id}:${k || ''}">${esc(short(p))}${k ? ', ' + esc(loc(p, +k)) : ''}</a>)`;
+    const links = s => {
+      const named = ps.flatMap((p, i) => names[i].some(x => s.includes(x)) ? [i] : []); if (named.length === 1) last = named[0];
+      return inl(s).replace(/\[S(\d+)(?:[\s,;]*p\.\s?(\d+))?\]|\[p\.\s?(\d+)\]/g, (m, i, k, bare) => { if (i) last = i - 1; const p = ps[last]; return p ? link(p, k || bare) : m; })
+        .replace(/\bS(\d+)\b(?![^<]*<\/a>)/g, (m, i) => ps[i - 1] ? esc(short(ps[i - 1])) : m);
+    };
     await addBlocks(n, [{ type: 'header', data: { text: esc(q.length > 90 ? q.slice(0, 88) + '…' : q), level: 3 } }, ...mdBlocks(out, links),
       { type: 'paragraph', data: { text: `<i>Drafted by AI from ${ps.length} source${ps.length > 1 ? 's' : ''}. Click a citation to check it against the passage.</i>` } }]);
   }, null);
@@ -1401,7 +1412,7 @@ const curNote = () => notes.find(x => x.id === N);
 async function fillCell(p, c) { // one matrix cell, answered from the source's own text and tied to a sentence in it
   await text(p);
   const j = await aiJSON(`You fill one cell of a literature-review table. The column is "${c}". From the source below, give what belongs in that column for this source. JSON: {"answer":"at most 40 words, or 'Not stated' if the source does not say","quote":"one sentence copied VERBATIM from the source that supports the answer, or ''"}. Plain text. Never guess.`, fullText(p));
-  (p.cols ||= {})[c] = String(j.answer || 'Not stated'); (p.colsrc ||= {})[c] = findQuote(p, j.quote); save(p);
+  (p[CS()] ||= {})[c] = String(j.answer || 'Not stated'); (p[CQ()] ||= {})[c] = findQuote(p, j.quote); save(p);
 }
 async function discover(q) {
   disc.q = q; disc.busy = true; render();
@@ -1496,6 +1507,14 @@ const ACT = {
     F.project = v; lsSet('project', v); picks.clear(); N = null; enter($('#page')); render(); $('#page').scrollTop = 0;
   },
   fproject: el => ACT.setproject(el),
+  delproj: () => {
+    const old = F.project, ps = lib.filter(p => p.project === old), ns = notes.filter(n => n.project === old);
+    if (!confirm(`Delete the project “${old}”?\n\nIts ${ps.length} source${ps.length === 1 ? '' : 's'} and ${ns.length} notebook page${ns.length === 1 ? '' : 's'} are kept and become unfiled. The project's matrix column settings are removed. This cannot be undone.`)) return;
+    for (const p of ps) { p.project = ''; save(p); }
+    for (const n of ns) { n.project = ''; saveNote(n); }
+    lsSet('projects', lsGet('projects', []).filter(x => x !== old)); delete mxAll[old]; mxKeep();
+    ACT.setproject({ dataset: { v: '' } }); toast(`Deleted the project “${old}”. Its sources are under “Not in a project yet”.`);
+  },
   moveto: el => { // file the ticked sources under a project
     if (el.value === '?') return;
     for (const id of picks) { const p = byId(id); p.project = el.value; save(p); }
@@ -1547,13 +1566,13 @@ const ACT = {
     const c = el.dataset.v;
     if (!confirm(`Remove the “${c}” column and everything written in it? This cannot be undone.`)) return;
     mxP().cols = mxP().cols.filter(x => x !== c); mxKeep();
-    for (const p of inScope()) if (p.cols && c in p.cols) { delete p.cols[c]; delete p.colsrc?.[c]; save(p); }
+    for (const p of inScope()) if (p[CS()] && c in p[CS()]) { delete p[CS()][c]; delete p[CQ()]?.[c]; save(p); }
     render();
   },
   mxfill: el => {
     // Fills only the empty cells of the rows on screen, one request per source, and can be stopped between sources.
     if (filling) { filling = null; return toast('Stopping after the cell being written.'); }
-    const c = el.dataset.v, ps = scoped().filter(p => p.brief && !(p.cols?.[c] || '').trim());
+    const c = el.dataset.v, ps = scoped().filter(p => p.brief && !(p[CS()]?.[c] || '').trim());
     if (!ps.length) return toast('Every row shown already has something in this column.');
     if (working) return toast('Still working on the last request. Try again when it finishes.');
     if (ps.length > 5 && !confirm(`Fill ${ps.length} empty cells in “${c}”?\n\nThat is one AI request per source, so roughly ${Math.ceil(ps.length / 3)} minutes. You can stop it at any time, fill a single cell from the cell itself, or narrow the filters first to fill fewer.`)) return;
@@ -1623,7 +1642,7 @@ const SET = {
   tags: v => P.tags = [...new Set(v.split(',').map(t => t.trim().toLowerCase()).filter(Boolean))],
   project: v => P.project = v.trim(),
   take: (v, d) => byId(d.id).take = v,
-  col: (v, d) => { const p = byId(d.id); (p.cols ||= {})[d.c] = v; delete p.colsrc?.[d.c]; }, // an edited cell is the reader's, no longer backed by the AI's quote
+  col: (v, d) => { const p = byId(d.id); (p[CS()] ||= {})[d.c] = v; delete p[CQ()]?.[d.c]; }, // an edited cell is the reader's, no longer backed by the AI's quote
   nbtitle: v => { curNote().title = v; nbSide(); },
   nbproject: v => curNote().project = v.trim(),
 };
@@ -1638,6 +1657,15 @@ const FORM = {
   disc: f => discover(f.q.value.trim()),
   work: f => { work(f.q.value); f.q.value = ''; },
   mxadd: f => { const c = f.c.value.trim(); if (!c) return; if (!mxCols().some(x => x.label.toLowerCase() === c.toLowerCase())) mxP().cols.push(c); mxP().hide = mxP().hide.filter(x => x !== 'c:' + c); mxKeep(); render(); },
+  renproj: f => {
+    const old = F.project, v = f.p.value.trim(); if (!v || v === old) return;
+    const merged = projects().includes(v);
+    for (const p of lib) if (p.project === old) { p.project = v; save(p); }
+    for (const n of notes) if (n.project === old) { n.project = v; saveNote(n); }
+    lsSet('projects', [...new Set(lsGet('projects', []).map(x => x === old ? v : x).concat(v))]);
+    if (!merged && mxAll[old]) mxAll[v] = mxAll[old]; delete mxAll[old]; mxKeep();
+    ACT.setproject({ dataset: { v } }); toast(merged ? `Merged “${old}” into the existing project “${v}”.` : `Renamed to “${v}”.`);
+  },
   newproj: f => { const v = f.p.value.trim(); if (!v) return; lsSet('projects', [...new Set([...lsGet('projects', []), v])]); ACT.setproject({ dataset: { v } }); toast(`Project “${v}” created. Sources you add now are filed in it.`); },
   follow: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); b.disabled = true; toast('Looking for the feed…');
