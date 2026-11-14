@@ -45,6 +45,14 @@ srv.stdout.once('data', async () => {
     assert.equal((await call('fetch?url=' + encodeURIComponent('https://example.com/'))).body.html?.includes('Example Domain'), true, 'public pages are fetched (needs internet)');
     assert.equal((await call('library', 'GET', null, { Origin: 'https://evil.example' })).status, 403, 'other sites cannot call the API');
 
+    assert.equal((await call('settings', 'PUT', { url: 'ftp://x', models: 'm' })).status, 400, 'the API address must be http(s)');
+    assert.equal((await call('settings', 'PUT', { url: 'http://127.0.0.1:9/v1', key: 'test-key-1234', models: 'a\nb', paid: true })).status, 200);
+    const cfg = (await call('settings')).body;
+    assert.deepEqual([cfg.url, cfg.models, cfg.hasKey, cfg.keyFrom, cfg.hint, cfg.paid], ['http://127.0.0.1:9/v1', 'a\nb', true, 'saved', '1234', true]);
+    assert.ok(!JSON.stringify(cfg).includes('test-key'), 'the key is never sent back');
+    await call('settings/key', 'DELETE');
+    assert.equal((await call('settings')).body.keyFrom, process.env.OPENROUTER_API_KEY ? 'env' : '', 'a saved key can be deleted');
+
     await call('items/abc', 'DELETE');
     lib = (await call('library')).body;
     assert.equal(lib.items.length, 0); assert.equal(lib.notes.length, 1, 'notebook pages survive');

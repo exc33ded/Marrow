@@ -39,11 +39,19 @@ CREATE TABLE IF NOT EXISTS notes(              -- item_id set: highlight/note on
   note TEXT, quote TEXT, page INTEGER, a INTEGER, b INTEGER, eb INTEGER, c INTEGER, ul INTEGER, updated INTEGER);
 CREATE INDEX IF NOT EXISTS notes_item ON notes(item_id, pos);
 CREATE TABLE IF NOT EXISTS activity(ts INTEGER NOT NULL, kind TEXT NOT NULL, item_id TEXT);
+CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT NOT NULL);       -- AI service: url, key, models, vision, paid
 CREATE TABLE IF NOT EXISTS feeds(url TEXT PRIMARY KEY, title TEXT NOT NULL, added INTEGER NOT NULL);  -- blogs and journals being followed
 CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(body, content='parts', content_rowid='id', tokenize='porter unicode61');
 CREATE TRIGGER IF NOT EXISTS parts_ai AFTER INSERT ON parts BEGIN INSERT INTO fts(rowid, body) VALUES(new.id, new.body); END;
 CREATE TRIGGER IF NOT EXISTS parts_ad AFTER DELETE ON parts BEGIN INSERT INTO fts(fts, rowid, body) VALUES('delete', old.id, old.body); END;`);
 
+// AI settings: what was saved in the app wins over .env, which wins over the defaults. The key is only ever read here, on the server.
+const saved = k => db.prepare('SELECT v FROM settings WHERE k=?').get(k)?.v;
+const list = v => String(v).split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+const conf = () => ({
+  url: (saved('url') || process.env.AI_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''), key: saved('key') || KEY || '',
+  models: list(saved('models') || MODELS), vision: list(saved('vision') || VISION), paid: saved('paid') === '1',
+});
 // node:sqlite binds neither undefined, booleans nor objects.
 const bind = v => v === undefined ? null : typeof v === 'boolean' ? +v : v !== null && typeof v === 'object' ? JSON.stringify(v) : v;
 const inserter = (table, cols) => {
@@ -127,15 +135,17 @@ async function fetchPublic(link) {
 // A model that just failed is skipped for 10 minutes, so one flaky provider doesn't slow every request.
 const cooling = new Map();
 async function ai(messages) {
-  let lastErr = 'no model answered';
-  const all = messages.some(m => Array.isArray(m.content)) ? VISION : MODELS;
+  const c = conf(), openrouter = /(^|\.)openrouter\.ai$/.test(new URL(c.url).hostname);
+  if (!c.key && openrouter) throw fail(400, 'no API key yet. Add one in Settings');
+  let lastErr = 'no model is allowed to answer. On OpenRouter only free models are used unless you allow paid ones in Settings';
+  const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.models;
   const ready = all.filter(m => !(cooling.get(m) > Date.now()));
   for (const model of ready.length ? ready : all) {
-    if (!model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money
+    if (openrouter && !c.paid && !model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money unless told to
     try {
-      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const r = await fetch(c.url + '/chat/completions', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', 'X-Title': 'Marrow' },
+        headers: { ...(c.key && { Authorization: `Bearer ${c.key}` }), 'Content-Type': 'application/json', 'X-Title': 'Marrow' },
         body: JSON.stringify({ model, messages, temperature: 0.3 }),
         signal: AbortSignal.timeout(90000),
       });
@@ -147,7 +157,7 @@ async function ai(messages) {
     cooling.set(model, Date.now() + 10 * 60e3);
     console.warn('model failed ->', lastErr);
   }
-  throw new Error(lastErr);
+  throw fail(502, lastErr);
 }
 
 async function discover(q) {
@@ -182,6 +192,20 @@ http.createServer(async (req, res) => {
       if (!Array.isArray(messages)) throw fail(400, 'messages required');
       return send(res, 200, await ai(messages));
     }
+    if (p === '/api/settings' && M === 'GET') { // the key itself never leaves the server: only whether there is one, and its last four characters
+      const c = conf();
+      return send(res, 200, { url: c.url, models: c.models.join('\n'), vision: c.vision.join('\n'), paid: c.paid, hasKey: !!c.key, keyFrom: saved('key') ? 'saved' : KEY ? 'env' : '', hint: c.key ? c.key.slice(-4) : '' });
+    }
+    if (p === '/api/settings' && M === 'PUT') {
+      const b = await json(req, 1e5), put = (k, v) => db.prepare('INSERT OR REPLACE INTO settings VALUES(?,?)').run(k, String(v));
+      try { if (!/^https?:$/.test(new URL(b.url).protocol)) throw 0; } catch { throw fail(400, 'the API address must start with http:// or https://'); }
+      if (!list(b.models || '').length) throw fail(400, 'name at least one model');
+      put('url', b.url.trim()); put('models', list(b.models).join(',')); put('vision', list(b.vision || b.models).join(',')); put('paid', b.paid ? 1 : 0);
+      if (typeof b.key === 'string' && b.key.trim()) put('key', b.key.trim());
+      cooling.clear(); return send(res, 200, {});
+    }
+    if (p === '/api/settings/key' && M === 'DELETE') { db.prepare("DELETE FROM settings WHERE k='key'").run(); return send(res, 200, {}); }
+    if (p === '/api/settings/test' && M === 'POST') { const r = await ai([{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model }); }
     if (M === 'POST' && p === '/api/activity') {
       const { kind, item_id } = await json(req, 1e4);
       db.prepare('INSERT INTO activity VALUES(?,?,?)').run(Date.now(), String(kind), bind(item_id));
@@ -221,4 +245,4 @@ http.createServer(async (req, res) => {
     }
     send(res, 404, { error: 'not found' });
   } catch (e) { send(res, Number.isInteger(e.code) && e.code >= 400 && e.code < 600 ? e.code : 500, { error: e.message }); }
-}).listen(PORT, HOST, () => console.log(`Marrow -> http://localhost:${PORT}` + (KEY ? '' : '  (OPENROUTER_API_KEY missing!)')));
+}).listen(PORT, HOST, () => console.log(`Marrow -> http://localhost:${PORT}` + (conf().key ? '' : '  (no API key yet: add one in Settings)')));

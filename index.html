@@ -144,7 +144,7 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .k,.kind,.mx th,kbd{font-family:"IBM Plex Mono",monospace!important}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px} .mapgrid #node{margin:0;overflow:auto;max-height:calc(100vh - 290px)} .mapgrid #node h3{font-size:19px}
 .pickbar{padding:8px 12px;border:1px solid var(--acc);border-radius:4px;background:var(--acc-bg);margin-bottom:8px}
-.card input[type=checkbox]{width:16px;height:16px;flex:none;accent-color:var(--acc)}
+.card input[type=checkbox],.mx input[type=checkbox]{width:16px;height:16px;flex:none;accent-color:var(--acc)}
 /* notebook: a list of pages, a page of blocks, and a bench that works across the page's sources */
 .nb{display:grid;grid-template-columns:248px minmax(0,1fr);height:100%}
 .nbside{padding:12px 8px;overflow:auto;background:var(--panel);border-right:1px solid var(--line);font-size:14px}
@@ -202,8 +202,10 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .item b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ttl{font:700 42px/1.15 Newsreader,Georgia,serif;border:0;background:none;padding:0;border-radius:0}
 #peek{border:1px solid var(--line);border-radius:6px;padding:0;background:var(--panel);color:var(--ink);width:min(700px,92vw);max-height:82vh;box-shadow:0 24px 80px #0007}
-#peek[open]{animation:pop .2s var(--e)} #peek::backdrop{background:#0b0f0d8c} .pk{padding:26px 32px 22px} .pk h3{font-size:22px;margin-top:.5em} .pk h3 a{color:inherit;text-decoration:none}
+#sure{border:1px solid var(--line);border-radius:6px;padding:0;background:var(--panel);color:var(--ink);width:min(440px,92vw);box-shadow:0 24px 80px #0007} #sure h3{margin-top:0} #sure .danger{background:var(--vid);color:#fff;border:0;font-weight:600} [data-theme=dark] #sure .danger{color:#1b1916}
+#peek[open],#sure[open]{animation:pop .2s var(--e)} #peek::backdrop,#sure::backdrop{background:#0b0f0d8c} .pk{padding:26px 32px 22px} .pk h3{font-size:22px;margin-top:.5em} .pk h3 a{color:inherit;text-decoration:none}
 .peekbody{font:19px/1.62 Newsreader,Georgia,serif;margin:18px 0 22px}
+.set label{display:block;font-weight:600;margin:16px 0 4px} .set small{display:block;margin-top:4px} .set textarea{min-height:92px;font:13px/1.5 "IBM Plex Mono",monospace} .set label.row{display:flex;flex-wrap:nowrap;align-items:flex-start;font-weight:400}
 .runhead label{display:flex;gap:8px;align-items:center} .runhead select{font:500 12px "Schibsted Grotesk",sans-serif;letter-spacing:0;text-transform:none;padding:1px 6px;min-height:0;border-radius:4px;background:var(--panel);color:var(--ink);max-width:220px}
 .card.flat form,form.card{cursor:default} form.card{gap:8px} .mx td .add{border:0;background:none;color:var(--muted);min-height:0;padding:2px 0;font-size:12.5px} .mx td .add:hover{color:var(--acc)} .ttl:focus-visible{outline:0}
 #cy{height:420px;border:1px solid var(--line);border-radius:4px;background:var(--panel)} #cy.big{height:calc(100vh - 290px);min-height:380px}
@@ -222,7 +224,7 @@ article{max-width:740px;margin:8px auto 60px;padding:34px 40px 60px;background:v
 article h1{font-size:1.9em} article h2{font-size:1.4em;margin-top:1.4em} article h3{font-size:1.2em;margin-top:1.2em}
 article img,article svg,article video{max-width:100%;height:auto;border-radius:8px} article figure{margin:1em 0} article figcaption{font-size:.8em;color:var(--muted)}
 article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;font-size:.78em;line-height:1.5} article table{border-collapse:collapse;font-size:.85em;display:block;overflow:auto} article td,article th{border:1px solid var(--line);padding:4px 8px}
-.blk{scroll-margin:38vh;border-radius:6px} .blk.hit{background:#ff7a0030} .blk.flash{animation:fl 1.8s}
+.blk{scroll-margin:38vh;border-radius:6px} .blk.flash{animation:fl 1.8s}
 @keyframes fl{0%,60%{background:var(--acc-bg);box-shadow:0 0 0 6px var(--acc-bg)}}
 .vid{max-width:860px;margin:0 auto}
 #yt{position:sticky;top:-12px;z-index:4;background:var(--pdf);padding:12px 0 10px}
@@ -251,7 +253,8 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 .done .num{background:var(--ok);color:#fff}
 progress{width:100%;height:6px;accent-color:var(--ok)}
 .warn{color:#b58900;font-size:12.5px}
-.textLayer span.hl{background:#ffd60070;cursor:pointer} .textLayer span.hit{background:#ff7a0080}
+.textLayer span.hl{background:#ffd60070;cursor:pointer}
+::highlight(find){background:#ffb14e99} ::highlight(findcur){background:#ff6a00}
 .textLayer span.c2{background:#6fdc8c80} .textLayer span.c3{background:#ff8fb180}
 .textLayer span.ul{background:none;box-shadow:inset 0 -2.5px 0 #e0531a;cursor:pointer}
 .dot{width:22px;height:22px;min-height:0!important;padding:0;border-radius:50%!important;margin:6px 4px;border:2px solid #fff8!important}
@@ -281,7 +284,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 @media (max-width:900px){
   body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
   #rail{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px;justify-content:space-between} .logo,#rail .sp{display:none}
-  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn{display:none}
+  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn,#rail #setBtn{display:none}
   .wrap{padding:22px 16px 60px} .hero{font-size:32px}
   .addbar{flex-wrap:wrap} .addbar input{flex:1 1 100%}
   .nb{grid-template-columns:1fr;height:auto} .nbside{border-right:0;border-bottom:1px solid var(--line);max-height:32vh} .nbpage{padding:24px 18px} .bench{padding:10px 18px}
@@ -301,6 +304,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
   <div id="nav"></div>
   <span class="sp"></span>
   <button id="palBtn" data-act="palette" title="Search everything, or paste a link to add it (Ctrl K)"></button>
+  <button id="setBtn" data-view="settings"></button>
   <button id="themeBtn" data-act="theme"></button>
 </nav>
 <div id="page"></div>
@@ -316,7 +320,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
       <button class="mob" id="viewBtn">Source ⇄ Study</button>
     </header>
     <div id="tools" class="row">
-      <input id="find" type="search" placeholder="Find in this source ⏎" aria-label="Find in this source"><small id="findn" class="muted"></small><span class="sp"></span>
+      <input id="find" type="search" placeholder="Find in this source" aria-label="Find in this source"><small id="findn" class="muted"></small><span class="sp"></span>
       <button id="tnote">+ Note at this moment</button>
       <button id="zo" aria-label="Smaller">−</button><button id="zi" aria-label="Larger">+</button>
       <button id="snipBtn" title="Drag a box around a figure, table or equation to have it explained">Explain a figure</button>
@@ -335,6 +339,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 <datalist id="projects"></datalist>
 <dialog id="pal" aria-label="Jump to anything"><input id="palq" autocomplete="off" placeholder="Jump to a source, a note or a page. Or paste a link to add it." aria-label="Search everything"><div id="pall"></div></dialog>
 <dialog id="peek" aria-label="Reading a matrix cell"></dialog>
+<dialog id="sure"></dialog>
 <div id="status" role="status"></div>
 <div id="toast" role="status"></div>
 
@@ -350,6 +355,7 @@ const IC = {
   layers: 'M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 18l10 5 10-5', table: 'M3 5h18v14H3zM3 10h18M3 15h18M9 5v14', pen: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
   graph: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
   sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4', moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+  gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
   compass: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z',
   file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z', play: 'M3 5h18v14H3zM10 9l5 3-5 3z',
 };
@@ -375,6 +381,12 @@ function md(s, p = P) {
   close(); return out;
 }
 const list = a => (a || []).length ? '<ul>' + a.map(x => `<li>${md(x)}</li>`).join('') + '</ul>' : '<p class="muted">—</p>';
+// An in-app "are you sure": resolves true only when the named action is chosen. Esc, Cancel and a click outside all mean no.
+const sure = (title, body, ok = 'Delete', danger = true) => new Promise(done => {
+  const d = $('#sure');
+  d.innerHTML = `<form method="dialog" class="pk"><h3>${esc(title)}</h3><p class="muted">${esc(body)}</p><div class="row"><span class="sp"></span><button value="no" autofocus>Cancel</button><button value="yes" class="${danger ? 'danger' : 'pri'}">${esc(ok)}</button></div></form>`;
+  d.returnValue = ''; d.onclick = e => e.target === d && d.close(); d.onclose = () => done(d.returnValue === 'yes'); d.showModal();
+});
 let toastT;
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6000); };
 // Motion. enter(): the next render inside these containers plays its entrance. vt(): cross-fade a whole-screen change where the browser can.
@@ -435,8 +447,8 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
 
 // ---------- state ----------
-let feeds = [], news = null, newsAt = 0;
-let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askAll = false, pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, fx = false;
+let feeds = [], news = null, newsAt = 0, cfg = null;
+let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, fx = false;
 let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
 const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: '', rows: null, busy: false };
 const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'compass'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
@@ -466,7 +478,9 @@ const lsGet = (k, d) => { try { return JSON.parse(localStorage[k]) ?? d; } catch
 const CS = () => F.project ? 'cols' : 'colsAll', CQ = () => F.project ? 'colsrc' : 'colsrcAll';
 // Each project has its own matrix: which columns exist and which are hidden is remembered per project ('' is "all projects").
 const mxAll = lsGet('mx', {}), mxP = () => mxAll[F.project] ||= { cols: [], hide: [] }, mxKeep = () => lsSet('mx', mxAll);
-let filling = null; // the column an AI fill is running on, so it can be stopped
+let filling = null, mxOnly = false, mxRowsShown = []; const mxSel = new Set();
+// The rows an action applies to: the ticked ones if any are ticked, otherwise every row the filters show.
+const mxPick = () => mxSel.size ? inScope().filter(p => p.brief && mxSel.has(p.id)) : scoped().filter(p => p.brief); // the column an AI fill is running on, so it can be stopped
 const mxCols = () => [...MX.map(([label, key]) => ({ label, key })),
   ...[...new Set([...mxP().cols, ...inScope().flatMap(p => Object.keys(p[CS()] || {}))])].map(label => ({ label, key: 'c:' + label, custom: label })), { label: 'My take', key: 'take' }];
 const mxVal = (p, c) => c.custom ? p[CS()]?.[c.custom] || '' : c.key === 'take' ? p.take || '' : p.brief[c.key] || '';
@@ -734,7 +748,7 @@ async function drawPage(doc, d, scale) {
   d.append(c, tl);
   await page.render({ canvasContext: c.getContext('2d'), viewport: vp, transform: [r, 0, 0, r, 0, 0] }).promise;
   await new pdfjsLib.TextLayer({ textContentSource: page.streamTextContent(), container: tl, viewport: vp }).render();
-  paint(d);
+  paint(d); paintFind();
 }
 // PDF highlights are stored as text-span index ranges per page, so they survive zoom and reload.
 // ponytail: whole spans (line fragments) are painted, not exact characters. Split spans at range offsets if precision matters.
@@ -742,9 +756,9 @@ const spansOf = d => [...d.querySelectorAll('.textLayer span:not(.markedContent)
 function paint(d) {
   if (!P) return;
   const sp = spansOf(d), n = +d.dataset.n;
-  sp.forEach(s => s.classList.remove('hl', 'ul', 'c1', 'c2', 'c3', 'hit'));
+  sp.forEach(s => s.classList.remove('hl', 'ul', 'c1', 'c2', 'c3'));
   for (const h of P.notes) if (h.page === n && h.a != null) for (let i = h.a; i <= h.b; i++) sp[i]?.classList.add(h.ul ? 'ul' : 'hl', 'c' + (h.c || 1));
-  if (findQ) sp.forEach(s => s.textContent.toLowerCase().includes(findQ) && s.classList.add('hit'));
+
 }
 
 // ---------- reader: articles and videos (numbered blocks) ----------
@@ -780,7 +794,7 @@ function pointIn(blk, o) {
   return [blk, blk.childNodes.length];
 }
 function paintBlocks() {
-  document.querySelectorAll('#doc .blk').forEach(b => b.classList.toggle('hit', !!findQ && b.textContent.toLowerCase().includes(findQ)));
+
   if (!window.Highlight) return;
   const H = { c1: new Highlight(), c2: new Highlight(), c3: new Highlight(), ul: new Highlight() };
   for (const h of P.notes) {
@@ -790,7 +804,21 @@ function paintBlocks() {
   }
   for (const k in H) CSS.highlights.set(k, H[k]);
 }
-const paintAll = () => P?.kind === 'pdf' ? document.querySelectorAll('.page[data-done]').forEach(paint) : P && paintBlocks();
+const paintAll = () => { P?.kind === 'pdf' ? document.querySelectorAll('.page[data-done]').forEach(paint) : P && paintBlocks(); paintFind(); };
+// Find marks the matched letters themselves, in whatever is drawn so far, and returns the range of the current hit if it is on screen.
+function paintFind() {
+  if (!window.Highlight) return;
+  const all = new Highlight(), cur = new Highlight(), on = {};
+  if (findQ) for (const el of document.querySelectorAll('#doc .textLayer span:not(.markedContent), #doc .blk')) {
+    const n = el.closest('[data-n]').dataset.n, w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let t;
+    if (el.children.length && el.matches('span')) continue; // only leaf spans of a PDF's text layer
+    while ((t = w.nextNode())) for (let s = t.data.toLowerCase(), i = s.indexOf(findQ); i >= 0; i = s.indexOf(findQ, i + findQ.length)) { const r = new Range(); r.setStart(t, i); r.setEnd(t, i + findQ.length); (on[n] ||= []).push(r); all.add(r); }
+  }
+  const h = findHits[findI], r = h && on[h.n]?.[Math.min(h.k, on[h.n].length - 1)];
+  if (r) { all.delete(r); cur.add(r); }
+  CSS.highlights.set('find', all); CSS.highlights.set('findcur', cur);
+  return r;
+}
 async function rezoom(k) {
   zoom = Math.min(3, Math.max(.5, zoom * k));
   if (P.kind !== 'pdf') return $('#doc').style.setProperty('--z', zoom);
@@ -810,7 +838,7 @@ async function openItem(id, n) {
   try { await text(p); } catch (e) { return toast('Could not open it: ' + e.message); }
   CSS.highlights?.clear(); yt = null;
   P = p; view = 'read'; tab = p.brief ? 'read' : 'brief'; shown = false;
-  findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = '';
+  findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = ''; askWith.clear();
   p.opened = Date.now(); save(p); enter($('#body'), $('#doc')); await vt(render);
   if (P !== p) return; // something else was opened meanwhile
   if (p.kind === 'pdf') await api('files/' + id).then(renderPdf).catch(e => { $('#doc').innerHTML = `<p class="muted pad">Could not load the PDF: ${esc(e.message)}</p>`; });
@@ -822,6 +850,7 @@ function go(v) {
   view = v; shown = false; enter($('#page'));
   vt(() => { document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0; });
   if (v === 'discover') loadNews();
+  if (v === 'settings') api('settings').then(c => { cfg = c; if (view === 'settings') render(); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
 }
 
 // ---------- study panel ----------
@@ -905,7 +934,7 @@ const VIEW = {
     return P.chat.map(m => `<div class="msg ${m.role}">${md(m.content)}</div>`).join('') +
       (P.chat.length ? '' : `<p class="muted">Ask anything. Answers come from this source and link back to where it says so.</p><div class="row">` +
         ['What is the single key insight?', 'What are the weakest points?', 'How would I reproduce or apply this?', 'What should I read next?'].map(q => `<button data-act="ask" data-q="${q}" style="white-space:normal;text-align:left">${q}</button>`).join('') + '</div>') +
-      (lib.length > 1 ? `<label class="row muted" style="margin-top:12px"><input type="checkbox" style="width:auto" data-act="askscope" ${askAll ? 'checked' : ''}> Also use my other ${lib.length - 1} source${lib.length > 2 ? 's' : ''} (compare, connect, contrast)</label>` : '') +
+      (lib.length > 1 ? `<div class="cols" style="margin:14px 0 0"><span class="muted">${askWith.size ? 'Answering from this source and' : 'Answering from this source only.'}</span>${[...askWith].map(byId).filter(Boolean).map(o => `<span class="srcchip"><a href="#" data-open="${esc(o.id)}" title="${esc(o.title)}">${esc(o.title)}</a><button class="x" data-act="askdrop" data-id="${esc(o.id)}" aria-label="Leave ${esc(o.title)} out">✕</button></span>`).join('')}<button class="chip" data-act="askadd">+ Bring in other sources</button></div>` : '') +
       `<form data-f="ask" class="row" style="flex-wrap:nowrap;margin-top:12px"><input name="q" placeholder="Ask about this source…" aria-label="Ask about this source" autocomplete="off"><button class="pri" ${working ? 'disabled' : ''}>Ask</button></form>${mathBar}`;
   },
 };
@@ -935,7 +964,7 @@ const hue = s => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 36
 const card = p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}">
   <div class="cover ${p.vid ? 'shot' : ''}" style="${p.vid ? `background-image:url(https://i.ytimg.com/vi/${String(p.vid).replace(/[^\w-]/g, '')}/mqdefault.jpg)` : `--h:${hue(p.title)}`}">${p.vid ? '' : ic(KIND[p.kind][1], 36)}<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span>${ring(p)}</div>
   <h4>${esc(p.title)}</h4><small class="muted clamp" style="-webkit-line-clamp:2">${esc(byline(p))}</small><span class="sp"></span>
-  <div class="row"><small class="step">${step(p)}</small><span class="sp"></span>${p.project ? `<span class="tag proj">${esc(p.project)}</span>` : ''}</div><div class="bar"><i style="width:${mastery(p)}%"></i></div></div>`;
+  <div class="row"><small class="step">${step(p)}</small><span class="sp"></span>${p.project ? `<span class="tag proj">${esc(p.project)}</span>` : ''}<button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete ${esc(p.title)}" title="Delete this source">✕</button></div><div class="bar"><i style="width:${mastery(p)}%"></i></div></div>`;
 const HOW = `<div class="box" style="margin-top:8px"><h3>How Marrow works</h3><p class="muted">Summaries make you feel like you understand. Marrow makes you actually understand, with the four things research on learning says work, for a paper, a blog post or a lecture alike.</p>
 <ol><li><b>Brief.</b> Get the skeleton first: problem, idea, method, results, and the terms you need.</li>
 <li><b>Read or watch.</b> Section by section. Each one tells you what to look for, then asks a checkpoint question you answer from memory.</li>
@@ -1003,6 +1032,22 @@ const PAGE = {
           ${have.has(norm(r.title).slice(0, 40)) ? '<span class="tag ok">In library</span>' : r.pdf ? `<button class="pri" data-act="dadd" data-i="${i}">Add</button>` : ''}
           ${r.url ? `<a class="btn" href="${esc(r.url)}" target="_blank" rel="noopener">Open ↗</a>` : ''}</div>`).join('') + `</div>`) + `</div>`;
   },
+  settings() {
+    const c = cfg;
+    return `<div class="wrap narrow"><h1>Settings</h1><p class="muted lead">Which AI service Marrow asks. Any service that speaks the OpenAI chat format works: OpenRouter, OpenAI, or a model running on this computer.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
+      <form data-f="cfg" class="box set">
+        <label for="cfgurl">API address</label><input id="cfgurl" name="url" required value="${esc(c.url)}" placeholder="https://openrouter.ai/api/v1" autocomplete="off">
+        <small class="muted">OpenRouter: https://openrouter.ai/api/v1 · OpenAI: https://api.openai.com/v1 · Ollama on this computer: http://localhost:11434/v1</small>
+        <label for="cfgkey">API key</label><input id="cfgkey" name="key" type="password" autocomplete="off" placeholder="${c.hasKey ? 'Leave empty to keep the current key, or paste a new one to replace it' : 'Paste your key'}">
+        <small class="muted">${c.keyFrom === 'saved' ? `A key ending in ${esc(c.hint)} is saved. <a href="#" data-act="cfgdel">Delete the saved key</a>` : c.keyFrom === 'env' ? `Using the key from the .env file (ends in ${esc(c.hint)}). A key saved here takes its place; to remove the .env one, edit that file.` : 'No key yet. A local service such as Ollama does not need one.'}
+          The key is kept on this computer in data/marrow.db and is never sent to the browser.</small>
+        <label for="cfgmodels">Models, tried in order until one answers</label><textarea id="cfgmodels" name="models" required spellcheck="false">${esc(c.models)}</textarea>
+        <label for="cfgvision">Models for explaining figures (they must accept images)</label><textarea id="cfgvision" name="vision" spellcheck="false">${esc(c.vision)}</textarea>
+        <label class="row"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow models that cost money. Without this, OpenRouter is only asked for models ending in “:free”.</label>
+        <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
+        <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600"></p>
+      </form>`) + `</div>`;
+  },
   review() {
     return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(inScope(), true)}
       <div class="sec"><h3>Last 12 weeks</h3><small class="muted">${streak()} day streak</small></div>${heat()}</div>`;
@@ -1010,7 +1055,7 @@ const PAGE = {
   matrix() {
     return `<div class="wrap wide"><div class="row"><h1>Literature matrix</h1><span class="sp"></span>
         <button data-act="mxwork">Work with these in the Notebook</button><button data-act="mxcsv">Export CSV</button><button data-act="mxmd">Export Markdown</button><button class="pri" data-act="synth" ${working ? 'disabled' : ''}>Draft a synthesis</button></div>
-      <p class="muted">One row per analyzed source. Show only the columns you need, add your own, and click a cell to read it in full. Click a column heading to see that column alone.</p>${filterBar(true)}
+      <p class="muted">One row per analyzed source. Show only the columns you need, add your own, and click a cell to read it in full. Click a column heading to see that column alone. Tick rows to export, synthesize or fill only those.</p>${filterBar(true)}
       <div class="cols"><span class="muted">Columns</span>${mxCols().map(c => `<button class="chip ${mxP().hide.includes(c.key) ? '' : 'on'}" data-act="mxcol" data-v="${esc(c.key)}">${esc(c.label)}</button>`).join('')}
         <form data-f="mxadd"><input name="c" required maxlength="40" autocomplete="off" placeholder="Add a column, e.g. Dataset" aria-label="New column name"><button>Add column</button></form></div>
       <div id="mxBody"></div></div>`;
@@ -1045,7 +1090,7 @@ const PAGE = {
 function libRows() {
   if (!$('#libList')) return;
   const f = F.q.toLowerCase(), ps = inScope().filter(p => (!F.kind || p.kind === F.kind) && (!F.status || (F.status === 'done') === !!p.done) && [p.title, p.project, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f));
-  $('#libList').innerHTML = (picks.size ? `<div class="row pickbar"><b>${picks.size} selected</b><span class="sp"></span>${sel('moveto', [['?', 'Move to project…'], ...projects().map(x => [x, x]), ['', 'No project']], '?', 'Move to project')}<button class="pri" data-act="workwith">Work with ${picks.size === 1 ? 'it' : 'these'} in the Notebook</button><button data-act="unpick">Clear selection</button></div>` : '') +
+  $('#libList').innerHTML = (picks.size ? `<div class="row pickbar"><b>${picks.size} selected</b><span class="sp"></span>${sel('moveto', [['?', 'Move to project…'], ...projects().map(x => [x, x]), ['', 'No project']], '?', 'Move to project')}<button class="pri" data-act="workwith">Work with ${picks.size === 1 ? 'it' : 'these'} in the Notebook</button><button data-act="delpicks">Delete</button><button data-act="unpick">Clear selection</button></div>` : '') +
     ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><input type="checkbox" data-act="pick" data-id="${esc(p.id)}" ${picks.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
     <div class="grow"><b>${esc(p.title)}</b><br><small class="muted">${esc(byline(p))}</small> ${(p.tags || []).map(t => `<span class="tag" data-act="ftag" data-v="${esc(t)}">${esc(t)}</span>`).join(' ')}</div>
     ${p.project ? `<span class="tag proj" data-act="fproject" data-v="${esc(p.project)}">${esc(p.project)}</span>` : ''}${p.done ? '<span class="tag ok">Finished</span>' : ''}${ring(p)}
@@ -1062,7 +1107,7 @@ const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', disp
 function renderRail() {
   const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}</button>`).join('');
-  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search';
+  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : '';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
   $('#status').textContent = working;
 }
@@ -1076,7 +1121,7 @@ function render() {
     dropEd();
     $('#page').innerHTML = PAGE[view]();
     const at = NAV.findIndex(x => x[0] === view); // a journal's running head: where you are, how much is here, today's date
-    $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><span>Marrow · ${String(at + 1).padStart(2, '0')} ${NAV[at][1]}</span><label>Project ${projSel()}<span>· ${inScope().length} source${inScope().length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></label></div>`);
+    $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><span>Marrow · ${at < 0 ? 'Settings' : String(at + 1).padStart(2, '0') + ' ' + NAV[at][1]}</span><label>Project ${projSel()}<span>· ${inScope().length} source${inScope().length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></label></div>`);
     window.renderMathInElement?.($('#page'), MATH);
     if (view === 'library') libRows();
     if (view === 'matrix') mxTable();
@@ -1098,9 +1143,10 @@ function render() {
 
 function mxTable() {
   const box = $('#mxBody'); if (!box) return;
-  const all = scoped(), ps = all.filter(p => p.brief), cols = mxShown();
-  box.innerHTML = ps.length ? `<div class="mxwrap"><table class="mx"><tr><th>Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">✕</button>` : ''}</th>`).join('')}</tr>` +
-    ps.map(p => `<tr><td><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
+  const all = scoped(), rows = all.filter(p => p.brief), ps = mxRowsShown = mxOnly && mxSel.size ? rows.filter(p => mxSel.has(p.id)) : rows, cols = mxShown();
+  const bar = mxSel.size ? `<div class="row pickbar"><b>${mxSel.size} selected</b><span class="muted">Export, synthesis, the Notebook and AI fill now use only these.</span><span class="sp"></span><button data-act="mxonly">${mxOnly ? 'Show all rows' : 'Show only these'}</button><button data-act="mxclear">Clear selection</button></div>` : '';
+  box.innerHTML = ps.length ? `${bar}<div class="mxwrap"><table class="mx"><tr><th><input type="checkbox" data-act="mxall" ${ps.every(p => mxSel.has(p.id)) ? 'checked' : ''} aria-label="Select every row shown"> Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">✕</button>` : ''}</th>`).join('')}</tr>` +
+    ps.map(p => `<tr><td><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:10px"><input type="checkbox" data-act="mxsel" data-id="${esc(p.id)}" ${mxSel.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><div><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></div></div></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
       ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p[CQ()]?.[c.custom] ? `<small>${cite(p, p[CQ()][c.custom])}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
       : `<div class="cell" data-act="mxrow">${md(mxVal(p, c), p)}</div>`) + `</td>`).join('') + `</tr>`).join('') + `</table></div>` +
       (all.length > ps.length ? `<p class="muted">${all.length - ps.length} more ${all.length - ps.length === 1 ? 'source is' : 'sources are'} not analyzed yet and not shown.</p>` : '')
@@ -1198,7 +1244,7 @@ const bib = p => {
 };
 const csv = rows => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
 const MX = [['Problem', 'problem'], ['Core idea', 'idea'], ['Method', 'method'], ['Findings', 'results'], ['Limitations', 'limitations']];
-const mxRows = () => scoped().filter(p => p.brief).map(p => [p.title, byline(p), ...mxShown().map(c => mxVal(p, c))]); // what is on screen is what is exported
+const mxRows = () => mxPick().map(p => [p.title, byline(p), ...mxShown().map(c => mxVal(p, c))]); // what is on screen is what is exported
 // ponytail: backup is one JSON file with PDFs inlined as data URLs. Fine for dozens of sources; for more, copy the server's data/ folder instead.
 async function backup() {
   const out = [];
@@ -1344,7 +1390,7 @@ function nbToc() { // an outline of the page's headings, shown in the margin on 
   el.innerHTML = hs.length > 1 ? hs.map((h, i) => `<a href="#" data-act="tocgo" data-i="${i}" class="l${h.tagName[1]}">${esc(h.textContent)}</a>`).join('') : '';
 }
 // The palette in pick mode: Enter hands the chosen source to `fn` and the list stays open until `fn` closes it or Esc is pressed.
-function pickSource(placeholder, fn) { palPick = fn; $('#palq').value = ''; $('#palq').placeholder = placeholder; palI = 0; palette(); $('#pal').showModal(); }
+function pickSource(placeholder, fn, has = () => false) { palPick = fn; palHas = has; $('#palq').value = ''; $('#palq').placeholder = placeholder; palI = 0; palette(); $('#pal').showModal(); }
 // A matrix cell, popped out for reading. Arrow keys walk across columns and down sources.
 let peek = null;
 function showPeek() {
@@ -1401,7 +1447,7 @@ function ask(q, img) {
   if (!q.trim() || working) return;
   P.chat.push({ role: 'user', content: q }); tab = 'ask'; document.body.classList.add('study');
   run(img ? 'Looking at the figure…' : 'Writing an answer…', async p => {
-    const hist = p.chat.slice(-8), others = askAll ? lib.filter(o => o !== p && o.brief).slice(0, 25) : [];
+    const hist = p.chat.slice(-8), others = [...askWith].map(byId).filter(o => o && o !== p && o.brief).slice(0, 25);
     if (img) hist[hist.length - 1] = { role: 'user', content: [{ type: 'text', text: q }, { type: 'image_url', image_url: { url: img } }] };
     const text = await ai([{ role: 'system', content: `You are a patient expert tutor helping someone master this source (a paper, an article, or a talk transcript). Markers like [p.N] number its parts. Answer from the source and cite the part like (p.4). If the source does not say, say so, then give your best general knowledge clearly labelled. Be concise and plain; define jargon; prefer intuition and concrete examples. Write any math as LaTeX inside $...$.\n\nSOURCE:\n${fullText(p)}` + (others.length ? `\n\nOTHER SOURCES IN THE READER'S LIBRARY (summaries only; name a source by its title when you use it, and say so if a detail would need its full text):\n` + others.map(o => `- "${o.title}" (${o.meta?.year || 'n.d.'}): ${o.brief.tldr} Idea: ${o.brief.idea} Method: ${o.brief.method} Results: ${o.brief.results} Limitations: ${o.brief.limitations}`).join('\n') : '') }, ...hist]);
     p.chat.push({ role: 'assistant', content: text });
@@ -1421,11 +1467,11 @@ async function discover(q) {
   disc.busy = false; if (view === 'discover') { enter($('#page')); render(); }
 }
 // Command palette (Ctrl/⌘ K or /): every source, note and page, plus full-text search and "add this link", from one box.
-let palI = 0, palRows = [], palPick = null;
+let palI = 0, palRows = [], palPick = null, palHas = () => false;
 $('#pal').onclose = () => { palPick = null; };
 function palette() {
   const q = $('#palq').value.trim(), words = q.toLowerCase().split(/\s+/).filter(Boolean);
-  if (palPick) { const on = docOf(curNote()).sources; palRows = lib.filter(p => words.every(w => (p.title + ' ' + byline(p)).toLowerCase().includes(w))).slice(0, 40).map(p => [p.title, on.includes(p.id) ? '✓ On this page' : byline(p).slice(0, 40), KIND[p.kind][1], () => palPick(p.id)]); }
+  if (palPick) { palRows = lib.filter(p => words.every(w => (p.title + ' ' + byline(p)).toLowerCase().includes(w))).slice(0, 40).map(p => [p.title, palHas(p.id) ? '✓ Selected' : byline(p).slice(0, 40), KIND[p.kind][1], () => palPick(p.id)]); }
   else palRows = [
     ...lib.map(p => [p.title, KIND[p.kind][0], KIND[p.kind][1], () => openItem(p.id)]),
     ...notes.map(n => [n.title || 'Untitled', 'Note', 'pen', () => { N = n.id; go('notebook'); }]),
@@ -1474,8 +1520,9 @@ const ACT = {
   done: () => { P.done = !P.done; save(P); render(); },
   export: exportMd,
   ask: el => ask(el.dataset.q),
-  askscope: el => { askAll = el.checked; },
-  askall: () => { askAll = true; ask('How does this source relate to the others in my library? Where do they agree, disagree, or build on each other, and what should I read in which order?'); },
+  askadd: () => pickSource('Choose other sources to bring into the answer', id => { if (id !== P.id) askWith[askWith.has(id) ? 'delete' : 'add'](id); render(); }, id => askWith.has(id)),
+  askdrop: el => { askWith.delete(el.dataset.id); render(); },
+  askall: () => { askWith = new Set(related(P).map(x => x.q.id)); ask('How does this source relate to the others in my library? Where do they agree, disagree, or build on each other, and what should I read in which order?'); },
   check: el => {
     const i = +el.dataset.i, s = P.sections[i];
     if (!(s.answer || '').trim()) return toast('Write your answer first — even a rough one. The attempt is the point.');
@@ -1505,12 +1552,12 @@ const ACT = {
   setproject: el => {
     const v = el.dataset.v ?? el.value;
     if (v === '+') { F.project = ''; go('home'); return setTimeout(() => $('form[data-f=newproj] input')?.focus(), 400); }
-    F.project = v; lsSet('project', v); picks.clear(); N = null; enter($('#page')); render(); $('#page').scrollTop = 0;
+    F.project = v; lsSet('project', v); picks.clear(); mxSel.clear(); mxOnly = false; N = null; enter($('#page')); render(); $('#page').scrollTop = 0;
   },
   fproject: el => ACT.setproject(el),
-  delproj: () => {
+  delproj: async () => {
     const old = F.project, ps = lib.filter(p => p.project === old), ns = notes.filter(n => n.project === old);
-    if (!confirm(`Delete the project “${old}”?\n\nIts ${ps.length} source${ps.length === 1 ? '' : 's'} and ${ns.length} notebook page${ns.length === 1 ? '' : 's'} are kept and become unfiled. The project's matrix column settings are removed. This cannot be undone.`)) return;
+    if (!await sure(`Delete the project “${old}”?`, `Its ${ps.length} source${ps.length === 1 ? '' : 's'} and ${ns.length} notebook page${ns.length === 1 ? '' : 's'} are kept and become unfiled. The project's matrix column settings are removed. This cannot be undone.`, 'Delete project')) return;
     for (const p of ps) { p.project = ''; save(p); }
     for (const n of ns) { n.project = ''; saveNote(n); }
     lsSet('projects', lsGet('projects', []).filter(x => x !== old)); delete mxAll[old]; mxKeep();
@@ -1525,6 +1572,22 @@ const ACT = {
   ssort: el => { S.sort = el.value; render(); },
   pick: el => { picks[el.checked ? 'add' : 'delete'](el.dataset.id); libRows(); },
   unpick: () => { picks.clear(); libRows(); },
+  cfgdel: async () => {
+    if (!await sure('Delete the saved API key?', 'Marrow stops being able to ask the AI until you add a key again (or falls back to the one in the .env file, if there is one).', 'Delete key')) return;
+    try { await api('settings/key', { method: 'DELETE' }); cfg = await api('settings'); toast('The saved key is deleted.'); render(); } catch (e) { toast('Could not delete the key (' + e.message + ').'); }
+  },
+  cfgtest: async () => { // asks the saved service for a one-word reply and says, in place, whether it worked
+    const say = (msg, color) => { const el = $('#cfgstate'); if (el) { el.textContent = msg; el.style.color = color; } }, t = Date.now();
+    say('Checking: asking the model for a one-word reply…', 'var(--muted)');
+    try { const r = await send('POST', 'settings/test', {}); say(`● Working. ${r.model} answered in ${((Date.now() - t) / 1000).toFixed(1)} s.`, 'var(--ok)'); }
+    catch (e) { say(`● Not working: ${e.message}. This tests what is saved, so save any edits first.`, 'var(--vid)'); }
+  },
+  delpicks: async () => {
+    const ps = [...picks].map(byId).filter(Boolean);
+    if (!await sure(`Delete ${ps.length} source${ps.length === 1 ? '' : 's'}?`, 'Their notes, highlights and flashcards are deleted with them. This cannot be undone.', 'Delete ' + ps.length)) return;
+    for (const p of ps) { try { await api('items/' + p.id, { method: 'DELETE' }); lib = lib.filter(x => x !== p); if (P === p) P = null; } catch (e) { toast('Could not delete “' + p.title + '” (' + e.message + ').'); } }
+    picks.clear(); render();
+  },
   workwith: () => { const ids = [...picks]; picks.clear(); newPage(ids); },
   // map
   mapshared: el => { M.shared = !!el.dataset.v; render(); },
@@ -1535,7 +1598,7 @@ const ACT = {
   ftag: el => { F.q = el.dataset.v; render(); ftSearch(); },
   del: async el => {
     const p = byId(el.dataset.id);
-    if (!confirm(`Delete “${p.title}” with all its notes, highlights and cards? This cannot be undone.`)) return;
+    if (!await sure(`Delete “${p.title}”?`, 'Its notes, highlights and flashcards are deleted with it. This cannot be undone.', 'Delete source')) return;
     try { await api('items/' + p.id, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
     lib = lib.filter(x => x !== p); if (P === p) P = null; render();
   },
@@ -1557,26 +1620,30 @@ const ACT = {
   // matrix
   mxcsv: () => dl(`matrix-${fname(F.project || 'library')}.csv`, '﻿' + csv([['Source', 'By', ...mxShown().map(c => c.label)], ...mxRows()]), 'text/csv'),
   mxmd: () => dl(`matrix-${fname(F.project || 'library')}.md`, mxRows().map(r => `## ${r[0]}\n*${r[1]}*\n\n` + mxShown().flatMap((c, i) => r[i + 2] ? [`**${c.label}.** ${r[i + 2]}`] : []).join('\n\n')).join('\n\n---\n\n'), 'text/markdown'),
+  mxsel: el => { mxSel[el.checked ? 'add' : 'delete'](el.dataset.id); if (!mxSel.size) mxOnly = false; mxTable(); },
+  mxall: el => { for (const p of mxRowsShown) mxSel[el.checked ? 'add' : 'delete'](p.id); if (!mxSel.size) mxOnly = false; mxTable(); },
+  mxonly: () => { mxOnly = !mxOnly; mxTable(); },
+  mxclear: () => { mxSel.clear(); mxOnly = false; mxTable(); },
   mxcol: el => { const k = el.dataset.v, m = mxP(); m.hide = m.hide.includes(k) ? m.hide.filter(x => x !== k) : [...m.hide, k]; mxKeep(); render(); },
   mxsolo: el => { // show one column alone; click it again to bring the rest back
     const k = el.dataset.v, others = mxCols().map(c => c.key).filter(x => x !== k);
     mxP().hide = others.every(x => mxP().hide.includes(x)) ? [] : others; mxKeep(); render();
   },
-  mxrow: el => { const td = el.closest('td'); peek = { ps: scoped().filter(p => p.brief), cols: mxShown(), r: td.parentElement.rowIndex - 1, c: td.cellIndex - 1 }; showPeek(); $('#peek').showModal(); },
-  mxdrop: el => {
+  mxrow: el => { const td = el.closest('td'); peek = { ps: mxRowsShown, cols: mxShown(), r: td.parentElement.rowIndex - 1, c: td.cellIndex - 1 }; showPeek(); $('#peek').showModal(); },
+  mxdrop: async el => {
     const c = el.dataset.v;
-    if (!confirm(`Remove the “${c}” column and everything written in it? This cannot be undone.`)) return;
+    if (!await sure(`Remove the “${c}” column?`, 'Everything written in it, for every source in this matrix, is removed. This cannot be undone.', 'Remove column')) return;
     mxP().cols = mxP().cols.filter(x => x !== c); mxKeep();
     for (const p of inScope()) if (p[CS()] && c in p[CS()]) { delete p[CS()][c]; delete p[CQ()]?.[c]; save(p); }
     render();
   },
-  mxfill: el => {
+  mxfill: async el => {
     // Fills only the empty cells of the rows on screen, one request per source, and can be stopped between sources.
     if (filling) { filling = null; return toast('Stopping after the cell being written.'); }
-    const c = el.dataset.v, ps = scoped().filter(p => p.brief && !(p[CS()]?.[c] || '').trim());
+    const c = el.dataset.v, ps = mxPick().filter(p => !(p[CS()]?.[c] || '').trim());
     if (!ps.length) return toast('Every row shown already has something in this column.');
     if (working) return toast('Still working on the last request. Try again when it finishes.');
-    if (ps.length > 5 && !confirm(`Fill ${ps.length} empty cells in “${c}”?\n\nThat is one AI request per source, so roughly ${Math.ceil(ps.length / 3)} minutes. You can stop it at any time, fill a single cell from the cell itself, or narrow the filters first to fill fewer.`)) return;
+    if (ps.length > 5 && !await sure(`Fill ${ps.length} empty cells in “${c}”?`, `That is one AI request per source, so roughly ${Math.ceil(ps.length / 3)} minutes. You can stop it at any time, fill a single cell from the cell itself, or tick only the rows you want first.`, 'Fill them', false)) return;
     filling = c;
     run(`Filling “${c}”…`, async () => {
       let i = 0;
@@ -1587,13 +1654,13 @@ const ACT = {
   },
   mxfill1: el => { const p = byId(el.dataset.id), c = el.dataset.v; if (working) return toast('Still working on the last request. Try again when it finishes.'); run(`Filling “${c}” for one source…`, () => fillCell(p, c), null); },
   mxwork: () => {
-    const ids = scoped().filter(p => p.brief).map(p => p.id);
+    const ids = mxPick().map(p => p.id);
     if (!ids.length) return toast('No analyzed sources match these filters.');
     if (ids.length > 25) toast('Took the first 25 sources. Narrow the filters to choose others.');
     newPage(ids.slice(0, 25), F.project);
   },
   synth: () => {
-    const ps = scoped().filter(p => p.brief).slice(0, 40);
+    const ps = mxPick().slice(0, 40);
     if (ps.length < 2) return toast('A synthesis needs at least two analyzed sources.');
     run('Drafting a synthesis — about a minute…', async () => {
       const body = await ai([{ role: 'system', content: `You help a researcher write a literature review. From the summaries below (and the researcher's own takes, where given), write a synthesis in Markdown with these sections: ## Themes, ## Where the sources agree, ## Where they disagree or differ in method, ## Gaps and open questions, ## Suggested reading order. Refer to each source as (First author's surname, Year) or by a short title. Compare and connect; do not summarize the sources one by one. Use only what the summaries say and never invent findings, numbers or citations. If the sources are unrelated, say so plainly.` },
@@ -1609,7 +1676,7 @@ const ACT = {
   nbgo: el => { N = el.dataset.id; go('notebook'); },
   nbopen: el => { N = el.dataset.id; render(); },
   nbdel: async el => {
-    const n = el?.dataset.id ? notes.find(x => x.id === el.dataset.id) : curNote(); if (!n || !confirm(`Delete the page “${n.title || 'Untitled'}”? This cannot be undone.`)) return;
+    const n = el?.dataset.id ? notes.find(x => x.id === el.dataset.id) : curNote(); if (!n || !await sure(`Delete the page “${n.title || 'Untitled'}”?`, 'Everything written on it is deleted. The sources it works with are not touched. This cannot be undone.', 'Delete page')) return;
     if (n.id === N) { clearTimeout(nbT); clearTimeout(edT); edDirty = false; }
     try { await api('notes/' + n.id, { method: 'DELETE' }); } catch (e) { return toast('Could not delete the page (' + e.message + '). Try again.'); }
     notes = notes.filter(x => x !== n); if (n.id === N) N = null; render();
@@ -1618,7 +1685,7 @@ const ACT = {
   nbseticon: async el => { const n = curNote(); if (edDirty) await keepEd(); docOf(n).icon = el.dataset.v; putDoc(n); dropEd(); render(); }, // the page is redrawn with its new icon, after the editor's text is saved
   tocgo: el => [...document.querySelectorAll('#ed h2,#ed h3,#ed h4')].filter(h => h.textContent.trim())[+el.dataset.i]?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
   nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`, 'text/markdown'); },
-  nbaddsrc: () => pickSource('Choose the sources to work with on this page', id => { const s = docOf(curNote()).sources, i = s.indexOf(id); i < 0 ? s.push(id) : s.splice(i, 1); putDoc(curNote()); nbSrc(); nbSide(); }),
+  nbaddsrc: () => pickSource('Choose the sources to work with on this page', id => { const s = docOf(curNote()).sources, i = s.indexOf(id); i < 0 ? s.push(id) : s.splice(i, 1); putDoc(curNote()); nbSrc(); nbSide(); }, id => docOf(curNote()).sources.includes(id)),
   nbunsrc: el => { const n = curNote(), s = docOf(n).sources; s.splice(s.indexOf(el.dataset.id), 1); putDoc(n); nbSrc(); nbSide(); },
   work: el => work(el.dataset.q),
   nbhl: () => {
@@ -1656,6 +1723,10 @@ const FORM = {
     b.disabled = false;
   },
   disc: f => discover(f.q.value.trim()),
+  cfg: async f => {
+    try { await send('PUT', 'settings', { url: f.url.value, key: f.key.value, models: f.models.value, vision: f.vision.value, paid: f.paid.checked }); cfg = await api('settings'); toast('Settings saved. Checking that the service answers…'); render(); ACT.cfgtest(); }
+    catch (e) { toast('Could not save the settings: ' + e.message + '.'); }
+  },
   work: f => { work(f.q.value); f.q.value = ''; },
   mxadd: f => { const c = f.c.value.trim(); if (!c) return; if (!mxCols().some(x => x.label.toLowerCase() === c.toLowerCase())) mxP().cols.push(c); mxP().hide = mxP().hide.filter(x => x !== 'c:' + c); mxKeep(); render(); },
   renproj: f => {
@@ -1722,14 +1793,21 @@ document.ondragover = e => e.preventDefault();
 document.ondrop = e => { e.preventDefault(); addFiles(e.dataTransfer.files); };
 
 // ---------- reader tools: find, zoom, figure snip, timestamped notes ----------
-$('#find').onkeydown = e => {
-  if (e.key !== 'Enter' || !P) return;
-  const q = e.target.value.trim().toLowerCase();
-  if (q !== findQ) { findQ = q; findI = 0; findHits = q ? P.pages.flatMap((t, i) => t.toLowerCase().includes(q) ? [i + 1] : []) : []; paintAll(); }
-  else findI = (findI + 1) % Math.max(1, findHits.length);
-  $('#findn').textContent = !q ? '' : findHits.length ? `${loc(P, findHits[findI])} · ${findI + 1}/${findHits.length}` : 'no matches';
-  if (findHits.length) gotoPage(findHits[findI]);
-};
+function find(step) { // step 0: the query changed; 1 / -1: next / previous occurrence
+  if (!P) return;
+  const q = $('#find').value.trim().toLowerCase();
+  if (q !== findQ || !step) {
+    findQ = q.length > 1 ? q : ''; findI = 0; // one letter would match half the document
+    findHits = !findQ ? [] : P.pages.flatMap((t, i) => { const out = []; for (let s = t.toLowerCase(), j = s.indexOf(findQ); j >= 0; j = s.indexOf(findQ, j + findQ.length)) out.push({ n: i + 1, k: out.length }); return out; });
+  } else if (findHits.length) findI = (findI + step + findHits.length) % findHits.length;
+  const h = findHits[findI];
+  $('#findn').textContent = !q ? '' : q.length < 2 ? 'Type at least two letters' : h ? `${findI + 1} of ${findHits.length} · ${loc(P, h.n)} · Enter for the next` : 'No matches';
+  const show = r => r?.startContainer.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const r = paintFind();
+  if (r) show(r); else if (h) { gotoPage(h.n); setTimeout(() => show(paintFind()), 700); } // a PDF page that is not drawn yet: go there, then mark it
+}
+$('#find').oninput = () => { clearTimeout(ftT); ftT = setTimeout(() => find(0), 250); };
+$('#find').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(ftT); find($('#find').value.trim().toLowerCase() === findQ ? (e.shiftKey ? -1 : 1) : 0); } };
 $('#zi').onclick = () => rezoom(1.2);
 $('#zo').onclick = () => rezoom(1 / 1.2);
 $('#tnote').onclick = () => { P.notes.unshift({ page: nowPart() || undefined, note: '' }); save(P); tab = 'notes'; document.body.classList.add('study'); render(); $('#body textarea')?.focus(); };

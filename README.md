@@ -35,14 +35,15 @@ AI-generated flashcards and feedback must quote the source; quotes are checked a
 
 ## Run
 
-Requires Node 22.13+ (it uses Node's built-in SQLite) and an [OpenRouter](https://openrouter.ai) API key. No dependencies to install.
+Requires Node 22.13+ (it uses Node's built-in SQLite). No dependencies to install.
 
 ```bash
-cp .env.example .env   # then put your key in .env
-node --env-file=.env server.js
+node server.js
 ```
 
-Open http://localhost:5173.
+Open http://localhost:5173, then open **Settings** (the gear, bottom left) and enter the address and key of your AI service: [OpenRouter](https://openrouter.ai), OpenAI, or anything else that speaks the OpenAI chat format, including a local Ollama. "Test the connection" tells you whether it answers. The key is stored on your computer in `data/marrow.db`, is never sent to the browser, and can be replaced or deleted from the same screen. On OpenRouter only free models are used unless you allow paid ones.
+
+A key can also be supplied in a `.env` file (`cp .env.example .env`, then `node --env-file=.env server.js`); a key saved in Settings takes precedence.
 
 - `node test.js` checks the server (storage, search, link-fetching rules).
 - Add `#test` to the URL to run the browser self-check (see the console).
