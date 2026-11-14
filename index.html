@@ -385,7 +385,8 @@ const list = a => (a || []).length ? '<ul>' + a.map(x => `<li>${md(x)}</li>`).jo
 const sure = (title, body, ok = 'Delete', danger = true) => new Promise(done => {
   const d = $('#sure');
   d.innerHTML = `<form method="dialog" class="pk"><h3>${esc(title)}</h3><p class="muted">${esc(body)}</p><div class="row"><span class="sp"></span><button value="no" autofocus>Cancel</button><button value="yes" class="${danger ? 'danger' : 'pri'}">${esc(ok)}</button></div></form>`;
-  d.returnValue = ''; d.onclick = e => e.target === d && d.close(); d.onclose = () => done(d.returnValue === 'yes'); d.showModal();
+  // The braces matter: an on-click handler that returns false cancels the click, which would disable both buttons.
+  d.returnValue = ''; d.onclick = e => { if (e.target === d) d.close(); }; d.onclose = () => done(d.returnValue === 'yes'); d.showModal();
 });
 let toastT;
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6000); };
@@ -1342,7 +1343,7 @@ class Toggle { // a heading line that folds the text under it away
   render() {
     const w = document.createElement('details'); w.className = 'tgl'; w.open = this.data.open !== false; w.innerHTML = '<summary><span contenteditable="true" data-ph="Toggle"></span></summary>';
     this.t = w.querySelector('span'); this.t.innerHTML = clean(this.data.title); w.append(this.b = editable(this.data.text, 'Hidden until opened')); this.w = w;
-    w.firstChild.onkeyup = e => e.key === ' ' && e.preventDefault(); // a space typed in the heading must not fold it
+    w.firstChild.onkeyup = e => { if (e.key === ' ') e.preventDefault(); }; // a space typed in the heading must not fold it
     return w;
   }
   save() { return { title: this.t.innerHTML, text: this.b.innerHTML, open: this.w.open }; }
