@@ -82,7 +82,7 @@ const conf = S => {
   const jsonOf = k => { try { return JSON.parse(S[k]); } catch {} };
   const providers = (jsonOf('providers') || [{ id: 'main', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '' }]).map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), key: unseal(p.key) }));
   const first = providers[0].id, chainOf = (k, def) => jsonOf(k) || def.map(m => ({ p: first, m }));
-  return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: S.paid === '1' };
+  return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: S.paid === '1', embed: jsonOf('embed') };
 };
 
 // ponytail: an item is saved whole, so its cards and notes are rewritten each time (inside the put_item function). Diff them if items grow to thousands of cards.
@@ -162,6 +162,28 @@ async function offered(p) { // p is the provider as typed in Settings, so a new 
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !Array.isArray(j.data)) throw fail(502, `${p.name} did not return a model list (${r.status}). Type the model name instead`);
   return j.data.map(m => m.id).filter(Boolean).sort().map(id => ({ id, free: id.endsWith(':free') }));
+}
+
+// Meaning-based search. Embeddings go through the same providers as chat: POST {url}/embeddings (OpenAI format; OpenAI, Gemini, OpenRouter and Ollama have it, Anthropic does not).
+// ponytail: fixed 1024 dimensions (the column size), so the model must support a `dimensions` option or be 1024 natively. A part is cut at 6000 characters.
+const DIM = 1024;
+async function embed(c, texts) {
+  const e = c.embed, p = c.providers.find(x => x.id === e?.p);
+  if (!p) throw fail(400, 'pick an embedding model in Settings');
+  const r = await fetch(p.url + '/embeddings', { method: 'POST', headers: headers(p), signal: AbortSignal.timeout(60000), body: JSON.stringify({ model: e.m, input: texts.map(t => t.slice(0, 6000)), dimensions: DIM }) })
+    .catch(() => { throw fail(502, `could not reach ${p.url}`); });
+  const j = await r.json().catch(() => ({}));
+  const v = Array.isArray(j.data) && j.data.sort((a, b) => a.index - b.index).map(d => d.embedding);
+  if (!v || v.length !== texts.length || v.some(x => x?.length !== DIM)) throw fail(502, j.error?.message || `${p.name} did not return ${DIM}-dimension embeddings`);
+  return v;
+}
+// Embed the parts of one source that have no vector yet.
+async function embedItem(ctx, c, id) {
+  const rows = await db(ctx, `parts?item_id=eq.${id}&emb=is.null&select=id,body&order=n`);
+  for (let i = 0; i < rows.length; i += 64) {
+    const b = rows.slice(i, i + 64), v = await embed(c, b.map(r => r.body));
+    await rpc(ctx, 'set_emb', { p: b.map((r, k) => ({ id: r.id, v: v[k] })), m: c.embed.m });
+  }
 }
 
 async function discover(q) {
@@ -370,6 +392,19 @@ http.createServer(async (req, res) => {
       await upsert(ctx, 'settings', [{ k: 'projects', v: JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean)) }], 'user_id,k'); return send(res, 200, {});
     }
     if (M === 'GET' && p === '/api/search') return send(res, 200, await search(ctx, q('q'), q('phrase')));
+    if (M === 'POST' && p === '/api/retrieve') { // the passages that best answer a question; item omitted = the whole library
+      const b = await json(req, 1e5), c = conf(await S()), query = String(b.q || '').trim();
+      if (!query) throw fail(400, 'q required');
+      const [e] = await embed(c, [query]);
+      return send(res, 200, await rpc(ctx, 'match_parts', { qe: e, q: query, m: c.embed.m, k: 12, only_item: b.item ? String(b.item) : null }));
+    }
+    if (M === 'POST' && p === '/api/embed') { // embed what has no vector yet: one source, or the whole library
+      const b = await json(req, 1e4), c = conf(await S());
+      if (!c.embed) throw fail(400, 'pick an embedding model in Settings');
+      const ids = b.all ? (await db(ctx, 'items?select=id')).map(r => r.id) : [String(b.item || '')];
+      for (const id of ids) if (/^[\w-]{1,64}$/.test(id)) await embedItem(ctx, c, id);
+      return send(res, 200, { items: ids.length });
+    }
     if (M === 'GET' && p === '/api/discover') return send(res, 200, await discover(q('q')));
     if (M === 'POST' && p === '/api/ai') {
       const { messages } = await json(req, 6e6); // source text plus one cropped image
@@ -378,7 +413,7 @@ http.createServer(async (req, res) => {
     }
     if (p === '/api/settings' && M === 'GET') { // keys never leave the server: only whether there is one, and its last four characters
       const c = conf(await S());
-      return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
+      return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, embed: c.embed, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
     }
     if (p === '/api/settings' && M === 'PUT') {
       const b = await json(req, 1e5); let have = []; try { have = JSON.parse((await S()).providers) || []; } catch {}
@@ -393,7 +428,7 @@ http.createServer(async (req, res) => {
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
       const chain = clean(b.chain); if (!chain.length) throw fail(400, 'pick at least one model');
       const vision = clean(b.vision);
-      await upsert(ctx, 'settings', [{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }], 'user_id,k');
+      await upsert(ctx, 'settings', [{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }], 'user_id,k');
       for (const k of cooling.keys()) if (k.startsWith(ctx.uid + '|')) cooling.delete(k);
       return send(res, 200, {});
     }
@@ -464,7 +499,11 @@ http.createServer(async (req, res) => {
     if (m) {
       const [, what, id, parts] = m;
       if (what === 'items' && parts && M === 'GET') return send(res, 200, (await db(ctx, `parts?item_id=eq.${id}&select=n,t,body,html&order=n`)).map(drop));
-      if (what === 'items' && M === 'PUT') { await putItem(ctx, id, await json(req)); return send(res, 200, {}); }
+      if (what === 'items' && M === 'PUT') {
+        const b = await json(req), c = conf(await S()); await putItem(ctx, id, b);
+        if (Array.isArray(b.parts) && c.embed) embedItem(ctx, c, id).catch(e => console.warn('embed failed ->', e.message)); // in the background: a failure never blocks the save
+        return send(res, 200, {});
+      }
       if (what === 'items' && M === 'DELETE') { await db(ctx, 'items?id=eq.' + id, { method: 'DELETE' }); await sb(store(ctx.uid, id), { method: 'DELETE', token: ctx.token }).catch(() => {}); return send(res, 200, {}); }
       if (what === 'notes' && M === 'PUT') { const n = await json(req, 5e6); await upsert(ctx, 'notes', [{ id, title: n.title, project: n.project, note: n.note, updated: Date.now() }], 'id'); return send(res, 200, {}); }
       if (what === 'notes' && M === 'DELETE') { await db(ctx, `notes?id=eq.${id}&item_id=is.null`, { method: 'DELETE' }); return send(res, 200, {}); }

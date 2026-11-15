@@ -1191,6 +1191,12 @@ async function aiJSON(system, user) {
 }
 // ponytail: the whole source goes in the prompt, capped at ~40k tokens. Chunk + retrieve if books/theses/3-hour lectures need support.
 const fullText = p => p.pages.map((t, i) => `[p.${i + 1}] ${t}`).join('\n').slice(0, 150000);
+// Over that cap, the passages that best answer the question stand in for the source (needs an embedding model in Settings; otherwise the cut-off text is used).
+async function sourceText(p, q) {
+  if (p.pages.reduce((n, t) => n + t.length, 0) <= 150000) return fullText(p);
+  try { const r = await send('POST', 'retrieve', { q, item: p.id }); if (r.length) return r.sort((a, b) => a.n - b.n).map(x => `[p.${x.n}] ${x.body}`).join('\n'); } catch {}
+  return fullText(p);
+}
 
 const SYS_ANALYZE = `You are an expert research mentor preparing a student to deeply master a source: a research paper, a web article, or the transcript of a talk or lecture. Markers like [p.N] number its pages, paragraphs or transcript chunks; wherever "page" is asked for, give that number N. Produce JSON:
 {"title":"title of the source","authors":["Full Name"],"year":"YYYY","venue":"short name of the journal/conference, site or channel, e.g. NeurIPS",
@@ -1226,10 +1232,13 @@ const probe = async p => { // asks the service for its model list: proves the ad
   catch (e) { delete found[p.id]; stat[p.id] = { ok: false, msg: e.message }; }
 };
 const saveCfg = async () => { // writes the Settings form to the server and reloads it (keys come back masked); true if it worked
-  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: cfg.chain, vision: cfg.vision, paid: !!$('input[name=paid]')?.checked }); cfg = await api('settings'); return true; }
+  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: cfg.chain, vision: cfg.vision, embed: cfg.embed, paid: !!$('input[name=paid]')?.checked }); cfg = await api('settings'); return true; }
   catch (e) { toast('Could not save the settings: ' + e.message + '.'); return false; }
 };
 const persist = async () => { render(); if (await saveCfg()) render(); }; // order and picks are saved as soon as they change
+const embedHTML = () => { const e = cfg.embed || {};
+  return `<h4 style="margin:16px 0 4px">Embedding model (to ask questions of sources too long to send whole)</h4><p class="row" style="margin:0"><select id="emb-p" aria-label="Provider" style="width:auto;flex:none"><option value="">None</option>${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === e.p ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input id="emb-m" class="grow" value="${esc(e.m || '')}" placeholder="e.g. text-embedding-3-small" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgemb" style="min-width:0;width:auto;flex:none">Save</button><button type="button" data-act="cfgidx" style="min-width:0;width:auto;flex:none">Index my library</button></p><small class="muted">It must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model). The text of your sources is sent to this service.</small>`;
+};
 const chainHTML = (k, label) => {
   const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?';
   return `<h4 style="margin:16px 0 4px">${label}</h4><ol class="chain" style="padding-left:22px;margin:0">${rows.map((e, i) => { const t = mstat[k + '|' + e.p + '|' + e.m]; return `<li draggable="true" data-k="${k}" data-i="${i}" style="margin:3px 0;cursor:grab"><span class="row" style="gap:6px;flex-wrap:nowrap"><span aria-hidden="true" title="Drag to reorder" class="muted" style="flex:none">⠿</span><small class="muted" style="flex:none;max-width:30%">${esc(name(e.p))}</small> <code style="flex:1;min-width:0;overflow-wrap:anywhere;font-size:12.5px;background:none;padding:0">${esc(e.m)}</code>${t ? `<small role="status" style="flex:none;font-weight:600;color:var(${t.ok === null ? '--muted' : t.ok ? '--ok' : '--vid'})">● ${esc(t.msg)}</small>` : ''}
@@ -1965,6 +1974,7 @@ const PAGE = {
         <p class="row" style="margin:0"><select id="newp" aria-label="Service to add">${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
         ${chainHTML('chain', 'Models, tried from the top until one answers')}
         ${chainHTML('vision', 'Models for explaining figures (they must accept images)')}
+        ${embedHTML()}
         <label class="row" style="margin-top:14px"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow OpenRouter models that cost money. Without this, only models ending in “:free” are used there. Other providers are always asked, so choose their models with care.</label>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
         <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600"></p>
@@ -2497,7 +2507,7 @@ function ask(q, img) {
   run(img ? 'Looking at the figure…' : 'Writing an answer…', async p => {
     const hist = p.chat.slice(-8), others = [...askWith].map(byId).filter(o => o && o !== p && o.brief).slice(0, 25);
     if (img) hist[hist.length - 1] = { role: 'user', content: [{ type: 'text', text: q }, { type: 'image_url', image_url: { url: img } }] };
-    const text = await ai([{ role: 'system', content: `You are a patient expert tutor helping someone master this source (a paper, an article, or a talk transcript). Markers like [p.N] number its parts. Answer from the source and cite the part like (p.4). If the source does not say, say so, then give your best general knowledge clearly labelled. Be concise and plain; define jargon; prefer intuition and concrete examples. Write any math as LaTeX inside $...$.\n\nSOURCE:\n${fullText(p)}` + (others.length ? `\n\nOTHER SOURCES IN THE READER'S LIBRARY (summaries only; name a source by its title when you use it, and say so if a detail would need its full text):\n` + others.map(o => `- "${o.title}" (${o.meta?.year || 'n.d.'}): ${o.brief.tldr} Idea: ${o.brief.idea} Method: ${o.brief.method} Results: ${o.brief.results} Limitations: ${o.brief.limitations}`).join('\n') : '') }, ...hist]);
+    const src = await sourceText(p, q), text = await ai([{ role: 'system', content: `You are a patient expert tutor helping someone master this source (a paper, an article, or a talk transcript). Markers like [p.N] number its parts. Answer from the source and cite the part like (p.4). If the source does not say, say so, then give your best general knowledge clearly labelled. Be concise and plain; define jargon; prefer intuition and concrete examples. Write any math as LaTeX inside $...$.\n\nSOURCE:\n${src}` + (others.length ? `\n\nOTHER SOURCES IN THE READER'S LIBRARY (summaries only; name a source by its title when you use it, and say so if a detail would need its full text):\n` + others.map(o => `- "${o.title}" (${o.meta?.year || 'n.d.'}): ${o.brief.tldr} Idea: ${o.brief.idea} Method: ${o.brief.method} Results: ${o.brief.results} Limitations: ${o.brief.limitations}`).join('\n') : '') }, ...hist]);
     p.chat.push({ role: 'assistant', content: text });
   });
 }
@@ -2636,6 +2646,8 @@ const ACT = {
     render();
   },
   cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); persist(); },
+  cfgemb: () => { const p = $('#emb-p').value, m = $('#emb-m').value.trim(); cfg.embed = p && m ? { p, m } : null; persist(); },
+  cfgidx: async () => { toast('Indexing your library. This can take a while…'); try { await send('POST', 'embed', { all: true }); toast('Your library is indexed.'); } catch (e) { toast('Could not index: ' + e.message); } },
   cfgaddp: () => { const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
   cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); for (const k of ['chain', 'vision']) cfg[k] = cfg[k].filter(e => e.p !== p.id); render(); },
   cfgtest: async () => { // asks the saved models, in order, for a one-word reply and says, in place, whether it worked

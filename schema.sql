@@ -150,3 +150,31 @@ create or replace function library() returns jsonb language sql stable as $$
     'feeds', coalesce((select jsonb_agg(jsonb_build_object('url', f.url, 'title', f.title) order by f.added) from feeds f), '[]'),
     'projects', coalesce((select v::jsonb from settings where k = 'projects'), '[]'));
 $$;
+
+-- Meaning-based search (pgvector). Vectors are made by the server from the reader's own embedding model (Settings).
+-- put_item rewrites a source's parts when its text changes, which clears the vectors; the server then embeds them again.
+create extension if not exists vector;
+alter table parts add column if not exists emb halfvec(1024);
+alter table parts add column if not exists emb_model text;
+
+-- Store vectors for a batch of parts. security invoker: RLS limits it to your own rows.
+create or replace function set_emb(p jsonb, m text) returns void language sql as $$
+  update parts set emb = (x->'v')::text::halfvec, emb_model = m
+  from jsonb_array_elements(p) x where parts.id = (x->>'id')::bigint
+$$;
+
+-- Hybrid search: vector rank and full-text rank merged by reciprocal rank fusion. only_item = null searches the whole library.
+-- No HNSW index on purpose: a plain scan is fast at personal scale. create index on parts using hnsw (emb halfvec_cosine_ops) once a library passes ~100k chunks.
+create or replace function match_parts(qe halfvec(1024), q text, m text, k int default 12, only_item text default null)
+returns table(item_id text, n int, t real, body text) language sql stable as $$
+  with v as (
+    select id, row_number() over (order by emb <=> qe) r from parts
+    where emb_model = m and (only_item is null or item_id = only_item)
+    order by emb <=> qe limit 40),
+  f as (
+    select id, row_number() over (order by ts_rank(fts, tq) desc) r from parts, plainto_tsquery('english', q) tq
+    where fts @@ tq and (only_item is null or item_id = only_item)
+    order by r limit 40),
+  s as (select id, sum(1.0 / (60 + r)) sc from (select * from v union all select * from f) u group by id)
+  select p.item_id, p.n, p.t, p.body from s join parts p using (id) order by sc desc limit k
+$$;

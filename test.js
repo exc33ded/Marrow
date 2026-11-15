@@ -96,7 +96,7 @@ srv.stdout.once('data', async () => {
     assert.ok(!JSON.stringify(cfg).includes('test-key'), 'the key is never sent back');
     const other = (await B('settings')).body;
     assert.deepEqual([other.providers[0].hasKey, other.providers[0].url, other.paid], [false, 'https://openrouter.ai/api/v1', false], "B does not get A's key or settings");
-    assert.equal((await B('settings/test', 'POST')).status, 502, 'with no key of their own, B cannot use AI');
+    { const r = await B('settings/test', 'POST', {}); assert.equal(r.status, 502, 'with no key of their own, B cannot use AI'); }
     await A('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', '')], chain: [{ p: 'a', m: 'y' }, { p: 'a', m: 'x' }] });
     cfg = (await A('settings')).body;
     assert.deepEqual([cfg.providers[0].hasKey, cfg.chain.map(e => e.m)], [true, ['y', 'x']], 'an empty key keeps the saved one; order is kept');
@@ -109,6 +109,22 @@ srv.stdout.once('data', async () => {
     assert.equal((await A('whisper/use?id=base.en', 'PUT')).status, 400, 'a model must be downloaded before it is used');
     assert.equal((await A('ytaudio?vid=../etc')).status, 400, 'only YouTube video ids');
     assert.equal((await A('ytsubs?vid=../etc')).status, 400, 'only YouTube video ids');
+
+    // ---- meaning-based search: a fake embedding service (word counts hashed into 1024 numbers) stands in for a real model
+    const emb = require('http').createServer((rq, rs) => { let b = ''; rq.on('data', d => b += d).on('end', () => {
+      rs.setHeader('content-type', 'application/json');
+      rs.end(JSON.stringify({ data: JSON.parse(b).input.map((t, index) => { const v = new Array(1024).fill(0); for (const w of t.toLowerCase().match(/[a-z]+/g) || []) v[[...w].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 1024, 7)]++; return { index, embedding: v }; }) }));
+    }); });
+    await new Promise(r => emb.listen(5982, '127.0.0.1', r));
+    const withEmb = { providers: [prov('http://127.0.0.1:5982/v1', '')], chain: [{ p: 'a', m: 'x' }], embed: { p: 'a', m: 'fake' } };
+    assert.equal((await B('retrieve', 'POST', { q: 'dictionary' })).status, 400, 'no embedding model chosen yet');
+    await A('settings', 'PUT', withEmb);
+    assert.equal((await A('settings')).body.embed.m, 'fake', 'the embedding model is saved');
+    { const r = await A('embed', 'POST', { item: 'abc' }); assert.equal(r.status, 200, JSON.stringify(r.body)); }
+    const near = (await A('retrieve', 'POST', { q: 'dictionary learning', item: 'abc' })).body;
+    assert.equal(near[0].n, 2, 'the passage about dictionary learning comes first');
+    await A('settings', 'PUT', { ...withEmb, embed: null });
+    emb.close();
 
     // ---- clean up, then log out
     await A('items/abc', 'DELETE'); await A('notes/n1', 'DELETE'); await A('feeds?url=' + encodeURIComponent('https://example.org/feed.xml'), 'DELETE'); await A('projects', 'PUT', { list: [] });
