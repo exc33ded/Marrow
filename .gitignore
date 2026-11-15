@@ -1,3 +1,5 @@
 .env
 *.log
 data/
+node_modules/
+package-lock.json

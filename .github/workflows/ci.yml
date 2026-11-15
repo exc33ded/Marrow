@@ -1,0 +1,56 @@
+# Runs on every push and every pull request. To make it required, protect the main branch in
+# GitHub (Settings > Branches > Add rule) and require the check named "CI passed".
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (server and storage)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['22', '24']   # server.js needs Node 22.13+ for the built-in SQLite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ matrix.node }}' }
+      - run: node test.js
+
+  frontend:
+    name: Frontend contract (looks, tokens, contrast, fonts)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: node test-frontend.js
+
+  ui:
+    name: In a real browser (every look, light and dark, every screen)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm i --no-save playwright && npx playwright install --with-deps chromium
+      - name: Start Marrow on a fresh database
+        run: |
+          node server.js > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fs http://localhost:5173/ > /dev/null && break; sleep 1; done
+      - run: node test-ui.mjs
+        env: { CI: 'true' }
+      - if: failure()
+        run: cat server.log
+
+  # One stable name to require in branch protection, whatever jobs are added later.
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [backend, frontend, ui]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "backend=${{ needs.backend.result }} frontend=${{ needs.frontend.result }} ui=${{ needs.ui.result }}"
+          [ "${{ needs.backend.result }}" = success ] && [ "${{ needs.frontend.result }}" = success ] && [ "${{ needs.ui.result }}" = success ]

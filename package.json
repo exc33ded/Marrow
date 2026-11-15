@@ -1,0 +1,11 @@
+{
+  "name": "marrow",
+  "private": true,
+  "description": "A research desk for one.",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js && node test-frontend.js",
+    "test:ui": "node test-ui.mjs"
+  }
+}
