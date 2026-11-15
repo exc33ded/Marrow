@@ -26,7 +26,7 @@ srv.stdout.once('data', async () => {
     await call('notes/n1', 'PUT', { title: 'Idea', note: 'text', project: 'thesis' });
     await call('activity', 'POST', { kind: 'review', item_id: 'abc' });
     lib = (await call('library')).body;
-    assert.equal(lib.notes[0].title, 'Idea'); assert.equal(lib.activity.length, 1);
+    assert.equal(lib.notes[0].title, 'Idea'); assert.equal(lib.activity.length, 1); assert.equal(lib.activity[0].kind, 'review'); assert.equal(lib.activity[0].item_id, 'abc');
     await call('feeds', 'PUT', { url: 'https://example.org/feed.xml', title: 'Example' });
     assert.equal((await call('feeds', 'PUT', { url: 'javascript:1' })).status, 400);
     assert.deepEqual((await call('library')).body.feeds, [{ url: 'https://example.org/feed.xml', title: 'Example' }]);

@@ -116,7 +116,8 @@ kbd{font:600 11px var(--f-body);border:1px solid currentColor;border-radius:5px;
 .heat i,.hleg i{display:block;border-radius:2px;background:var(--h0)} .hleg i{width:var(--cs);height:var(--cs)}
 i[data-l="1"]{background:var(--h1)} i[data-l="2"]{background:var(--h2)} i[data-l="3"]{background:var(--h3)} i[data-l="4"]{background:var(--h4)}
 .heat i[data-today]{outline:1.5px solid var(--ink);outline-offset:1px}
-.hleg{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-top:4px;flex-wrap:wrap} .hleg span{margin:0 4px}
+#heattip{position:fixed;z-index:30;pointer-events:none;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--pop);padding:8px 11px;font-size:12.5px;line-height:1.45;max-width:280px} #heattip b{display:block;margin-bottom:2px} #heattip ul{margin:4px 0 0;padding-left:1.1em} #heattip li{margin:0}
+.hleg{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-top:4px;flex-wrap:wrap} .hleg span{margin:2px 0 0;flex-basis:100%}
 .facts{display:flex;flex-wrap:wrap;gap:4px 20px;margin:0 0 4px;font-weight:600} .facts a{color:var(--ink)}
 .sec{display:flex;align-items:baseline;gap:10px;margin:26px 0 10px} .sec h3{margin:0;font-size:20px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
@@ -332,7 +333,587 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 .looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:18px} .lookcard{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;white-space:normal;padding:12px} .lookcard small{color:var(--muted);font-size:12.5px;line-height:1.4} .lookcard[aria-pressed=true]{outline:2px solid var(--acc);outline-offset:1px}
 .lookcard .sw{display:flex;gap:0;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--bg)} .lookcard .sw i{width:30px;height:22px}
 /* LOOKS-BEGIN */
-
+/* look: barcode.css */
+/* barcode: black and white only, mono numerals, hairlines, bar fields */
+[data-look=barcode]{--bg:#fff;--panel:#fff;--ink:#000;--muted:#3d3d3d;--line:#000;--acc:#000;--acc-bg:#fff;--ok:#000;--pdf:#fff;--web:#000;--vid:#000;--sh:none;--pop:none;--pri:#000;--pri-h:#000;--on-pri:#fff;--on-n:#fff;--scrim:#000000b3;--logo-a:#000;--logo-b:#000;--sig:#000;--h0:#fff;--h1:#000;--h2:#000;--h3:#000;--h4:#000;--f-body:"JetBrains Mono",ui-monospace,Consolas,monospace;--f-display:"JetBrains Mono",ui-monospace,Consolas,monospace;--f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;--r:0;--r2:0;color-scheme:light}
+[data-look=barcode][data-theme=dark]{--bg:#000;--panel:#000;--ink:#fff;--muted:#cfcfcf;--line:#fff;--acc:#fff;--acc-bg:#000;--ok:#fff;--pdf:#000;--web:#fff;--vid:#fff;--sh:none;--pop:none;--pri:#fff;--pri-h:#fff;--on-pri:#000;--on-n:#000;--scrim:#000000cc;--logo-a:#fff;--logo-b:#fff;--sig:#fff;--h0:#000;--h1:#fff;--h2:#fff;--h3:#fff;--h4:#fff;color-scheme:dark}
+html[data-look=barcode]{--bars:repeating-linear-gradient(90deg,var(--ink) 0 1px,#0000 1px 5px),repeating-linear-gradient(90deg,var(--ink) 0 2px,#0000 2px 7px),repeating-linear-gradient(90deg,var(--ink) 0 3px,#0000 3px 13px),repeating-linear-gradient(90deg,var(--ink) 0 1px,#0000 1px 17px)}
+html[data-look=barcode] body{font:14px/1.6 var(--f-body);font-variant-numeric:tabular-nums;font-feature-settings:"zero" 1,"calt" 0}
+html[data-look=barcode] :is(h1,h2,h3,h4,.q,b.h,.hero,.ttl,.sec h3){font-family:var(--f-body);font-weight:700;letter-spacing:-.01em}
+html[data-look=barcode] h1{font-size:26px} html[data-look=barcode] .hero{font-size:30px} html[data-look=barcode] .ttl{font-size:32px;line-height:1.2}
+html[data-look=barcode] #page h1::after{content:"";display:block;height:12px;margin:10px 0 4px;background:var(--bars)}
+html[data-look=barcode] .sec{margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--ink)} html[data-look=barcode] .sec h3{font-size:17px}
+html[data-look=barcode] .q{font-size:17px} html[data-look=barcode] .wrap.narrow .q{font-size:21px}
+html[data-look=barcode] a{color:var(--ink);text-underline-offset:3px} html[data-look=barcode] a.btn,html[data-look=barcode] .ts,html[data-look=barcode] .toc a{text-decoration:none}
+html[data-look=barcode] *{scrollbar-color:var(--ink) transparent}
+html[data-look=barcode] *::-webkit-scrollbar-thumb{border-radius:0;background:var(--ink);background-clip:border-box;border:2px solid var(--bg)}
+html[data-look=barcode] :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+html[data-look=barcode] #rail button:focus-visible{outline-offset:-2px;box-shadow:inset 0 0 0 4px var(--bg)}
+html[data-look=barcode] .addbar:focus-within{outline:2px solid var(--ink);outline-offset:2px;border-color:var(--ink)}
+html[data-look=barcode] .addbar:focus-within input:focus-visible,html[data-look=barcode] .askbar input:focus-visible{outline:0}
+/* shape */
+html[data-look=barcode] :is(.tag,.kind,.ring,.chip,#status,#tabs button,.dot,.cover,.cover .kind,.num,#tabs i,.srcchip,.prow,.item,#pall button,progress,.bar,.bar i,article img,article pre,.ce-popover-item,.mprev:not(:empty),.askbar,.askbar form button,.icons,#sel,#cy,.mx td textarea,.msg,.blk){border-radius:0!important}
+html[data-look=barcode] button:hover,html[data-look=barcode] .btn:hover{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);text-decoration:underline;text-underline-offset:3px}
+html[data-look=barcode] button,html[data-look=barcode] .btn{min-height:30px;padding:.3em .7em;border-color:var(--ink);transition:none}
+html[data-look=barcode] button:active{transform:none;background:var(--ink);color:var(--bg)}
+html[data-look=barcode] button.pri:hover{background:var(--bg);color:var(--ink);border:1px solid var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+html[data-look=barcode] button.pri{border:1px solid var(--ink)}
+html[data-look=barcode] button:disabled{opacity:1;color:var(--muted);border-style:dashed;box-shadow:none;text-decoration:none}
+html[data-look=barcode] button.pri:disabled{background:var(--bg);color:var(--muted)}
+html[data-look=barcode] :is(input,textarea,select){border-color:var(--ink);padding:.4em .6em}
+html[data-look=barcode] kbd{opacity:1;border-radius:0;font-size:10.5px;color:inherit}
+html[data-look=barcode] :is(code,#ed .inline-code){background:none;border:1px solid var(--ink);color:var(--ink);padding:0 .3em}
+html[data-look=barcode] mark{background:var(--ink);color:var(--bg)}
+html[data-look=barcode] .warn{color:var(--ink);font-weight:700} html[data-look=barcode] .warn::before{content:"[!] "}
+html[data-look=barcode] .sk{border-radius:0;background:repeating-linear-gradient(135deg,var(--ink) 0 1px,#0000 1px 5px);animation:none;height:10px}
+/* rail, logo */
+html[data-look=barcode] #rail{gap:2px;padding:10px 5px}
+html[data-look=barcode] .logo{background:var(--ink);color:var(--bg);font:700 22px var(--f-body);border-radius:0}
+html[data-look=barcode] #rail button:hover{background:none;color:var(--ink)}
+html[data-look=barcode] #rail button.on{background:var(--ink);color:var(--bg)}
+html[data-look=barcode] #rail .n{background:var(--bg);color:var(--ink);border:1px solid var(--ink);border-radius:0;line-height:14px;font-weight:700}
+html[data-look=barcode] :is(#rail button.on,.chip.on,#tabs button.on,.prow.on,#pall button.on,.item.on) *{color:inherit}
+/* selected = inverted */
+html[data-look=barcode] :is(.chip.on,#tabs button.on,.prow.on,#pall button.on,.item.on){background:var(--ink);color:var(--bg);border-color:var(--ink)}
+html[data-look=barcode] .item:hover:not(.on){background:none;border-color:var(--ink)}
+html[data-look=barcode] .prow:hover:not(.on){background:none;box-shadow:inset 0 0 0 1px var(--ink)}
+html[data-look=barcode] .prow .ico{color:inherit}
+/* badges, kinds, tags */
+html[data-look=barcode] .kind{border:1px solid var(--ink);padding:1px 6px;color:var(--ink);letter-spacing:.06em;font-size:10.5px}
+html[data-look=barcode] .kind::before{content:"";width:9px;height:9px;border:1px solid var(--ink);background:var(--ink);flex:none}
+html[data-look=barcode] .kind.web{border-style:dashed} html[data-look=barcode] .kind.web::before{background:repeating-linear-gradient(135deg,var(--ink) 0 1px,#0000 1px 3px)}
+html[data-look=barcode] .kind.video{border-style:double;border-width:3px;padding:0 5px} html[data-look=barcode] .kind.video::before{background:radial-gradient(var(--ink) 1px,#0000 1.4px) 0 0/3px 3px}
+html[data-look=barcode] .tag,html[data-look=barcode] .tag.ok{background:none;border:1px solid var(--ink);color:var(--ink);padding:1px 7px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+html[data-look=barcode] .tag.proj{border-style:dashed;color:var(--muted)}
+html[data-look=barcode] .tag:hover{background:var(--ink);color:var(--bg)}
+html[data-look=barcode] .k{background:none;border:1px solid var(--ink);color:var(--ink);border-radius:0;padding:1px 6px}
+html[data-look=barcode] .step,html[data-look=barcode] .okk,html[data-look=barcode] .badge{color:var(--ink);font-weight:700}
+html[data-look=barcode] .num{background:none;border:1px solid var(--ink);color:var(--ink)}
+html[data-look=barcode] .done .num,html[data-look=barcode] #tabs .done i{background:var(--ink);color:var(--bg)}
+html[data-look=barcode] #tabs i{background:none;border:1px solid currentColor;color:inherit}
+html[data-look=barcode] #tabs button.on i{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+html[data-look=barcode] #tabs button{padding:.3em .5em}
+/* progress: bar fields */
+html[data-look=barcode] .bar{height:10px;background:var(--bg);border:1px solid var(--ink)}
+html[data-look=barcode] .bar i{background:var(--bars);border-radius:0}
+html[data-look=barcode] #prog{height:8px;background:var(--bg);border-bottom:1px solid var(--ink)}
+html[data-look=barcode] #prog i{background:var(--bars)}
+html[data-look=barcode] progress{accent-color:var(--ink);height:8px}
+html[data-look=barcode] .ring{background:linear-gradient(var(--ink),var(--ink)) 0 100%/calc(var(--p)*1%) 4px no-repeat,var(--panel);border:1px solid var(--ink);width:36px;height:30px;font-size:10.5px;color:var(--ink)}
+/* cards, boxes, density */
+html[data-look=barcode] .wrap{padding:26px 24px 80px} html[data-look=barcode] .grid{gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))} html[data-look=barcode] .rows{gap:6px}
+html[data-look=barcode] .card,html[data-look=barcode] .box{border-color:var(--ink)}
+html[data-look=barcode] .card{padding:10px;gap:6px;transition:none} html[data-look=barcode] button.card{padding:10px}
+html[data-look=barcode] .card:hover{transform:none;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+html[data-look=barcode] .card.flat:hover{box-shadow:none}
+html[data-look=barcode] .rows .card{padding:7px 10px} html[data-look=barcode] .box{padding:11px;margin-bottom:10px} html[data-look=barcode] .box.done{border-left:5px solid var(--ink)}
+html[data-look=barcode] .card h4{font-size:14.5px}
+html[data-look=barcode] .cover:not(.shot){background:repeating-linear-gradient(135deg,var(--ink) 0 1px,#0000 1px 6px);color:var(--ink);height:84px;border-bottom:1px solid var(--ink)}
+html[data-look=barcode] .cover.shot{border-bottom:1px solid var(--ink)} html[data-look=barcode] .cover.shot::after{display:none} html[data-look=barcode] .cover{height:84px;color:var(--ink)!important}
+html[data-look=barcode] .cover .kind{background:var(--panel)}
+html[data-look=barcode] .tldr{font:600 15px/1.5 var(--f-body);background:none;border:1px solid var(--ink);border-left:6px solid var(--ink)}
+html[data-look=barcode] .fact.key{border-width:2px} html[data-look=barcode] .term{border-color:var(--ink)}
+html[data-look=barcode] .msg{border-color:var(--ink)} html[data-look=barcode] .msg.user{background:none;border-left:5px solid var(--ink)}
+html[data-look=barcode] .pickbar{background:none;border:1px dashed var(--ink)}
+html[data-look=barcode] :is(.addbar,.mxwrap,#cy,.props,.askbar){border-color:var(--ink)} html[data-look=barcode] .askbar{box-shadow:none;border-width:2px}
+html[data-look=barcode] .lead{font-size:14px} html[data-look=barcode] .addbar{padding:5px} html[data-look=barcode] .addbar input{font-size:14px}
+/* matrix */
+html[data-look=barcode] .mx{font-size:12.5px;line-height:1.45}
+html[data-look=barcode] .mx th,html[data-look=barcode] .mx td{padding:7px 9px;border-bottom-color:var(--ink);min-width:200px}
+html[data-look=barcode] .mx :is(td,th):first-child{border-right-color:var(--ink)} html[data-look=barcode] .mx th{font:700 10.5px var(--f-body);color:var(--ink);border-bottom:2px solid var(--ink)}
+html[data-look=barcode] .mx td textarea:hover,html[data-look=barcode] .mx td textarea:focus{border-color:var(--ink)}
+html[data-look=barcode] .runhead{border-bottom-color:var(--ink);font-size:10.5px}
+/* notebook */
+html[data-look=barcode] .nb{grid-template-columns:230px minmax(0,1fr)} html[data-look=barcode] .nbside{border-right-color:var(--ink);font-size:13px}
+html[data-look=barcode] .prow{height:26px;border-radius:0;font-weight:500} html[data-look=barcode] .prow:not(.on){color:var(--ink)}
+html[data-look=barcode] :is(.nbtop button:hover,.pico:hover,.addico:hover,.icons button:hover,.prop .add:hover,.prop input:hover,.prop input:focus,.mx td .add:hover,#ed .ce-toolbar__plus:hover,#ed .ce-toolbar__settings-btn:hover){background:none;box-shadow:inset 0 0 0 1px var(--ink);color:var(--ink)}
+html[data-look=barcode] .srcchip{background:none;border:1px solid var(--ink)}
+html[data-look=barcode] .nbtop{border-bottom:1px solid var(--ink)} html[data-look=barcode] .nbpage{padding:28px 48px 0}
+html[data-look=barcode] .props{border-bottom-color:var(--ink)} html[data-look=barcode] .icons{border-color:var(--ink)}
+html[data-look=barcode] #ed .callout,html[data-look=barcode] :is(#ed .cdx-quote__text,#ed .cdx-quote__caption,#ed .ce-code__textarea,#ed .mathblk textarea){border-color:var(--ink);border-radius:0}
+html[data-look=barcode] #ed .ce-block--selected .ce-block__content{background:none;outline:1px dashed var(--ink)}
+html[data-look=barcode] #ed .ce-delimiter::before{border-top-color:var(--ink)}
+html[data-look=barcode] .ce-popover__container{border:1px solid var(--ink)!important;border-radius:0!important;box-shadow:none!important}
+html[data-look=barcode] :is(.ce-popover-item:hover,.ce-popover-item--focused){background:none!important;box-shadow:inset 0 0 0 1px var(--ink)!important}
+/* reader */
+html[data-look=barcode] :is(header,#tools,#panel,#tabs){border-color:var(--ink)}
+html[data-look=barcode] .page{box-shadow:none;outline:1px solid var(--ink)} html[data-look=barcode] article{font:calc(16px*var(--z,1))/1.7 var(--f-body);box-shadow:none;border:1px solid var(--ink)}
+html[data-look=barcode] .seg{font-size:calc(14px*var(--z,1))} html[data-look=barcode] .seg.now{background:none;box-shadow:inset 4px 0 0 var(--ink);font-weight:700}
+html[data-look=barcode] .ts{color:var(--ink);font-weight:700}
+html[data-look=barcode] body.snip #snipBtn{background:var(--ink);color:var(--bg)}
+html[data-look=barcode] #sel{background:var(--ink);box-shadow:none;border:1px solid var(--bg)} html[data-look=barcode] #sel button{color:var(--bg)} html[data-look=barcode] #sel button:hover{background:var(--bg);color:var(--ink);box-shadow:none}
+/* dialogs, palette, toast, status */
+html[data-look=barcode] :is(#peek,#sure,#pal){border:2px solid var(--ink);border-radius:0;box-shadow:none}
+html[data-look=barcode] .peekbody{font:15px/1.65 var(--f-body)} html[data-look=barcode] .pk{padding:22px 26px 18px}
+html[data-look=barcode] #sure .danger{background:var(--ink);color:var(--bg);border:1px solid var(--ink);font-weight:700} html[data-look=barcode] #sure .danger::before{content:"[!] "}
+html[data-look=barcode] #palq{border-bottom-color:var(--ink);font-size:15px;padding:13px 16px}
+html[data-look=barcode] #pall button.on:hover{text-decoration:none}
+html[data-look=barcode] #status{background:var(--panel);border:1px solid var(--ink);border-radius:0;box-shadow:none}
+html[data-look=barcode] #toast{border:1px solid var(--bg);outline:1px solid var(--ink);border-radius:0}
+html[data-look=barcode] .lookcard{border-color:var(--ink)} html[data-look=barcode] .lookcard .sw{border-color:var(--ink);border-radius:0}
+/* activity grid: five distinct patterns, readable without colour */
+html[data-look=barcode] .heatwrap{--cs:12px}
+html[data-look=barcode] :is(.heat i,.hleg i){border-radius:0;border:1px solid var(--ink);background:var(--panel)}
+html[data-look=barcode] :is(.heat,.hleg) i[data-l="1"]{background:radial-gradient(var(--ink) 1px,#0000 1.5px) 1px 1px/5px 5px,var(--panel)}
+html[data-look=barcode] :is(.heat,.hleg) i[data-l="2"]{background:repeating-linear-gradient(135deg,var(--ink) 0 1px,#0000 1px 4px),var(--panel)}
+html[data-look=barcode] :is(.heat,.hleg) i[data-l="3"]{background:repeating-linear-gradient(90deg,var(--ink) 0 2px,#0000 2px 4px),var(--panel)}
+html[data-look=barcode] :is(.heat,.hleg) i[data-l="4"]{background:var(--ink)}
+html[data-look=barcode] .heat i[data-today]{outline:2px solid var(--ink);outline-offset:1px}
+/* look: concourse.css */
+/* concourse: airport wayfinding signs. Yellow shell, black type, 2px frames, black heading bands with an arrow. */
+[data-look=concourse]{--bg:#e4e4e4;--panel:#fff;--ink:#111;--muted:#4a4a4a;--line:#c6c6c6;--acc:#0a4aa6;--acc-bg:#dde8f8;--ok:#17692f;--pdf:#cfcfcf;--web:#0a4aa6;--vid:#b3001b;--sh:none;--pop:none;--pri:#FFD100;--pri-h:#FFE35C;--on-pri:#111;--on-n:#fff;--scrim:#111111b3;--logo-a:#111;--logo-b:#111;--sig:#FFD100;--f-body:"Source Sans 3",system-ui,"Segoe UI",sans-serif;--f-display:"Source Sans 3",system-ui,"Segoe UI",sans-serif;--f-mono:"Source Sans 3",system-ui,"Segoe UI",sans-serif;--r:2px;--r2:3px;--h0:#c4c4c4;--h1:#999;--h2:#6a6a6a;--h3:#3c3c3c;--h4:#111;--fr:#111;--fc:#111;--cb:#111;--ct:#FFD100;color-scheme:light}
+[data-look=concourse][data-theme=dark]{--bg:#141414;--panel:#222;--ink:#f2f2f2;--muted:#b8b8b8;--line:#434343;--acc:#78b4ff;--acc-bg:#1d3354;--ok:#5fd08a;--pdf:#0b0b0b;--web:#78b4ff;--vid:#ff8a80;--sh:none;--pop:none;--pri:#FFD100;--pri-h:#FFE35C;--on-pri:#111;--on-n:#111;--scrim:#000000c0;--logo-a:#111;--logo-b:#111;--sig:#FFD100;--f-body:"Source Sans 3",system-ui,"Segoe UI",sans-serif;--f-display:"Source Sans 3",system-ui,"Segoe UI",sans-serif;--f-mono:"Source Sans 3",system-ui,"Segoe UI",sans-serif;--r:2px;--r2:3px;--h0:#363636;--h1:#666;--h2:#929292;--h3:#c0c0c0;--h4:#f4f4f4;--fr:#cfcfcf;--fc:#FFD100;--cb:#000;--ct:#FFD100;color-scheme:dark}
+html[data-look=concourse] body{font-variant-numeric:tabular-nums;letter-spacing:0}
+html[data-look=concourse] :focus-visible{outline:3px solid var(--fc);outline-offset:2px}
+html[data-look=concourse] #rail :focus-visible{outline-color:#111}
+html[data-look=concourse] ::selection{background:#FFD100;color:#111}
+/* signature: wayfinding bands */
+html[data-look=concourse] h1,html[data-look=concourse] .sec{position:relative;background:var(--cb);color:var(--ct);border:2px solid var(--cb);border-radius:var(--r);padding:.3em 56px .3em 16px}
+html[data-look=concourse][data-theme=dark] :is(h1,.sec){border-color:var(--fr)}
+html[data-look=concourse] h1{font-size:30px;font-weight:700;letter-spacing:0;margin:0 0 .5em}
+html[data-look=concourse] h1.hero{font-size:34px}
+html[data-look=concourse] article h1{all:unset;display:block;font:700 1.9em/1.2 var(--f-display);margin:.2em 0 .4em;color:var(--ink)}
+html[data-look=concourse] .sec{align-items:center;margin:30px 0 14px;color:#fff;min-height:44px}
+html[data-look=concourse] .sec h3{color:var(--ct);font-size:21px;font-weight:700}
+html[data-look=concourse] .sec .muted,html[data-look=concourse] .sec small{color:#e2e2e2;font-weight:700}
+html[data-look=concourse] .sec a{color:var(--ct)}
+html[data-look=concourse] :is(h1,.sec)::after{content:"";position:absolute;right:16px;top:50%;margin-top:-10px;border:10px solid transparent;border-right:0;border-left:15px solid var(--ct)}
+html[data-look=concourse] h1,html[data-look=concourse] h2,html[data-look=concourse] h3,html[data-look=concourse] h4{font-weight:700}
+/* rail */
+html[data-look=concourse] #rail{background:#FFD100;border-right:2px solid #111;color:#111}
+html[data-look=concourse] .logo{background:#111;color:#fff;border-radius:var(--r);font-weight:800}
+html[data-look=concourse] #rail button{color:#111;font-weight:700;border-radius:var(--r);transition:none}
+html[data-look=concourse] #rail button:hover{background:#00000022;color:#111}
+html[data-look=concourse] #rail button.on{background:#111;color:#fff}
+html[data-look=concourse] #rail button.on svg{stroke:#fff}
+html[data-look=concourse] #rail .n{background:#fff;color:#111;border:2px solid #111;border-radius:var(--r);font-weight:800;font-size:11px;line-height:14px;padding:0 4px;top:0;right:4px}
+html[data-look=concourse] #rail button.on .n{border-color:#fff}
+/* frames and controls */
+html[data-look=concourse] :is(.card,.box,.fact,.term,.addbar,.mxwrap,.pickbar,.msg,.icons,#cy,.askbar,#peek,#sure,#pal,.lookcard){border:2px solid var(--fr);border-radius:var(--r);box-shadow:none}
+html[data-look=concourse] .askbar{border-radius:var(--r)}
+html[data-look=concourse] :is(button,.btn,input,textarea,select){border:2px solid var(--fr);border-radius:var(--r);transition:none}
+html[data-look=concourse] button:hover,html[data-look=concourse] .btn:hover{border-color:var(--fr);background:var(--line)}
+html[data-look=concourse] button:active{transform:none;background:var(--ink);color:var(--panel)}
+html[data-look=concourse] button.pri{background:var(--pri);color:var(--on-pri);border:2px solid #111;font-weight:700}
+html[data-look=concourse] button.pri:hover{background:var(--pri-h);border-color:#111}
+html[data-look=concourse] button.pri:active{background:#111;color:#FFD100}
+html[data-look=concourse] button:disabled{opacity:1;background:var(--line);color:var(--muted);border-style:dashed;cursor:not-allowed}
+html[data-look=concourse] input,html[data-look=concourse] textarea,html[data-look=concourse] select{background:var(--panel)}
+html[data-look=concourse] :is(.addbar input,.nbside #nbq,.prop input,.ttl,.askbar input,#palq,.mx td textarea){border:0}
+html[data-look=concourse] .addbar:focus-within{border-color:var(--fr);outline:3px solid var(--fc);outline-offset:2px}
+html[data-look=concourse] :is(.x,.nbtop button,.pico,.addico,.prop .add,.mx th button,.mx td .add,.icons button,#rail button,#tabs button,#pall button,.chip,.askbar form button){border-width:0}
+html[data-look=concourse] .chip{border:2px solid var(--fr);border-radius:var(--r)}
+html[data-look=concourse] .chip.on,html[data-look=concourse] .item.on,html[data-look=concourse] .lookcard[aria-pressed=true],html[data-look=concourse] .pickbar{background:#FFD100;color:#111;border-color:#111;font-weight:700}
+html[data-look=concourse] .lookcard[aria-pressed=true]{outline:0}
+html[data-look=concourse] .lookcard[aria-pressed=true] small{color:#111}
+html[data-look=concourse] .card:hover{border-color:var(--fr);transform:none;background:var(--bg)}
+html[data-look=concourse] .card.flat:hover{background:var(--panel)}
+html[data-look=concourse] .card h4,html[data-look=concourse] .card b{font-weight:700}
+html[data-look=concourse] .rows,html[data-look=concourse] .grid{gap:12px}
+html[data-look=concourse] .tag,html[data-look=concourse] .num,html[data-look=concourse] #tabs i{border-radius:var(--r);font-weight:700}
+html[data-look=concourse] .tag.proj,html[data-look=concourse] .tag.ok{border-width:2px;border-style:solid}
+html[data-look=concourse] .tag.proj{border-color:var(--fr);color:var(--ink)}
+html[data-look=concourse] .kind{letter-spacing:.04em}
+html[data-look=concourse] .cover{border-radius:0;margin:-14px -14px 4px;border-bottom:2px solid var(--fr)}
+html[data-look=concourse] .cover .kind,html[data-look=concourse] .cover .ring{border:2px solid var(--fr);border-radius:var(--r);box-shadow:none}
+html[data-look=concourse] .cover .kind{background:var(--panel);color:var(--ink)}
+html[data-look=concourse] .bar,html[data-look=concourse] .bar i{border-radius:0}
+html[data-look=concourse] .bar{height:8px;border:1px solid var(--fr);background:var(--panel)}
+html[data-look=concourse] .tldr{border:2px solid var(--fr);border-left-width:8px;border-radius:var(--r);background:var(--panel)}
+html[data-look=concourse] .fact.key{border-color:var(--fr);border-left:8px solid var(--ok)}
+html[data-look=concourse] blockquote{border-left-color:var(--fr)}
+html[data-look=concourse] code,html[data-look=concourse] .srcchip{background:var(--line);color:var(--ink)}
+/* monumental numerals */
+html[data-look=concourse] .facts{font-size:20px;font-weight:700;gap:6px 28px;margin-bottom:10px}
+html[data-look=concourse] :is(.facts b,.facts strong,.badge,.ring){font-weight:800;font-variant-numeric:tabular-nums}
+html[data-look=concourse] .facts :is(b,strong){font-size:1.4em}
+html[data-look=concourse] .ring{--in:var(--panel);width:40px;height:40px;font-size:13px}
+/* activity grid */
+html[data-look=concourse] .heat i,html[data-look=concourse] .hleg i{border-radius:1px}
+html[data-look=concourse] .heat i[data-l="0"],html[data-look=concourse] .heat i:not([data-l]),html[data-look=concourse] .hleg i:first-of-type{box-shadow:inset 0 0 0 1px var(--muted)}
+html[data-look=concourse] .heat i[data-today]{outline:2px solid var(--fr);outline-offset:1px}
+html[data-look=concourse] .heat,html[data-look=concourse] .hleg{color:var(--ink);font-size:12px}
+/* tabs, nav lists, palette */
+html[data-look=concourse] #tabs{border-bottom:2px solid var(--fr)}
+html[data-look=concourse] #tabs button{border-radius:var(--r);color:var(--ink);font-weight:600}
+html[data-look=concourse] #tabs button.on{background:#FFD100;color:#111;font-weight:700;box-shadow:inset 0 -4px 0 #111}
+html[data-look=concourse] #tabs i{background:var(--line);color:var(--ink)}
+html[data-look=concourse] #tabs .on i,html[data-look=concourse] .num{background:#111;color:#fff}
+html[data-look=concourse] #tabs .done i,html[data-look=concourse] .done .num{background:var(--ok);color:var(--bg)}
+html[data-look=concourse] [data-theme=dark] .done .num,html[data-look=concourse][data-theme=dark] :is(#tabs .done i,.done .num){color:#111}
+html[data-look=concourse] header,html[data-look=concourse] #tools{border-bottom:2px solid var(--fr)}
+html[data-look=concourse] #panel{border-left:2px solid var(--fr)}
+html[data-look=concourse] .nbside{border-right:2px solid var(--fr)}
+html[data-look=concourse] .nbside .lbl{color:var(--ink);font-weight:700}
+html[data-look=concourse] .prow{color:var(--ink);height:34px;font-weight:600}
+html[data-look=concourse] .prow:hover{background:var(--line)}
+html[data-look=concourse] .prow.on{background:#FFD100;color:#111;font-weight:700;box-shadow:inset 4px 0 0 #111}
+html[data-look=concourse] .prow.on .ico,html[data-look=concourse] .prow.on .t{color:#111}
+html[data-look=concourse] .prow .ico{color:var(--ink)}
+html[data-look=concourse] .nbtop{border-bottom:2px solid var(--fr);color:var(--ink)}
+html[data-look=concourse] .nbtop button{color:var(--ink)}
+html[data-look=concourse] .nbtop button:hover,html[data-look=concourse] .item:hover,html[data-look=concourse] #pall button:hover{background:var(--line);color:var(--ink)}
+html[data-look=concourse] .item{border-radius:var(--r)}
+html[data-look=concourse] .item:hover{background:var(--line)}
+html[data-look=concourse] #pall button.on,html[data-look=concourse] .seg.now{background:#FFD100;color:#111;font-weight:700}
+html[data-look=concourse] #pall button.on .muted{color:#111}
+html[data-look=concourse] #palq{border-bottom:2px solid var(--fr)}
+html[data-look=concourse] #pal{margin-top:12vh}
+/* matrix */
+html[data-look=concourse] .mx th{background:var(--cb);color:var(--ct);font-weight:700;letter-spacing:.04em}
+html[data-look=concourse] .mx th small,html[data-look=concourse] .mx th button{color:#e2e2e2}
+html[data-look=concourse] .mx th,html[data-look=concourse] .mx td{border-bottom:2px solid var(--fr)}
+html[data-look=concourse] .mx td:first-child,html[data-look=concourse] .mx th:first-child{border-right:2px solid var(--fr)}
+html[data-look=concourse] .mx td:first-child{font-weight:700}
+html[data-look=concourse] .mx td textarea:hover,html[data-look=concourse] .mx td textarea:focus{border:2px solid var(--fr);background:var(--panel)}
+/* misc */
+html[data-look=concourse] #status{background:#FFD100;color:#111;border:2px solid #111;border-radius:var(--r);font-weight:600}
+html[data-look=concourse] #status::before{border-color:#111;border-top-color:transparent}
+html[data-look=concourse] #toast{border:2px solid var(--fr);border-radius:var(--r)}
+html[data-look=concourse] #sure .danger{background:var(--vid);color:#fff;border:2px solid var(--fr);font-weight:700}
+html[data-look=concourse][data-theme=dark] #sure .danger{color:#111}
+html[data-look=concourse] .runhead{border-bottom:2px solid var(--fr);color:var(--ink)}
+html[data-look=concourse] .askbar{box-shadow:none}
+html[data-look=concourse] .ce-popover__container{border:2px solid var(--fr)!important;border-radius:var(--r)!important;box-shadow:none!important}
+html[data-look=concourse] article{border:2px solid var(--fr);box-shadow:none}
+html[data-look=concourse] .warn{color:var(--ink);font-weight:600}
+html[data-look=concourse] :is(.addbar input,.nbside #nbq,.prop input,.ttl,.askbar input,#palq){background:none}
+html[data-look=concourse] .prop input:hover,html[data-look=concourse] .prop input:focus{background:var(--line)}
+html[data-look=concourse] h1{flex:1 1 auto}
+html[data-look=concourse] .lookcard .sw{border:2px solid #111}
+/* look: cyanotype.css */
+/* cyanotype: white linework on Prussian blue, after Atkins's British Algae (1843). Signature: the plate (double-rule frame + caption headings). */
+[data-look=cyanotype]{--bg:#d9e6f0;--panel:#f5f9fc;--ink:#0a2742;--muted:#43617e;--line:#9db8cf;--acc:#1559a6;--acc-bg:#dbe9f6;--ok:#1d7a6d;--pdf:#c6d8e7;--web:#0b6685;--vid:#c0392b;--sh:none;--pop:0 6px 18px #0a274233;--pri:#0f3a63;--pri-h:#1a4f84;--on-pri:#fff;--on-n:#fff;--scrim:#04111fa6;--logo-a:#1c5a96;--logo-b:#0a2a4a;--sig:#0f3a63;
+--f-body:Archivo,system-ui,sans-serif;--f-display:"Libre Caslon Text","Iowan Old Style",Georgia,serif;--f-mono:Archivo,system-ui,sans-serif;--r:2px;--r2:2px;
+--h0:#bcd0e2;--h1:#8fb3d3;--h2:#5b8fbf;--h3:#2d669f;--h4:#0a2a4a;--rail:#0f3a63;--rail2:#0a2a4a;--ctl:#6f93b3;color-scheme:light}
+[data-look=cyanotype][data-theme=dark]{--bg:#071a30;--panel:#0d2745;--ink:#dcebf7;--muted:#93afc8;--line:#2c5f93;--acc:#7fd0ff;--acc-bg:#123a63;--ok:#4fc3b3;--pdf:#04111f;--web:#8ec5ff;--vid:#ff8d80;--sh:none;--pop:0 6px 18px #000a;--pri:#7fd0ff;--pri-h:#a6deff;--on-pri:#04111f;--on-n:#04111f;--scrim:#000b;--logo-a:#1c5a96;--logo-b:#0a2a4a;--sig:#3a86c8;
+--f-body:Archivo,system-ui,sans-serif;--f-display:"Libre Caslon Text","Iowan Old Style",Georgia,serif;--f-mono:Archivo,system-ui,sans-serif;--r:2px;--r2:2px;
+--h0:#12304f;--h1:#1f5a93;--h2:#3b86c4;--h3:#86c3ee;--h4:#e8f5ff;--rail:#04111f;--rail2:#020a14;--ctl:#4a7fb5;color-scheme:dark}
+html[data-look=cyanotype] body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
+html[data-look=cyanotype] :is(h1,h2,h3,h4,b.h,.q,.ttl,.tldr,.peekbody,.hero){font-weight:400}
+html[data-look=cyanotype] h1{font-size:38px;letter-spacing:-.2px;margin:.3em 0 .5em} html[data-look=cyanotype] .hero{font-size:48px;line-height:1.12}
+html[data-look=cyanotype] .lead{font-size:17px;line-height:1.7;margin:.4em 0 1.8em}
+html[data-look=cyanotype] .wrap{padding:48px 40px 110px} html[data-look=cyanotype] .wrap.narrow .box{padding:32px 34px}
+html[data-look=cyanotype] :is(.kind,.k,.mx th,kbd){font-family:var(--f-body)!important;font-variant-numeric:tabular-nums}
+html[data-look=cyanotype] .kind{font-family:var(--f-display)!important;font-style:italic;font-weight:400;text-transform:none;letter-spacing:.02em;font-size:13.5px}
+html[data-look=cyanotype] .k{font-style:italic;font-family:var(--f-display)!important;font-weight:400;text-transform:none;font-size:13px;letter-spacing:.03em}
+/* rail: the shell is the colour */
+html[data-look=cyanotype] #rail{background:var(--rail);border-right:1px solid var(--line);scrollbar-color:#2c5f93 transparent}
+html[data-look=cyanotype] .logo{background:linear-gradient(160deg,var(--logo-a),var(--logo-b));color:#fff;border:1px solid #fffc;font-weight:400;font-style:italic;box-shadow:inset 0 0 0 2px var(--rail),inset 0 0 0 3px #fff6}
+html[data-look=cyanotype] #rail button{color:#cfe2f3;font-weight:500;letter-spacing:.02em}
+html[data-look=cyanotype] #rail button:hover{background:#ffffff1f;color:#fff}
+html[data-look=cyanotype] #rail button.on{background:#ffffff26;color:#fff;font-weight:700;box-shadow:inset 0 0 0 1px #ffffffb3}
+html[data-look=cyanotype] #rail button:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+html[data-look=cyanotype] #rail .n{background:#fff;color:#0a2a4a;font-weight:700}
+html[data-look=cyanotype] :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* controls */
+html[data-look=cyanotype] :is(input,textarea,select){background:var(--panel);border-color:var(--ctl)}
+html[data-look=cyanotype] :is(.fbar,.filters,.nbside,.mx td) :is(input,textarea):not([type=checkbox]){background:var(--panel)}
+html[data-look=cyanotype] button,html[data-look=cyanotype] .btn{border-color:var(--ctl);padding:.5em 1.05em;letter-spacing:.01em}
+html[data-look=cyanotype] button:hover,html[data-look=cyanotype] .btn:hover{border-color:var(--acc);background:var(--acc-bg)}
+html[data-look=cyanotype] button.pri{border:1px solid var(--pri);background:var(--pri);color:var(--on-pri);font-weight:600} html[data-look=cyanotype] button.pri:hover{background:var(--pri-h);border-color:var(--pri-h)}
+html[data-look=cyanotype] button:disabled{opacity:.55;border-style:dashed}
+html[data-look=cyanotype] .tag{border-radius:2px;border:1px solid var(--acc);font-weight:600;letter-spacing:.02em}
+html[data-look=cyanotype] .tag.proj{border-color:var(--ctl)} html[data-look=cyanotype] .tag.ok{border-color:var(--ok)}
+html[data-look=cyanotype] .chip{border-radius:2px;border-color:var(--ctl)} html[data-look=cyanotype] .chip.on{border-width:2px;background:var(--acc-bg);color:var(--ink);font-weight:700}
+html[data-look=cyanotype] .addbar{border-color:var(--ctl);padding:10px 12px}
+html[data-look=cyanotype] mark{background:#ffd60080;color:inherit}
+html[data-look=cyanotype] *{scrollbar-color:var(--ctl) transparent} html[data-look=cyanotype] *::-webkit-scrollbar-thumb{background:var(--ctl);background-clip:content-box;border-radius:2px}
+/* THE PLATE: double-rule frame (outer border + inner hairline), no shadows */
+html[data-look=cyanotype] :is(.card,.box,.fact,.term,.msg,.pickbar){border-color:var(--line);box-shadow:inset 0 0 0 3px var(--panel),inset 0 0 0 4px var(--line)}
+html[data-look=cyanotype] .card{padding:20px;gap:10px;transition:border-color .15s} html[data-look=cyanotype] button.card{padding:20px}
+html[data-look=cyanotype] .rows .card{padding:13px 20px}
+html[data-look=cyanotype] .card:hover{transform:none;border-color:var(--acc);box-shadow:inset 0 0 0 3px var(--panel),inset 0 0 0 4px var(--acc)}
+html[data-look=cyanotype] .card.flat:hover{border-color:var(--line);box-shadow:inset 0 0 0 3px var(--panel),inset 0 0 0 4px var(--line)}
+html[data-look=cyanotype] .box{padding:20px} html[data-look=cyanotype] .box.done{border-color:var(--ok);box-shadow:inset 0 0 0 3px var(--panel),inset 0 0 0 4px var(--ok)}
+html[data-look=cyanotype] .fact{padding:6px 20px 16px} html[data-look=cyanotype] .term{padding:12px 14px}
+html[data-look=cyanotype] .msg.user{border:1px solid var(--line)}
+html[data-look=cyanotype] :is(#peek,#sure){box-shadow:var(--pop),inset 0 0 0 5px var(--panel),inset 0 0 0 6px var(--line)} html[data-look=cyanotype] .pk{padding:34px 40px 28px}
+html[data-look=cyanotype] #pal{border-color:var(--ctl)}
+html[data-look=cyanotype] .sec{border-top:1px solid var(--muted);padding-top:8px;margin:40px 0 16px;align-items:baseline}
+html[data-look=cyanotype] .sec h3{font:italic 400 15px var(--f-display);font-variant-caps:all-small-caps;letter-spacing:.09em}
+html[data-look=cyanotype] .sec :is(.muted,small,span){font-family:var(--f-display);font-style:italic;font-size:13.5px}
+html[data-look=cyanotype] .tldr{background:var(--acc-bg);border:1px solid var(--line);font-size:19px;line-height:1.6;padding:18px 20px}
+html[data-look=cyanotype] blockquote{border-left:1px solid var(--acc);padding-left:14px;font-family:var(--f-display);font-style:italic}
+html[data-look=cyanotype] .runhead{font-family:var(--f-display);font-style:italic;text-transform:none;letter-spacing:.04em;font-size:13px}
+/* cover thumbnails: blue duotone */
+html[data-look=cyanotype] .cover{background:linear-gradient(135deg,#d3e4f3,#6f9bc6);color:#0a2a4a;border-radius:2px;border:1px solid var(--line);margin:-6px -6px 2px}
+html[data-look=cyanotype][data-theme=dark] .cover,html[data-look=cyanotype] [data-theme=dark] .cover{background:linear-gradient(135deg,#1c5a96,#0a2a4a);color:#bfe6ff}
+html[data-look=cyanotype] .cover.shot{filter:grayscale(1) contrast(1.05)} html[data-look=cyanotype] .cover.shot::after{background:linear-gradient(135deg,#8fc0ee,#0f3a63);mix-blend-mode:color;opacity:1}
+html[data-look=cyanotype] .cover :is(.kind,.ring){z-index:1} html[data-look=cyanotype] .cover .kind{border-radius:2px;border:1px solid var(--line);color:var(--ink)}
+/* matrix, notebook, tabs */
+html[data-look=cyanotype] .mxwrap{border-color:var(--ctl)} html[data-look=cyanotype] .mx th,html[data-look=cyanotype] .mx td{padding:14px 16px}
+html[data-look=cyanotype] .mx th{color:var(--ink);border-bottom:1px solid var(--ctl);font-size:12px;letter-spacing:.1em}
+html[data-look=cyanotype] .prow.on{box-shadow:inset 2px 0 0 var(--acc);background:var(--acc-bg);color:var(--ink)} html[data-look=cyanotype] .prow:hover{background:var(--acc-bg)}
+html[data-look=cyanotype] .nbtop{background:var(--bg)} html[data-look=cyanotype] .nbpage{padding-top:48px}
+html[data-look=cyanotype] .askbar{border-radius:2px;border-color:var(--ctl);box-shadow:var(--pop)}
+html[data-look=cyanotype] #tabs button{border-radius:2px;border-bottom:2px solid transparent} html[data-look=cyanotype] #tabs button.on{border-bottom-color:var(--acc);color:var(--ink);background:var(--acc-bg)}
+html[data-look=cyanotype] #tabs .on i{background:var(--acc);color:var(--on-n)} html[data-look=cyanotype] #tabs .done i,html[data-look=cyanotype] .done .num{background:var(--ok);color:var(--on-n)}
+html[data-look=cyanotype] #tabs i{border-radius:2px;background:var(--line);color:var(--ink)} html[data-look=cyanotype] .num{border-radius:2px;color:var(--ink)}
+html[data-look=cyanotype] body.snip #snipBtn{color:var(--on-n)}
+html[data-look=cyanotype] #pall button.on,html[data-look=cyanotype] .item.on{box-shadow:inset 2px 0 0 var(--acc)}
+html[data-look=cyanotype] .warn{color:var(--vid)}
+html[data-look=cyanotype] #cy{border-color:var(--ctl)}
+html[data-look=cyanotype] #status{border-radius:2px}
+html[data-look=cyanotype] .lookcard[aria-pressed=true]{outline:2px solid var(--acc);outline-offset:2px}
+/* activity grid: restyle only; empty cells carry a hairline so they stay visible, today keeps its ring */
+html[data-look=cyanotype] .heat i,html[data-look=cyanotype] .hleg i{border-radius:1px;box-shadow:inset 0 0 0 1px #6f93b366}
+html[data-look=cyanotype][data-theme=dark] .heat i,html[data-look=cyanotype][data-theme=dark] .hleg i,html[data-look=cyanotype] [data-theme=dark] .heat i{box-shadow:inset 0 0 0 1px #4a7fb566}
+html[data-look=cyanotype] :is(.ttl,.prop input,.addbar input,.nbside #nbq,.askbar input,.mx td textarea:not(:hover):not(:focus)){background:none;border-color:transparent}
+html[data-look=cyanotype] :is(.prop input:hover,.prop input:focus){background:var(--line)}
+/* look: notion.css */
+/* notion: calm document workspace. Quiet white page, soft grey sidebar, block hover, tinted pills */
+[data-look=notion]{--bg:#fff;--panel:#fff;--ink:#37352f;--muted:#6b6964;--line:#e9e9e7;--line2:#d9d8d4;--hov:#efefed;--side:#f7f7f5;--acc:#0b6bcb;--acc-bg:#e7f3f8;--ok:#2a7f48;--pdf:#f1f1ef;--web:#0b6bcb;--vid:#c4281c;--sh:none;--pop:0 0 0 1px rgba(15,15,15,.05),0 3px 6px rgba(15,15,15,.1),0 9px 24px rgba(15,15,15,.2);--pri:#0b6bcb;--pri-h:#095bad;--on-pri:#fff;--on-n:#fff;--scrim:#0f0f0f99;--logo-a:#2383e2;--logo-b:#0b6bcb;--sig:#2383e2;--t-grey:#e3e2e0;--t-blue:#d3e5ef;--t-green:#dbeddb;--t-red:#ffe2dd;--tx-blue:#0b5a9e;--tx-green:#1e6b3b;--tx-red:#a8271c;--h0:#e3e2e0;--h1:#c6e6c6;--h2:#8fd19e;--h3:#4eae6b;--h4:#2a7f48;--f-body:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;--f-display:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;--f-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--r:4px;--r2:6px;color-scheme:light}
+[data-look=notion][data-theme=dark]{--bg:#191919;--panel:#202020;--ink:#ebebea;--muted:#9b9b9b;--line:#373737;--line2:#474747;--hov:#2c2c2c;--side:#252525;--acc:#6cb4e0;--acc-bg:#1d3342;--ok:#5cb87a;--pdf:#141414;--web:#6cb4e0;--vid:#f0857a;--sh:none;--pop:0 0 0 1px rgba(255,255,255,.07),0 3px 6px rgba(0,0,0,.4),0 9px 24px rgba(0,0,0,.5);--pri:#5aa8d8;--pri-h:#74b8e4;--on-pri:#111;--on-n:#191919;--scrim:#000000a6;--logo-a:#529cca;--logo-b:#2f77a8;--sig:#529cca;--t-grey:#373737;--t-blue:#1d3342;--t-green:#1f3a2a;--t-red:#46231f;--tx-blue:#7fc0ea;--tx-green:#7fd09a;--tx-red:#f4968c;--h0:#2c2c2c;--h1:#1f4d32;--h2:#2d7a48;--h3:#4aa56a;--h4:#7fd09a;color-scheme:dark}
+html[data-look=notion] body{font-size:15.5px;line-height:1.6}
+html[data-look=notion] :is(h1,h2,h3,h4,.q,b.h,.hero,.ttl,.sec h3){font-family:var(--f-display);font-weight:600;letter-spacing:-.01em;line-height:1.25}
+html[data-look=notion] :is(h1,.hero,.ttl){font-weight:700;letter-spacing:-.02em}
+html[data-look=notion] h1,html[data-look=notion] .hero{font-size:40px;line-height:1.15;margin:.1em 0 .3em}
+html[data-look=notion] .ttl{font-size:48px;line-height:1.1;color:var(--ink)}
+html[data-look=notion] .ttl::placeholder{color:var(--muted);opacity:.7}
+html[data-look=notion] .nbpage{padding-top:56px}
+html[data-look=notion] .wrap{padding-top:48px}
+html[data-look=notion] .sec{margin:32px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)} html[data-look=notion] .sec h3{font-size:18px}
+html[data-look=notion] .lead{color:var(--muted);font-size:16.5px}
+html[data-look=notion] a{color:var(--acc);text-underline-offset:2px}
+html[data-look=notion] :is(.facts a,.srcchip a,.toc a,.pk h3 a,a.btn,.ts){color:inherit}
+html[data-look=notion] .ts{color:var(--acc)}
+html[data-look=notion] :focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+html[data-look=notion] ::selection{background:color-mix(in srgb,var(--acc) 24%,transparent);color:inherit}
+html[data-look=notion] ::placeholder{color:var(--muted);opacity:1}
+/* labels: sans, small, sentence case, muted */
+html[data-look=notion] :is(.k,.kind,.mx th,kbd,.nbside .lbl,.runhead,.mprev:not(:empty)::before,.mx th button){font-family:var(--f-body)!important;text-transform:none;letter-spacing:0;font-weight:500}
+html[data-look=notion] :is(.k,.kind,.mx th,.nbside .lbl,.runhead){font-size:12.5px;color:var(--muted)}
+html[data-look=notion] .k{background:var(--hov);border-radius:var(--r);font-weight:600}
+html[data-look=notion] .kind{color:var(--muted)} html[data-look=notion] .kind.web{color:var(--web)} html[data-look=notion] .kind.video{color:var(--vid)}
+html[data-look=notion] kbd{border:0;background:var(--hov);color:var(--muted);opacity:1;border-radius:var(--r);font-size:11.5px}
+html[data-look=notion] .runhead{border-bottom:1px solid var(--line);padding-bottom:6px}
+html[data-look=notion] code{background:var(--hov);color:var(--vid);font-family:var(--f-mono)}
+html[data-look=notion] blockquote{border-left:3px solid var(--ink);color:var(--ink)}
+html[data-look=notion] .step{color:var(--muted)} html[data-look=notion] .warn{color:#8a6500}
+html[data-look=notion][data-theme=dark] .warn{color:#e0b84a}
+/* controls */
+html[data-look=notion] :is(button,.btn){background:var(--panel);border:1px solid var(--line2);padding:.3em .8em;min-height:32px;font-weight:500;box-shadow:none}
+html[data-look=notion] :is(button,.btn):hover{background:var(--hov);border-color:var(--line2)}
+html[data-look=notion] button.pri{background:var(--pri);border-color:var(--pri);color:var(--on-pri);font-weight:600} html[data-look=notion] button.pri:hover{background:var(--pri-h);border-color:var(--pri-h)}
+html[data-look=notion] button:disabled{opacity:.55}
+html[data-look=notion] :is(input,textarea,select){background:var(--panel);border-color:var(--line2)}
+html[data-look=notion] :is(input,textarea,select):hover{background:var(--side)}
+html[data-look=notion] :is(input,textarea,select):focus{border-color:var(--acc)}
+html[data-look=notion] .addbar{background:var(--panel)} html[data-look=notion] .addbar input:hover{background:none}
+html[data-look=notion] :is(.card,.mx td,.mx th) input[type=checkbox],html[data-look=notion] :is(progress,input[type=checkbox]){accent-color:var(--acc)}
+html[data-look=notion] .tag{background:var(--t-blue);color:var(--tx-blue);font-weight:500}
+html[data-look=notion] .tag.proj{background:var(--t-grey);color:var(--ink);border:0}
+html[data-look=notion] .tag.ok{background:var(--t-green);color:var(--tx-green);border:0}
+html[data-look=notion] .chip{border-radius:99px} html[data-look=notion] .chip.on{background:var(--t-blue);border-color:transparent;color:var(--tx-blue);font-weight:600}
+html[data-look=notion] .okk,html[data-look=notion] .badge{color:var(--tx-green)}
+html[data-look=notion] .pickbar{background:var(--acc-bg);border-color:transparent}
+html[data-look=notion] .tldr{background:var(--side);border-left:3px solid var(--ink);font-weight:500;font-size:17px}
+html[data-look=notion] .fact{background:var(--panel)} html[data-look=notion] .fact.key{border-color:var(--acc)}
+/* scrollbars: thin, grey, only while hovering the scroller */
+html[data-look=notion] *{scrollbar-color:transparent transparent}
+html[data-look=notion] *:hover{scrollbar-color:var(--line2) transparent}
+html[data-look=notion] *::-webkit-scrollbar-thumb{background:transparent;background-clip:content-box}
+html[data-look=notion] *:hover::-webkit-scrollbar-thumb{background:var(--line2);background-clip:content-box}
+html[data-look=notion] *::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:content-box}
+/* rail: soft grey sidebar, active item has a filled block */
+html[data-look=notion] #rail{background:var(--side);border-right:1px solid var(--line)}
+html[data-look=notion] .logo{background:linear-gradient(160deg,var(--logo-a),var(--logo-b));color:#fff;font-weight:700;border-radius:var(--r)}
+html[data-look=notion][data-theme=dark] .logo{color:#fff}
+html[data-look=notion] #rail button{color:var(--muted);font-weight:500;background:none;border:0}
+html[data-look=notion] #rail button:hover{background:var(--hov);color:var(--ink)}
+html[data-look=notion] #rail button.on{background:var(--hov);color:var(--ink);font-weight:700;box-shadow:inset 2px 0 0 var(--acc)}
+html[data-look=notion] #rail .n{background:var(--acc);color:var(--on-n)}
+html[data-look=notion] #rail button:focus-visible{outline-offset:-2px}
+/* signature: BLOCK HOVER. Flat hairline cards, rows and list items fill soft grey; rows show a faint drag handle */
+html[data-look=notion] .card{box-shadow:none;transition:background .12s,border-color .12s;position:relative}
+html[data-look=notion] .card:hover{transform:none;background:var(--hov);border-color:var(--line2)}
+html[data-look=notion] .card.flat:hover,html[data-look=notion] form.card:hover{background:var(--panel);border-color:var(--line)}
+html[data-look=notion] .rows .card{border-color:transparent;border-radius:var(--r);padding:9px 12px}
+html[data-look=notion] .rows .card:hover{border-color:transparent}
+html[data-look=notion] .rows .card:not(.flat)::before{content:"";position:absolute;left:-16px;top:50%;width:8px;height:14px;margin-top:-7px;opacity:0;transition:opacity .12s;background:radial-gradient(circle,var(--muted) 1.1px,#0000 1.6px) 0 0/4px 4.7px}
+html[data-look=notion] .rows .card:not(.flat):hover::before{opacity:.75}
+html[data-look=notion] .card h4{font-size:16px;font-weight:600}
+html[data-look=notion] .cover{border-radius:var(--r)}
+html[data-look=notion] :is(.item,.prow,#pall button,.whrow,.seg):hover{background:var(--hov)}
+html[data-look=notion] .item.on{background:var(--acc-bg);border-color:transparent;color:var(--ink)}
+html[data-look=notion] .whrow{border-radius:var(--r)}
+html[data-look=notion] .mx tbody tr:hover td{background:var(--side)}
+html[data-look=notion] #ed .ce-block:hover>.ce-block__content{background:color-mix(in srgb,var(--hov) 45%,transparent);border-radius:var(--r)}
+html[data-look=notion] #ed .ce-block--selected .ce-block__content{background:var(--acc-bg)}
+/* matrix */
+html[data-look=notion] .mx th{background:var(--side);border-bottom:1px solid var(--line2)}
+html[data-look=notion] .mx td:first-child{background:var(--panel)} html[data-look=notion] .mx tbody tr:hover td:first-child{background:var(--side)}
+html[data-look=notion] .mx th:first-child{background:var(--side)}
+html[data-look=notion] .mx td textarea:hover,html[data-look=notion] .mx td textarea:focus{background:var(--panel)}
+html[data-look=notion] .mx td .add:hover{color:var(--acc)}
+/* notebook */
+html[data-look=notion] .nbside{background:var(--side);font-size:14px}
+html[data-look=notion] .nbside #nbq:focus-visible{background:var(--hov)}
+html[data-look=notion] .prow{color:var(--ink);font-weight:400;height:30px}
+html[data-look=notion] .prow .ico{color:var(--muted)}
+html[data-look=notion] .prow.on{background:var(--hov);font-weight:600}
+html[data-look=notion] .prow.fold{font-weight:500}
+html[data-look=notion] .nbtop{background:var(--bg)}
+html[data-look=notion] :is(.nbtop button,.pico,.addico,.prop .add,.icons button):hover,html[data-look=notion] .prop input:hover,html[data-look=notion] .prop input:focus{background:var(--hov);color:var(--ink)}
+html[data-look=notion] .pico{color:var(--ink)}
+html[data-look=notion] .props{border-bottom:1px solid var(--line)}
+html[data-look=notion] .prop>span{color:var(--muted)}
+html[data-look=notion] .srcchip{background:var(--t-grey);color:var(--ink);border-radius:var(--r)}
+html[data-look=notion] .srcchip a:hover{color:var(--acc)}
+html[data-look=notion] #ed{font-size:16px;line-height:1.7}
+html[data-look=notion] #ed :is(h2,h3,h4){font-weight:700;letter-spacing:-.015em}
+html[data-look=notion] #ed .inline-code{background:var(--t-red);color:var(--tx-red);font-family:var(--f-mono)}
+html[data-look=notion] #ed .callout{background:var(--side);border-color:transparent}
+html[data-look=notion] #ed .callout>span{color:var(--muted)}
+html[data-look=notion] #ed .cdx-quote__text{font-family:var(--f-body);border-left-color:var(--ink)}
+html[data-look=notion] :is(.ce-popover__container,.ce-inline-toolbar .ce-popover__container){border:0!important;border-radius:var(--r2)!important;box-shadow:var(--pop)!important}
+html[data-look=notion] .askbar{border-radius:var(--r2);box-shadow:var(--pop);border-color:var(--line)}
+html[data-look=notion] .icons{box-shadow:var(--pop)}
+/* reader */
+html[data-look=notion] header,html[data-look=notion] #tools,html[data-look=notion] #panel,html[data-look=notion] #tabs{background:var(--panel)}
+html[data-look=notion] #body{background:var(--bg)}
+html[data-look=notion] #tabs button{border-radius:var(--r);font-weight:500}
+html[data-look=notion] #tabs button:hover{background:var(--hov);color:var(--ink)}
+html[data-look=notion] #tabs button.on{background:var(--hov);color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--acc)}
+html[data-look=notion] #tabs i{background:var(--t-grey);color:var(--ink)}
+html[data-look=notion] #tabs .on i{background:var(--acc);color:var(--on-n)}
+html[data-look=notion] #tabs .done i,html[data-look=notion] .done .num{background:var(--ok);color:var(--on-n)}
+html[data-look=notion] .num{background:var(--t-blue);color:var(--tx-blue)}
+html[data-look=notion] .msg.user{background:var(--acc-bg)}
+html[data-look=notion] .seg.now{background:var(--acc-bg)}
+html[data-look=notion] body.snip #snipBtn{background:var(--acc);color:var(--on-n)}
+html[data-look=notion] .bar{background:var(--hov)} html[data-look=notion] #prog{background:var(--hov)}
+html[data-look=notion] .ring{background:radial-gradient(closest-side,var(--in) 74%,transparent 76%),conic-gradient(var(--ok) calc(var(--p)*1%),var(--hov) 0)}
+/* dialogs and palette: the only shadows */
+html[data-look=notion] :is(#peek,#sure,#pal){border:0;border-radius:var(--r2);box-shadow:var(--pop)}
+html[data-look=notion] :is(#peek,#sure){margin:auto} html[data-look=notion] #pal{margin-top:13vh}
+html[data-look=notion] #pall button.on{background:var(--hov);box-shadow:inset 2px 0 0 var(--acc)}
+html[data-look=notion] #sure .danger{background:var(--vid);color:#fff;border:0}
+html[data-look=notion][data-theme=dark] #sure .danger{color:#191919}
+html[data-look=notion] #status{background:var(--panel);border-color:var(--line2);box-shadow:var(--pop)}
+html[data-look=notion] #toast{border-radius:var(--r2);box-shadow:var(--pop)}
+html[data-look=notion] .pk h3{font-size:24px}
+html[data-look=notion] .lookcard[aria-pressed=true]{outline-color:var(--acc)}
+/* activity grid: green ramp, soft cells; today keeps its outline so the grid is not colour-only */
+html[data-look=notion] :is(.heat i,.hleg i){border-radius:3px}
+html[data-look=notion] .heat i[data-today]{outline:2px solid var(--ink);outline-offset:1px}
+html[data-look=notion] .heat{font-size:12px}
+/* look: survey.css */
+[data-look=survey]{--bg:#f2f4f1;--panel:#fff;--ink:#1d1f1c;--muted:#585f55;--line:#c9c4b8;--acc:#8a5530;--acc-bg:#efe6da;--ok:#2f6b45;--pdf:#e3e6e0;--web:#1f6fa8;--vid:#b8322a;--sh:none;--pop:0 0 0 3px var(--panel),0 0 0 4px var(--line);--pri:#2f6b45;--pri-h:#265a39;--on-pri:#fff;--on-n:#fff;--scrim:#1d1f1c8c;--logo-a:#8a5530;--logo-b:#6b3f20;--sig:#2f6b45;
+ --h0:#d3d8cf;--h1:#cfe6c4;--h2:#8fcb80;--h3:#d6c15a;--h4:#a8672f;--t1:#cfe6c4;--t2:#8fcb80;--t3:#d6c15a;--t4:#a8672f;--warn:#7a5a00;--cl:#8a5530;
+ --f-body:"Barlow",system-ui,"Segoe UI",sans-serif;--f-display:"Barlow Condensed","Barlow",sans-serif;--f-mono:"Barlow",system-ui,sans-serif;--r:2px;--r2:3px;color-scheme:light}
+[data-look=survey][data-theme=dark]{--bg:#15130f;--panel:#1e1b16;--ink:#ece7dc;--muted:#a8a293;--line:#3a342a;--acc:#d9a066;--acc-bg:#33271a;--ok:#7fbf8e;--pdf:#0e0c09;--web:#7db8e6;--vid:#f08a7e;--sh:none;--pop:0 0 0 3px var(--panel),0 0 0 4px var(--line);--pri:#7fbf8e;--pri-h:#95cca2;--on-pri:#10170f;--on-n:#15130f;--scrim:#050403b0;--logo-a:#d9a066;--logo-b:#b57d42;--sig:#7fbf8e;
+ --h0:#2a261e;--h1:#3a6141;--h2:#4f8a54;--h3:#a8923a;--h4:#d9a066;--t1:#3a6141;--t2:#4f8a54;--t3:#a8923a;--t4:#d9a066;--warn:#e0b84a;--cl:#d9a066;color-scheme:dark}
+html[data-look=survey] body{font-size:14.5px;line-height:1.5;font-variant-numeric:tabular-nums}
+html[data-look=survey] :is(h1,h2,h3,h4){font-weight:600;letter-spacing:.01em;line-height:1.15}
+html[data-look=survey] h1{font-size:34px;letter-spacing:.01em}
+html[data-look=survey] .hero{font-size:44px;text-transform:uppercase;letter-spacing:.03em;padding:.35em 0 .3em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='140' viewBox='0 0 520 140' fill='none' stroke='%238a5530' stroke-opacity='.09' stroke-width='1.5'%3E%3Cpath d='M0 30C80 6 140 58 230 34S400 4 520 30'/%3E%3Cpath d='M0 62C90 38 150 92 240 66S410 36 520 64'/%3E%3Cpath d='M0 96C100 70 160 126 250 98S420 68 520 98'/%3E%3Cpath d='M0 128C110 104 170 150 260 128S430 100 520 128'/%3E%3C/svg%3E") right center/520px 140px no-repeat}
+html[data-look=survey][data-theme=dark] .hero{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='140' viewBox='0 0 520 140' fill='none' stroke='%23d9a066' stroke-opacity='.09' stroke-width='1.5'%3E%3Cpath d='M0 30C80 6 140 58 230 34S400 4 520 30'/%3E%3Cpath d='M0 62C90 38 150 92 240 66S410 36 520 64'/%3E%3Cpath d='M0 96C100 70 160 126 250 98S420 68 520 98'/%3E%3Cpath d='M0 128C110 104 170 150 260 128S430 100 520 128'/%3E%3C/svg%3E")}
+html[data-look=survey] a{color:var(--web)}
+html[data-look=survey] .lead{font-size:16px}
+html[data-look=survey] :focus-visible{outline:2px solid var(--web);outline-offset:2px}
+html[data-look=survey][data-theme=dark] :focus-visible{outline-color:#9bd0f5}
+html[data-look=survey] ::selection{background:var(--acc-bg);color:var(--ink)}
+/* reading text stays in Barlow, never the condensed face */
+html[data-look=survey] :is(article,.peekbody,.tldr,.q,.cdx-quote__text,.ttl){font-family:var(--f-body)}
+html[data-look=survey] article{font-size:calc(18px*var(--z,1));line-height:1.6}
+html[data-look=survey] .tldr{font-size:17px;font-weight:600;border-left:3px solid var(--acc)}
+html[data-look=survey] .peekbody{font-size:17px;line-height:1.55}
+html[data-look=survey] .q{font-size:19px;font-weight:600}
+html[data-look=survey] .ttl{font-family:var(--f-display);font-weight:600;font-size:44px}
+html[data-look=survey] :is(.k,.kind,.mx th,kbd,.nbside .lbl,.runhead,.mprev:not(:empty)::before){font-family:var(--f-display)!important;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+html[data-look=survey] :is(.k,.kind,.mx th){font-size:12.5px}
+html[data-look=survey] kbd{opacity:.8;border-radius:2px;text-transform:none}
+html[data-look=survey] .sec{border-bottom:1px solid var(--line);padding-bottom:3px;margin:22px 0 12px}
+html[data-look=survey] .sec h3{font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:var(--acc);font-weight:600}
+html[data-look=survey] .step{color:var(--acc)}
+html[data-look=survey] .warn{color:var(--warn)}
+/* controls */
+html[data-look=survey] :is(button,.btn){padding:.35em .8em;min-height:34px;font-weight:500}
+html[data-look=survey] :is(button,.btn):hover{background:var(--bg);border-color:var(--acc)}
+html[data-look=survey] button.pri{background:var(--pri);border:1px solid var(--pri);color:var(--on-pri);font-weight:600}
+html[data-look=survey] button.pri:hover{background:var(--pri-h);border-color:var(--pri-h)}
+html[data-look=survey] button:disabled{opacity:.55}
+html[data-look=survey] :is(input,textarea,select){background:var(--panel);border-color:var(--line)}
+html[data-look=survey] :is(input,textarea,select):hover{border-color:var(--acc)}
+html[data-look=survey] ::placeholder{color:var(--muted);opacity:1}
+html[data-look=survey] :is(.card,.mx td,.mx th) input[type=checkbox],html[data-look=survey] progress{accent-color:var(--ok)}
+html[data-look=survey] .tag{border-radius:2px;background:var(--acc-bg);color:var(--acc);border:1px solid transparent;font-weight:600}
+html[data-look=survey] .tag.proj{background:none;border-color:var(--line);color:var(--muted)}
+html[data-look=survey] .tag.ok{background:none;border-color:var(--ok);color:var(--ok)}
+html[data-look=survey] .chip{border-radius:2px;min-height:30px}
+html[data-look=survey] .chip.on{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);box-shadow:inset 0 -2px 0 var(--acc)}
+html[data-look=survey] .kind.web{color:var(--web)} html[data-look=survey] .kind.video{color:var(--vid)}
+html[data-look=survey] .okk,html[data-look=survey] .badge{color:var(--ok)}
+html[data-look=survey] blockquote{border-left-color:var(--acc)}
+html[data-look=survey] code{background:var(--acc-bg);color:var(--ink)}
+/* rail: white sheet edge with a thin contour line */
+html[data-look=survey] #rail{background:var(--panel);border-right:1px solid var(--acc);padding:10px 5px}
+html[data-look=survey] .logo{border-radius:2px;font-family:var(--f-display);font-weight:700;color:#fff;box-shadow:0 0 0 2px var(--panel),0 0 0 3px var(--acc)}
+html[data-look=survey][data-theme=dark] .logo{color:#15130f}
+html[data-look=survey] #rail button{font:600 11px var(--f-display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+html[data-look=survey] #rail button:hover{color:var(--ink);background:var(--bg);border:0}
+html[data-look=survey] #rail button.on{background:var(--pri);color:var(--on-pri)}
+html[data-look=survey] #rail .n{background:var(--acc);color:var(--on-n);border-radius:2px}
+html[data-look=survey] #rail button.on .n{background:var(--on-pri);color:var(--pri)}
+/* cartouche cards: thin double border, no shadow */
+html[data-look=survey] .card{border-radius:2px;box-shadow:0 0 0 3px var(--panel),0 0 0 4px var(--line);margin:4px;transition:border-color .15s,box-shadow .15s;padding:12px}
+html[data-look=survey] .card:hover{transform:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--panel),0 0 0 4px var(--acc)}
+html[data-look=survey] .card.flat:hover{border-color:var(--line);box-shadow:0 0 0 3px var(--panel),0 0 0 4px var(--line)}
+html[data-look=survey] .card h4{font-size:18px;text-transform:none}
+html[data-look=survey] .grid{gap:12px}
+html[data-look=survey] .cover{border-radius:1px}
+html[data-look=survey] :is(.fact,.term,.box,.msg,.mxwrap,#cy,.addbar,.pickbar){border-radius:2px}
+html[data-look=survey] .fact.key,html[data-look=survey] .addbar:focus-within{border-color:var(--ok)}
+html[data-look=survey] .msg.user{background:var(--acc-bg)}
+/* hypsometric tints: elevation bands for the grid, rings, bars */
+html[data-look=survey] .heat i,html[data-look=survey] .hleg i{border-radius:1px;box-shadow:inset 0 0 0 1px #8a553040}
+html[data-look=survey][data-theme=dark] :is(.heat i,.hleg i){box-shadow:inset 0 0 0 1px #d9a06630}
+html[data-look=survey] .heat i[data-today]{outline:2px solid var(--ink);outline-offset:1px}
+html[data-look=survey] .heat{font-family:var(--f-display);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+html[data-look=survey] .hleg{font-size:13px}
+html[data-look=survey] .bar{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);border-radius:1px;height:6px}
+html[data-look=survey] .bar i{background:linear-gradient(90deg,var(--t1),var(--t2),var(--t3),var(--t4));border-radius:0}
+html[data-look=survey] #prog{background:var(--line);height:4px}
+html[data-look=survey] #prog i{background:linear-gradient(90deg,var(--t1),var(--t2),var(--t3),var(--t4)) left/100vw 100%}
+html[data-look=survey] .ring{font-family:var(--f-display);font-size:12px;background:radial-gradient(closest-side,var(--in) 72%,transparent 74%),conic-gradient(var(--t1),var(--t2) calc(var(--p)*.4%),var(--t3) calc(var(--p)*.7%),var(--t4) calc(var(--p)*1%),var(--line) 0)}
+/* matrix */
+html[data-look=survey] .mx th,html[data-look=survey] .mx td{padding:9px 12px}
+html[data-look=survey] .mx th{color:var(--acc);border-bottom:1px solid var(--acc)}
+html[data-look=survey] .mx td:first-child,html[data-look=survey] .mx th:first-child{border-right-color:var(--acc)}
+html[data-look=survey] .mx td .add:hover{color:var(--web)}
+/* notebook */
+html[data-look=survey] .prow:hover{background:var(--bg)}
+html[data-look=survey] .prow.on{background:var(--acc-bg);color:var(--ink);box-shadow:inset 3px 0 0 var(--ok)}
+html[data-look=survey] .item.on{border-color:var(--ok);background:var(--bg);box-shadow:inset 3px 0 0 var(--ok)}
+html[data-look=survey] .item:hover{background:var(--bg)}
+html[data-look=survey] .nbside{font-size:14px}
+html[data-look=survey] .askbar{border-radius:2px;box-shadow:0 0 0 3px var(--panel),0 0 0 4px var(--line)}
+html[data-look=survey] .srcchip{border-radius:2px;background:var(--acc-bg)}
+html[data-look=survey] .ce-popover__container{border-radius:2px!important;box-shadow:0 0 0 3px var(--panel),0 0 0 4px var(--line)!important}
+html[data-look=survey] #ed .callout{border-left:3px solid var(--web)}
+html[data-look=survey] #ed .ce-block--selected .ce-block__content{background:var(--acc-bg)}
+/* reader tabs and number badges: text on fills uses --on-n, so it passes in both modes */
+html[data-look=survey] #tabs button{border-radius:2px;font-family:var(--f-display);font-size:15px;text-transform:uppercase;letter-spacing:.04em}
+html[data-look=survey] #tabs button.on{background:var(--acc-bg);color:var(--acc);box-shadow:inset 0 -2px 0 var(--acc)}
+html[data-look=survey] #tabs i{border-radius:2px;font-family:var(--f-body)}
+html[data-look=survey] #tabs .on i{background:var(--acc);color:var(--on-n)}
+html[data-look=survey] #tabs .done i,html[data-look=survey] .done .num{background:var(--ok);color:var(--on-n)}
+html[data-look=survey] .num{border-radius:2px}
+html[data-look=survey] body.snip #snipBtn{background:var(--acc);color:var(--on-n)}
+html[data-look=survey] .ts{color:var(--web)}
+html[data-look=survey] .seg.now{background:var(--acc-bg)}
+/* dialogs, palette, toast */
+html[data-look=survey] :is(#peek,#sure,#pal){border-radius:2px;margin:auto}
+html[data-look=survey] #pal{margin-top:13vh}
+html[data-look=survey] #sure .danger{background:var(--vid);color:#fff;border:1px solid var(--vid)}
+html[data-look=survey][data-theme=dark] #sure .danger{color:#15130f}
+html[data-look=survey] #pall button.on{background:var(--acc-bg);box-shadow:inset 3px 0 0 var(--ok)}
+html[data-look=survey] #status{border-radius:2px;box-shadow:none}
+html[data-look=survey] #toast{border-radius:2px}
+html[data-look=survey] .pk h3{font-size:24px}
+html[data-look=survey] .lookcard[aria-pressed=true]{outline-color:var(--ok)}
 /* LOOKS-END */
 </style>
 </head>
@@ -380,6 +961,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 <dialog id="sure"></dialog>
 <div id="status" role="status"></div>
 <div id="toast" role="status"></div>
+<div id="heattip" role="tooltip" hidden></div>
 
 <script type="module">
 import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
@@ -460,7 +1042,7 @@ const save = (p, parts) => {
 };
 const saveNote = n => n && send('PUT', 'notes/' + n.id, { title: n.title, project: n.project, note: n.note }).catch(e => toast('Could not save the note: ' + e.message));
 const text = async p => p.pages || (p.parts = await api(`items/${p.id}/parts`), p.pages = p.parts.map(x => x.body));
-const log = (kind, p) => { activity.push(Date.now()); send('POST', 'activity', { kind, item_id: p?.id }).catch(() => {}); };
+const log = (kind, p) => { activity.push({ ts: Date.now(), kind, item_id: p?.id }); send('POST', 'activity', { kind, item_id: p?.id }).catch(() => {}); };
 
 // ---------- AI ----------
 async function ai(messages) {
@@ -1066,19 +1648,32 @@ const VIEW = {
 // ---------- pages ----------
 const dayKey = t => new Date(t).toDateString();
 // The looks. Each is a [data-look] block of tokens and rules at the end of the stylesheet; the first is the original, with no attribute.
-const LOOKS = [['', 'Lab notebook', 'Grey-green paper, rust ink and a serif voice. The original.'], ['concourse', 'Concourse', 'Airport wayfinding: yellow signs, black type, one message to a line.'], ['barcode', 'Barcode', 'Pure black and white, monospaced figures, nothing grey.'], ['cyanotype', 'Cyanotype', 'Prussian blue and white linework, after the first photographic books of plants.'], ['survey', 'Survey', 'A topographic map: contour browns, forest greens and water blue.']];
+const LOOKS = [['', 'Lab notebook', 'Grey-green paper, rust ink and a serif voice. The original.'], ['concourse', 'Concourse', 'Airport wayfinding: yellow signs, black type, one message to a line.'], ['barcode', 'Barcode', 'Pure black and white, monospaced figures, nothing grey.'], ['cyanotype', 'Cyanotype', 'Prussian blue and white linework, after the first photographic books of plants.'], ['survey', 'Survey', 'A topographic map: contour browns, forest greens and water blue.'], ['notion', 'Page', 'A quiet white document with soft grey blocks and one blue, in the manner of a workspace app.']];
 const lookPicker = () => { const cur = document.documentElement.dataset.look || '', th = document.documentElement.dataset.theme;
   return `<div class="sec"><h3>Look</h3><small class="muted">Changes the colours, type and feel of everything. Light and dark work in each.</small></div><div class="looks">${LOOKS.map(([v, n, d]) => `<button class="lookcard" data-act="look" data-v="${v}" aria-pressed="${v === cur}"><span class="sw" ${v ? `data-look="${v}" data-theme="${th}"` : ''}><i style="background:var(--bg)"></i><i style="background:var(--panel)"></i><i style="background:var(--sig)"></i><i style="background:var(--ink)"></i></span><b>${n}</b><small>${d}</small></button>`).join('')}</div>`; };
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function streak() {
-  const days = new Set(activity.map(dayKey)); let n = 0, t = Date.now();
+  const days = new Set(activity.map(a => dayKey(a.ts))); let n = 0, t = Date.now();
   if (!days.has(dayKey(t))) t -= 864e5; // today doesn't break a streak until it's over
   while (days.has(dayKey(t))) { n++; t -= 864e5; }
   return n;
 }
 // A year of study, one square a day, in GitHub's layout: weeks run left to right, Sunday on top. Five levels, scaled to this reader's busiest day.
+const KIND_WORD = { review: ['card reviewed', 'cards reviewed'], check: ['checkpoint answered', 'checkpoints answered'], teach: ['answer taught back', 'answers taught back'] };
+// What you did on one day, shown above its square while the pointer is on it.
+function heatTip(cell) {
+  const tip = $('#heattip'); if (!tip) return; if (!cell) { tip.hidden = true; return; }
+  const key = cell.dataset.d, day = activity.filter(a => dayKey(a.ts) === key), kinds = {}, titles = new Set();
+  for (const a of day) { kinds[a.kind] = (kinds[a.kind] || 0) + 1; const ti = byId(a.item_id)?.title; if (ti) titles.add(ti); }
+  const list = [...titles], when = new Date(key).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  tip.innerHTML = `<b>${esc(when)}</b>` + (day.length ? `<div>${Object.entries(kinds).map(([k, n]) => `${n} ${KIND_WORD[k]?.[n === 1 ? 0 : 1] || k}`).join(' · ')}</div>` + (list.length ? `<ul>${list.slice(0, 4).map(x => `<li>${esc(x)}</li>`).join('')}${list.length > 4 ? `<li>and ${list.length - 4} more</li>` : ''}</ul>` : '') : '<div class="muted">Nothing studied</div>');
+  tip.hidden = false; const r = cell.getBoundingClientRect(), w = tip.offsetWidth;
+  tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; tip.style.top = Math.max(8, r.top - tip.offsetHeight - 8) + 'px';
+}
+document.addEventListener('mouseover', e => { const c = e.target.closest?.('.hg i'); if (c) heatTip(c); else if (!$('#heattip')?.hidden) heatTip(null); });
+addEventListener('scroll', () => heatTip(null), true);
 function heat() {
-  const c = {}; for (const t of activity) c[dayKey(t)] = (c[dayKey(t)] || 0) + 1;
+  const c = {}; for (const a of activity) c[dayKey(a.ts)] = (c[dayKey(a.ts)] || 0) + 1;
   const W = 53, today = new Date(); today.setHours(0, 0, 0, 0);
   const start = new Date(today); start.setDate(today.getDate() - today.getDay() - (W - 1) * 7);
   const days = []; let max = 0, total = 0, active = 0;
@@ -1088,10 +1683,10 @@ function heat() {
   }
   const months = []; for (let w = 0; w < W; w++) for (let k = 0; k < 7; k++) { const d = new Date(start); d.setDate(start.getDate() + w * 7 + k); if (d.getDate() === 1 && d <= today) months.push(`<span style="grid-column:${w + 1}">${d.toLocaleDateString(undefined, { month: 'short' })}</span>`); }
   const lv = n => n ? Math.min(4, Math.ceil(4 * n / max)) : 0, step = n => plural(n, 'study step');
-  const cells = days.map(([d, n]) => `<i data-l="${lv(n)}"${+d === +today ? ' data-today' : ''} title="${esc(d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }))}: ${n ? step(n) : 'nothing studied'}"></i>`).join('');
+  const cells = days.map(([d, n]) => `<i data-l="${lv(n)}"${+d === +today ? ' data-today' : ''} data-d="${d.toDateString()}"></i>`).join('');
   return `<div class="heatwrap"><div class="heat"><div class="hm" aria-hidden="true">${months.join('')}</div><div class="hd" aria-hidden="true"><span>Mon</span><span>Wed</span><span>Fri</span></div>
     <div class="hg" role="img" aria-label="Study activity over the last year: ${step(total)} on ${plural(active, 'day')}">${cells}</div></div>
-    <div class="hleg" aria-hidden="true">Less ${[0, 1, 2, 3, 4].map(l => `<i data-l="${l}"></i>`).join('')} More<span>A study step is a card reviewed, a checkpoint answered or an answer taught back. Hover a square for its day.</span></div></div>`;
+    <div class="hleg" aria-hidden="true">Less ${[0, 1, 2, 3, 4].map(l => `<i data-l="${l}"></i>`).join('')} More<span>A study step is a card reviewed, a checkpoint answered or an answer taught back. Hover a square to see what you did that day.</span></div></div>`;
 }
 const ADDBAR = `<form data-f="add" class="addbar"><input name="u" autocomplete="off" aria-label="Add a source" placeholder="Paste a link: article, blog post, YouTube video, arXiv ID, DOI, PDF…"><button class="pri">Add</button><button type="button" data-act="upload">Upload PDF</button></form>`;
 // What to do next with a source, so every card is an invitation rather than a title.
@@ -1131,7 +1726,7 @@ const PAGE = {
     const loose = lib.filter(p => !p.project);
     return `<div class="wrap"><h1 class="hero">${F.project ? esc(F.project) : h < 5 ? 'Still up?' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'}</h1>
       <p class="muted lead">${next ? `Next up: <a href="#" data-open="${esc(next.id)}">${esc(next.title)}</a> · ${step(next).replace(/^Next: /, '')}` : F.project ? 'Nothing in this project yet. Paste a link below and it is filed here.' : 'One desk for everything you read, watch and think about.'}</p>${ADDBAR}
-      <p class="facts"><a href="#" data-view="library">${plural(all.length, 'source')}</a><a href="#" data-view="review">${plural(d, 'card')} due</a><span>${plural(streak(), 'day')} streak</span><span title="Average across the ${started.length} you have started">${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}% mastery</span></p>
+      <p class="facts"><a href="#" data-view="library"><b>${all.length}</b> source${all.length === 1 ? '' : 's'}</a><a href="#" data-view="review"><b>${d}</b> card${d === 1 ? '' : 's'} due</a><span><b>${streak()}</b> day streak</span><span title="Average across the ${started.length} you have started"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b> mastery</span></p>
       <div class="sec"><h3>Study activity</h3><small class="muted">${plural(streak(), 'day')} streak</small></div>${heat()}` +
       (F.project ? (all.length ? group('Sources in this project', all) : '') + `<details class="box" style="margin-top:26px"><summary>Project settings</summary><form data-f="renproj" class="row" style="margin:12px 0"><input name="p" required maxlength="60" autocomplete="off" value="${esc(F.project)}" aria-label="Project name" style="max-width:320px"><button>Rename project</button></form>
           <p class="muted">Deleting a project keeps its sources and notebook pages; they become unfiled.</p><button data-act="delproj">Delete this project</button></details><p><a href="#" data-act="setproject" data-v="">← All projects</a></p>`

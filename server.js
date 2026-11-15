@@ -87,7 +87,7 @@ function library() {
   return {
     items: db.prepare('SELECT * FROM items ORDER BY added DESC').all().map(({ data, ...r }) => ({ ...JSON.parse(data), ...drop(r), cards: cards[r.id] || [], notes: notes[r.id] || [] })),
     notes: db.prepare('SELECT id,title,project,note,updated FROM notes WHERE item_id IS NULL ORDER BY updated DESC').all().map(drop),
-    activity: db.prepare('SELECT ts FROM activity WHERE ts > ?').all(Date.now() - 400 * 864e5).map(r => r.ts),
+    activity: db.prepare('SELECT ts, kind, item_id FROM activity WHERE ts > ? ORDER BY ts').all(Date.now() - 400 * 864e5), // each study step: when, what kind, which source
     feeds: db.prepare('SELECT url,title FROM feeds ORDER BY added').all().map(drop),
   };
 }
