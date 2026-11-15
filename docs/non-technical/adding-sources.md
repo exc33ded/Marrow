@@ -16,7 +16,7 @@ Paste a link into the box on Home, or into the search box (`Ctrl K`), or drop a 
 
 If the link is already in your library, Marrow opens the copy you have instead of adding it again.
 
-After a source is added, the AI writes its Brief automatically, as long as there is enough readable text. A scanned PDF with no selectable text can be read, but the AI features need text.
+After a source is added, the AI writes its Brief automatically, as long as there is enough readable text. A scanned or image-only PDF is read with OCR: pages with no selectable text are turned into pictures and read, which takes a little longer. If even that finds almost no text, Marrow says so, because the AI features need text.
 
 ## Videos and transcripts
 
@@ -31,4 +31,4 @@ Every note, card and AI answer on a video links to the moment in the video it re
 ## Discover
 
 - **Search papers.** Search 250 million scholarly works (OpenAlex) and add the open-access ones with one click.
-- **Follow feeds.** Follow blogs, journals and arXiv categories by their address. Marrow finds the RSS or Atom feed from a blog's home page. New posts are listed with read/unread and a "read later" list, and each feed can be refreshed on its own. A feed with no posts yet can still be followed.
+- **Follow feeds.** Follow blogs, journals and arXiv categories by their address. Marrow finds the RSS or Atom feed from a blog's home page. New posts are listed with read/unread and a "read later" list, and each feed can be refreshed on its own. Each post has icon buttons to add it to the library, open the page, save it for later and mark it read. A feed with no posts yet can still be followed.

@@ -13,7 +13,7 @@ Every table has `user_id uuid`, which defaults to `auth.uid()` and is deleted al
 | Table | Holds |
 |---|---|
 | `items` | sources: `id`, `kind` (`pdf`/`web`/`video`), `title`, `url`, `project`, `done`, `added`, `opened`, and `data jsonb` for everything else (brief, sections, concepts, tags, chat…) |
-| `parts` | a source's text, one row per page/block/chunk: `n`, `t` (seconds, for videos), `body`, `html`, and a generated `fts tsvector` (English) |
+| `parts` | a source's text, one row per page/block/chunk: `n`, `t` (seconds, for videos), `body`, `html`, a generated `fts tsvector` (English), and `emb halfvec(1024)` with `emb_model` (the vector and the model that made it; `put_item` clears them when the text changes) |
 | `cards` | flashcards: `q`, `a`, `quote`, `src` (part number), `ease`, `ivl`, `due` |
 | `notes` | with `item_id`: a highlight or note on a source (`page`, `a`, `b`, `eb`, `c`, `ul`). With `item_id` null: a notebook page (`title`, `project`, `note` holds the page document) |
 | `activity` | study events: `ts`, `kind` (`review`, `check`, `teach`), `item_id` |
@@ -48,6 +48,11 @@ All run as the calling user (`security invoker`), so row-level security still ap
 
   Empty fields are left out.
 - **`search_parts(q, phrase)`** does full-text search with `plainto_tsquery`, or `phraseto_tsquery` plus a regex check so the words really are adjacent and in order. It returns up to 40 `{ item_id, n, s }` rows, ranked, where `s` is a snippet with matches wrapped in `\x01`…`\x02`.
+
+- **`set_emb(p, m)`** stores a batch of vectors (`security invoker`, so RLS applies).
+- **`match_parts(qe, q, m, k, only_item)`** merges the nearest vectors (`<=>`, only rows made by model `m`) with the full-text rank by reciprocal rank fusion and returns the top `k` parts. `only_item` null searches the whole library. There is no HNSW index on purpose; add one past about 100,000 chunks.
+
+The `vector` extension is created at the top of that block.
 
 ## Known issue
 

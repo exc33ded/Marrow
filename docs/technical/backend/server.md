@@ -33,6 +33,7 @@ covers: [server.js]
 | `POST /api/activity` | log a study event |
 | `GET /api/fetch?url=` | fetch a pasted link (below) |
 | `POST /api/ai` | AI proxy |
+| `POST /api/retrieve`, `POST /api/embed` | meaning-based search of a source or the library; embed what has no vector yet (see [auth-and-ai](auth-and-ai.md)) |
 | `GET` / `PUT /api/settings`, `POST /api/settings/models`, `POST /api/settings/test` | AI settings |
 | `/api/whisper`, `/api/whisper/use`, `/api/transcribe`, `/api/ytaudio`, `/api/ytsubs` | see [transcription](transcription.md) |
 

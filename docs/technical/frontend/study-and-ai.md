@@ -10,7 +10,7 @@ covers: [index.html]
 - `aiJSON(system, user)` asks for a single JSON object and cuts it out of the reply, so a model that wraps it in prose still works.
 - `fullText(p)` builds the prompt text, with each part prefixed `[p.N]`. It is capped at 150,000 characters.
 
-  > ponytail note in the code: very long sources (books, theses, 3-hour lectures) would need chunking and retrieval.
+- `sourceText(p, q)` is what Ask sends. Up to 150,000 characters it is `fullText(p)`. Above that it calls `POST /api/retrieve` with the question and sends the best-matching parts (`[p.N]`, in order), and falls back to the cut-off text when no embedding model is set or the call fails.
 
 ## Analysis
 

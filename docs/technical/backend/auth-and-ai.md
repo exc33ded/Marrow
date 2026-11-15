@@ -45,4 +45,8 @@ Settings are rows in the `settings` table:
 4. It posts to `{provider url}/chat/completions` with `temperature: 0.3` and a 90 s timeout. Anthropic addresses also get `x-api-key` and `anthropic-version`.
 5. It returns the first reply that has text, as `{ text, model, provider }`. A `401`/`403` skips the rest of that provider's models. If nothing answers, it returns `502` with every model's error joined together.
 
-`offered(conf, id)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker.
+`offered(p)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker. `POST /api/settings/models` calls it with the address and key as typed in the form, falling back to the saved key of that provider id, so a provider can be tested before it is saved.
+
+**Embeddings.** The `embed` setting (`{ p, m }`) names a provider and model. `embed(c, texts)` posts to `{url}/embeddings` with `dimensions: 1024` (`DIM`; parts are cut at 6000 characters) and rejects any other vector size. `embedItem()` embeds a source's parts that have no vector, 64 at a time, through `set_emb`; `PUT /api/items/:id` runs it in the background when parts were saved, so a failure never blocks the save. `POST /api/embed` does one source (`item`) or all (`all`). `POST /api/retrieve` embeds the question and calls `match_parts` for the 12 best parts.
+
+`POST /api/settings/test` asks for a one-word reply. With `{ p, m }` in the body it tests only that model; without a body it tests the saved list in order.

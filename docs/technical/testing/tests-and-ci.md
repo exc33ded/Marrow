@@ -12,6 +12,8 @@ covers: [test.js, test-frontend.js, test-ui.mjs, .github/workflows/ci.yml, packa
 
 ## `test.js`
 
+It also checks meaning-based search against a fake embedding service on port 5982: no model chosen gives 400, the model is saved, `/api/embed` indexes a source, and `/api/retrieve` returns the dictionary-learning passage first.
+
 Run with `node --env-file=.env --env-file=.env.test test.js`. It needs `TEST_EMAIL_A`, `TEST_EMAIL_B` and `TEST_PASSWORD` in `.env.test`: two throwaway users created in Supabase (Authentication > Users, auto-confirm on).
 
 It starts the server on port 5981 with a temporary `DATA_DIR`, and checks that:
@@ -41,7 +43,7 @@ Needs Playwright (`npm i --no-save playwright && npx playwright install chromium
 
 It logs in once through `POST /api/login` as `TEST_EMAIL_A` and gives each browser context that session's cookies (`ctx.addCookies`). Without them, the app would wait at the login form and never draw a screen. It stops with exit code 2 if the test-user variables are missing or the login fails.
 
-For each look and theme it visits each view in `VIEWS` (home, library, discover, review, matrix, notebook, map, settings), and reports:
+It always opens `/?look=<name>&theme=<mode>`, with `look=` empty for Lab notebook, because a page with no look in the address gets the default look, Studio. For each look and theme it visits each view in `VIEWS` (home, library, discover, review, matrix, notebook, map, settings), and reports:
 
 - script and console errors;
 - horizontal overflow;
@@ -62,6 +64,6 @@ The `CI passed` job is green only when all three are, and it is the one check to
 
 **Secrets.** The workflow reads `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `APP_SECRET`, `TEST_EMAIL_A`, `TEST_EMAIL_B` and `TEST_PASSWORD` from the repository's Actions secrets, through a top-level `env:`. Without them, `server.js` exits at startup and `test.js` exits with code 2.
 
-> **Known failures in `ui`** (as of 8e6a7f7): 16 problems, all in the activity grid. In every look, the five levels `--h0`…`--h4` are not all distinct, and in some looks the empty squares are nearly invisible (about 1.0–1.25:1 against the background, with no outline). These were hidden while the test could not log in.
+> **Known failures in `ui`** (as of fb04a90): 18 problems, all in the activity grid (16 before the Studio look was added). In every look, the five levels `--h0`…`--h4` are not all distinct, and in some looks the empty squares are nearly invisible (about 1.0–1.25:1 against the background, with no outline). These were hidden while the test could not log in.
 >
 > In CI, the notebook page that `test-ui.mjs` creates is left in test user A's account after each run.

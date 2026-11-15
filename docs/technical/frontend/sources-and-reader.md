@@ -17,7 +17,7 @@ covers: [index.html]
 
 A duplicate (same URL or arXiv ID) is opened instead of being added again.
 
-- **`addPdf(buf)`** uploads the file (`PUT /api/files/:id`), then extracts one part per page with PDF.js.
+- **`addPdf(buf)`** uploads the file (`PUT /api/files/:id`), then extracts one part per page with PDF.js. A page with under 20 characters of text (a scan) is rendered to a canvas at scale 2 and read with Tesseract.js (`createWorker('eng')`, loaded on first need from jsdelivr and terminated after the file).
 - **`addWeb(html, url)`** parses the page with Readability and sanitises it with DOMPurify (rules in `PURE`). Each block becomes a part with both `body` (text) and `html`. Pages with less than 200 characters of article text are refused with advice to save the page as a PDF.
 - **`create(kind, title, extra, parts)`** saves the new item, opens it, and starts `analyze()` when there are at least 500 characters of text.
 

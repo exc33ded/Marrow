@@ -11,7 +11,7 @@ Everything is in `index.html`: the stylesheet, the page skeleton, and one `<scri
 | Part | What is there |
 |---|---|
 | `<head>` | CDN scripts (Editor.js and its plugins, Cytoscape, KaTeX, DOMPurify, Readability, PDF.js). A tiny inline script applies `?look=` and `?theme=` before first paint. |
-| `<style>` | Base styles, then every look between `/* LOOKS-BEGIN */` and `/* LOOKS-END */` (see [looks](looks.md)). |
+| `<style>` | Base styles, then every look between `/* LOOKS-BEGIN */` and `/* LOOKS-END */`, then the shell every look shares: sidebar, wordmark and pill shapes (see [looks](looks.md)). |
 | `<body>` | `#signin` (login form), `#rail` (left navigation), `#page` (every screen except the reader), `#reader` (source plus study panel), the selection toolbar `#sel`, and dialogs `#pal` (command palette), `#peek` (matrix cell) and `#sure` (confirmations). |
 | module script | Sections marked `// ---------- name ----------`, in this order: helpers, storage, AI, state, transcription, adding sources, feeds, readers, study panel, pages, export/backup/migration, notebook, actions, reader tools, selection toolbar, boot. |
 
@@ -42,4 +42,5 @@ Everything is in `index.html`: the stylesheet, the page skeleton, and one `<scri
 - moves any old browser-only project names into the database;
 - repairs sources whose checkpoint answers were pre-filled by the AI;
 - runs `migrate()`, which moves a library from the very first version (IndexedDB) to the server once;
+- restores the screen from the URL hash (`#/library`, `#/notebook/ID`, `#/read/ID/tab`) so a reload returns to it; `renderRail()` rewrites the hash with `history.replaceState` on every render (no back/forward entries);
 - renders, and starts loading feeds and Whisper's status.
