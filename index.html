@@ -1209,19 +1209,31 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
 
 // ---------- state ----------
-let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, ffilter = {}; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
-const PRESETS = [['OpenRouter', 'https://openrouter.ai/api/v1'], ['OpenAI', 'https://api.openai.com/v1'], ['Claude (Anthropic)', 'https://api.anthropic.com/v1'], ['Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/openai'], ['Ollama (this computer)', 'http://localhost:11434/v1'], ['Other', '']];
+let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, ffilter = {}, stat = {}, mstat = {}, dragFrom = null; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
+const PRESETS = [['OpenRouter', 'https://openrouter.ai/api/v1'], ['OpenAI', 'https://api.openai.com/v1'], ['Claude (Anthropic)', 'https://api.anthropic.com/v1'], ['Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/openai'], ['NVIDIA', 'https://integrate.api.nvidia.com/v1'], ['Groq', 'https://api.groq.com/openai/v1'], ['DeepSeek', 'https://api.deepseek.com/v1'], ['Mistral', 'https://api.mistral.ai/v1'], ['xAI (Grok)', 'https://api.x.ai/v1'], ['Together AI', 'https://api.together.xyz/v1'], ['Fireworks', 'https://api.fireworks.ai/inference/v1'], ['Hugging Face', 'https://router.huggingface.co/v1'], ['Cerebras', 'https://api.cerebras.ai/v1'], ['SambaNova', 'https://api.sambanova.ai/v1'], ['Ollama (this computer)', 'http://localhost:11434/v1'], ['Other', '']];
 // One ordered list of models. Each row says which provider answers it; ↑ ↓ change the order they are tried in.
 const foundHTML = (p, i) => { // what a provider offers: a filter and a short scrolling list; clicking a name adds it
-  const v = found[p.id]; if (!v) return ''; if (typeof v === 'string') return `<small class="muted">${esc(v)}</small>`;
+  if (!found[p.id]) return ''; if (typeof found[p.id] === 'string') return `<small class="muted">${esc(found[p.id])}</small>`;
+  const v = left(p); // models already in the list are not offered again
   const q = (ffilter[p.id] || '').toLowerCase(), hit = v.filter(m => m.id.toLowerCase().includes(q));
   return `<input data-ff="${i}" value="${esc(ffilter[p.id] || '')}" placeholder="Filter ${v.length} models" aria-label="Filter models" autocomplete="off" spellcheck="false" style="margin-top:6px"><div id="fl${i}" style="max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:var(--r);margin-top:4px">${foundRows(p, i)}</div><small class="muted" id="fc${i}">${hit.length > 80 ? `Showing 80 of ${hit.length}. Type to narrow it down.` : `${hit.length} shown. Click one to add it.`}</small>`;
 };
-const foundRows = (p, i) => { const q = (ffilter[p.id] || '').toLowerCase(); return found[p.id].filter(m => m.id.toLowerCase().includes(q)).slice(0, 80).map(m => `<button type="button" data-act="cfgpick" data-i="${i}" data-id="${esc(m.id)}" style="display:block;width:100%;text-align:left;border:0;border-radius:0;min-height:30px;padding:3px 10px;background:none;font-size:13px;white-space:normal;overflow-wrap:anywhere">${esc(m.id)}${m.free ? ' <small class="muted">free</small>' : ''}</button>`).join('') || '<p class="muted" style="margin:8px 10px">No match.</p>'; };
+const left = p => found[p.id].filter(m => !cfg.chain.some(e => e.p === p.id && e.m === m.id));
+const foundRows = (p, i) => { const q = (ffilter[p.id] || '').toLowerCase(); return left(p).filter(m => m.id.toLowerCase().includes(q)).slice(0, 80).map(m => `<button type="button" data-act="cfgpick" data-i="${i}" data-id="${esc(m.id)}" style="display:block;width:100%;text-align:left;border:0;border-radius:0;min-height:30px;padding:3px 10px;background:none;font-size:13px;white-space:normal;overflow-wrap:anywhere">${esc(m.id)}${m.free ? ' <small class="muted">free</small>' : ''}</button>`).join('') || '<p class="muted" style="margin:8px 10px">No match.</p>'; };
+const probe = async p => { // asks the service for its model list: proves the address and key work, and fills the pick list
+  stat[p.id] = { ok: null, msg: 'Testing…' }; found[p.id] = '';
+  try { const l = await send('POST', 'settings/models', { id: p.id, name: p.name, url: p.url, key: p.key, clearKey: p.clearKey }); found[p.id] = l; stat[p.id] = { ok: true, msg: `Connected · ${l.length} model${l.length === 1 ? '' : 's'}` }; }
+  catch (e) { delete found[p.id]; stat[p.id] = { ok: false, msg: e.message }; }
+};
+const saveCfg = async () => { // writes the Settings form to the server and reloads it (keys come back masked); true if it worked
+  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: cfg.chain, vision: cfg.vision, paid: !!$('input[name=paid]')?.checked }); cfg = await api('settings'); return true; }
+  catch (e) { toast('Could not save the settings: ' + e.message + '.'); return false; }
+};
+const persist = async () => { render(); if (await saveCfg()) render(); }; // order and picks are saved as soon as they change
 const chainHTML = (k, label) => {
   const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?';
-  return `<h4 style="margin:16px 0 4px">${label}</h4><ol class="chain" style="padding-left:22px;margin:0">${rows.map((e, i) => `<li style="margin:3px 0"><span class="row" style="gap:6px;flex-wrap:nowrap"><small class="muted" style="flex:none;max-width:30%">${esc(name(e.p))}</small> <code style="flex:1;min-width:0;overflow-wrap:anywhere;font-size:12.5px;background:none;padding:0">${esc(e.m)}</code>
-    <button type="button" data-act="cfgmv" data-k="${k}" style="min-width:0;width:auto;flex:none;padding:2px 10px" data-i="${i}" data-d="-1" aria-label="Move ${esc(e.m)} up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-act="cfgmv" data-k="${k}" style="min-width:0;width:auto;flex:none;padding:2px 10px" data-i="${i}" data-d="1" aria-label="Move ${esc(e.m)} down" ${i < rows.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-act="cfgrm" data-k="${k}" style="min-width:0;width:auto;flex:none;padding:2px 10px" data-i="${i}" aria-label="Remove ${esc(e.m)}">Remove</button></span></li>`).join('') || '<li class="muted">Empty.' + (k === 'vision' ? ' Figures then use the model list above.' : '') + '</li>'}</ol>
+  return `<h4 style="margin:16px 0 4px">${label}</h4><ol class="chain" style="padding-left:22px;margin:0">${rows.map((e, i) => { const t = mstat[k + '|' + e.p + '|' + e.m]; return `<li draggable="true" data-k="${k}" data-i="${i}" style="margin:3px 0;cursor:grab"><span class="row" style="gap:6px;flex-wrap:nowrap"><span aria-hidden="true" title="Drag to reorder" class="muted" style="flex:none">⠿</span><small class="muted" style="flex:none;max-width:30%">${esc(name(e.p))}</small> <code style="flex:1;min-width:0;overflow-wrap:anywhere;font-size:12.5px;background:none;padding:0">${esc(e.m)}</code>${t ? `<small role="status" style="flex:none;font-weight:600;color:var(${t.ok === null ? '--muted' : t.ok ? '--ok' : '--vid'})">● ${esc(t.msg)}</small>` : ''}
+    <button type="button" data-act="cfgtm" data-k="${k}" data-i="${i}" style="min-width:0;width:auto;flex:none;padding:2px 10px" aria-label="Test ${esc(e.m)}">Test</button><button type="button" data-act="cfgrm" data-k="${k}" style="min-width:0;width:auto;flex:none;padding:2px 10px" data-i="${i}" aria-label="Remove ${esc(e.m)}">Remove</button></span></li>`; }).join('') || '<li class="muted">Empty.' + (k === 'vision' ? ' Figures then use the model list above.' : '') + '</li>'}</ol>
     <p class="row" style="margin:8px 0 0"><select id="add-${k}-p" aria-label="Provider" style="width:auto;flex:none">${cfg.providers.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><input id="add-${k}-m" class="grow" placeholder="model name" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgadd" data-k="${k}" style="min-width:0;width:auto;flex:none">Add</button></p>`;
 };
 let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, fx = false;
@@ -1927,14 +1939,18 @@ const PAGE = {
     const c = cfg;
     return `<div class="wrap narrow"><h1>Settings</h1>${lookPicker()}<div class="sec"><h3>AI services</h3></div><p class="muted lead">Add each service you have a key for (Claude, OpenAI, OpenRouter, a model on this computer), then pick the models and put them in the order Marrow should try them. If one fails, the next one answers. Any service that speaks the OpenAI chat format works.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
       <form data-f="cfg" class="box set">
-        <h4 style="margin:0 0 4px">Providers</h4>
+        <div class="row" style="margin:0 0 8px"><h4 class="grow" style="margin:0">Providers</h4><button type="button" data-act="cfgall">Save &amp; test all</button></div>
         ${c.providers.map((p, i) => `<div class="box flat" style="margin:0 0 10px">
-          <label for="pn${i}">Name</label><input id="pn${i}" data-cf="name" data-i="${i}" value="${esc(p.name)}" autocomplete="off">
-          <label for="pu${i}">API address</label><input id="pu${i}" data-cf="url" data-i="${i}" required value="${esc(p.url)}" autocomplete="off">
-          <label for="pk${i}">API key</label><input id="pk${i}" data-cf="key" data-i="${i}" type="password" autocomplete="off" placeholder="${p.clearKey ? 'No key' : p.hasKey ? 'Leave empty to keep the saved key, or paste a new one' : 'Paste your key'}">
-          <small class="muted">${p.clearKey ? 'The saved key is removed when you save.' : p.hasKey ? `A key ending in ${esc(p.hint)} is ${p.fromEnv ? 'in the .env file' : 'saved'}.${p.fromEnv ? '' : ` <a href="#" data-act="cfgdel" data-i="${i}">Remove it</a>`}` : 'No key. A model on this computer, such as Ollama, does not need one.'} Your key is stored encrypted on the server and never reaches the browser.</small>
-          <p class="row" style="margin:8px 0 0"><button type="button" data-act="cfgfind" data-i="${i}">Find models</button>${c.providers.length > 1 ? `<button type="button" data-act="cfgrmp" data-i="${i}">Remove provider</button>` : ''}</p>
+          <p class="row" style="margin:0"><b class="grow" style="font-size:16px">${esc(p.name)}</b>${p.clearKey || !(p.hasKey || p.key) ? '<span class="tag">No key</span>' : '<span class="tag ok">Key ready</span>'}${c.providers.length > 1 ? `<button type="button" data-act="cfgrmp" data-i="${i}" style="min-width:0;width:auto">Remove</button>` : ''}</p>
+          <label for="pk${i}">API key</label>${p.hasKey && !p.clearKey && !p.replace
+            ? `<p class="row" style="margin:0"><code class="grow" style="letter-spacing:.12em">••••••••••••${esc(p.hint)}</code><button type="button" data-act="cfgrep" data-i="${i}" style="min-width:0;width:auto">Replace</button><button type="button" data-act="cfgdel" data-i="${i}" style="min-width:0;width:auto">Remove key</button></p>`
+            : `<input id="pk${i}" data-cf="key" data-i="${i}" type="password" autocomplete="off" placeholder="${p.clearKey ? 'No key' : 'Paste your key'}">`}
+          <small class="muted">${p.clearKey ? 'The saved key is removed when you save. <a href="#" data-act="cfgundo" data-i="${i}">Undo</a>' : p.replace ? 'The new key replaces the saved one when you save. <a href="#" data-act="cfgundo" data-i="${i}">Keep the saved key</a>' : p.hasKey ? '' : 'Ollama on this computer needs no key.'} Keys are stored encrypted on the server and never reach the browser.</small>
+          <p class="row" style="margin:10px 0 0"><button type="button" data-act="cfgfind" data-i="${i}" class="pri">Save &amp; test connection</button>${stat[p.id] ? `<span role="status" style="font-weight:600;color:var(${stat[p.id].ok === null ? '--muted' : stat[p.id].ok ? '--ok' : '--vid'})">● ${esc(stat[p.id].msg)}</span>` : '<small class="muted" style="margin:0">Saves your key, then checks it</small>'}</p>
           ${foundHTML(p, i)}
+          <details style="margin-top:10px" ${p.url ? '' : 'open'}><summary class="muted" style="cursor:pointer">Name and API address</summary>
+            <label for="pn${i}">Name</label><input id="pn${i}" data-cf="name" data-i="${i}" value="${esc(p.name)}" autocomplete="off">
+            <label for="pu${i}">API address</label><input id="pu${i}" data-cf="url" data-i="${i}" required value="${esc(p.url)}" autocomplete="off" placeholder="https://…/v1"></details>
         </div>`).join('')}
         <p class="row" style="margin:0"><select id="newp" aria-label="Service to add">${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
         ${chainHTML('chain', 'Models, tried from the top until one answers')}
@@ -2595,17 +2611,20 @@ const ACT = {
   ssort: el => { S.sort = el.value; render(); },
   pick: el => { picks[el.checked ? 'add' : 'delete'](el.dataset.id); libRows(); },
   unpick: () => { picks.clear(); libRows(); },
-  cfgdel: el => { cfg.providers[+el.dataset.i].clearKey = true; render(); }, // takes effect on Save
-  cfgfind: async el => { // lists what this provider offers; clicking one adds it to the models list
-    const p = cfg.providers[+el.dataset.i]; found[p.id] = 'Asking the service…'; render();
-    try { found[p.id] = await api('settings/models?provider=' + encodeURIComponent(p.id)); if (!found[p.id].length) found[p.id] = 'The service listed no models.'; }
-    catch (e) { found[p.id] = e.message + '. Finding models uses what is saved, so save a new provider first.'; }
+  cfgdel: el => { const p = cfg.providers[+el.dataset.i]; p.clearKey = true; p.replace = false; p.key = ''; render(); }, // takes effect on Save
+  cfgrep: el => { cfg.providers[+el.dataset.i].replace = true; render(); },
+  cfgundo: el => { const p = cfg.providers[+el.dataset.i]; p.clearKey = p.replace = false; p.key = ''; render(); },
+  cfgfind: async el => { const id = cfg.providers[+el.dataset.i].id; if (await saveCfg()) await probe(cfg.providers.find(p => p.id === id)); render(); }, // saves, then tests and loads the models
+  cfgall: async () => { if (await saveCfg()) await Promise.all(cfg.providers.map(probe)); render(); },
+  cfgpick: el => { const p = cfg.providers[+el.dataset.i]; if (!cfg.chain.some(e => e.p === p.id && e.m === el.dataset.id)) cfg.chain.push({ p: p.id, m: el.dataset.id }); persist(); },
+  cfgadd: el => { const k = el.dataset.k, m = $('#add-' + k + '-m').value.trim(), p = $('#add-' + k + '-p').value; if (m && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push({ p, m }); persist(); },
+  cfgtm: async el => { // asks this one model for a one-word reply (saves first: the server tests what is saved)
+    const k = el.dataset.k, e = cfg[k][+el.dataset.i], key = k + '|' + e.p + '|' + e.m, t = Date.now();
+    mstat[key] = { ok: null, msg: 'Testing…' }; render();
+    if (await saveCfg()) { try { await send('POST', 'settings/test', { p: e.p, m: e.m }); mstat[key] = { ok: true, msg: `Works · ${((Date.now() - t) / 1000).toFixed(1)} s` }; } catch (x) { mstat[key] = { ok: false, msg: x.message.replace(/^.*?\/ [^:]+: /, '') }; } } else delete mstat[key];
     render();
   },
-  cfgpick: el => { const p = cfg.providers[+el.dataset.i]; if (!cfg.chain.some(e => e.p === p.id && e.m === el.dataset.id)) cfg.chain.push({ p: p.id, m: el.dataset.id }); render(); },
-  cfgadd: el => { const k = el.dataset.k, m = $('#add-' + k + '-m').value.trim(), p = $('#add-' + k + '-p').value; if (m && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push({ p, m }); render(); },
-  cfgmv: el => { const l = cfg[el.dataset.k], i = +el.dataset.i, j = i + +el.dataset.d; if (l[j]) [l[i], l[j]] = [l[j], l[i]]; render(); },
-  cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); render(); },
+  cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); persist(); },
   cfgaddp: () => { const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
   cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); for (const k of ['chain', 'vision']) cfg[k] = cfg[k].filter(e => e.p !== p.id); render(); },
   cfgtest: async () => { // asks the saved models, in order, for a one-word reply and says, in place, whether it worked
@@ -2779,10 +2798,7 @@ const FORM = {
     b.disabled = false;
   },
   disc: f => discover(f.q.value.trim()),
-  cfg: async f => {
-    try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: cfg.chain, vision: cfg.vision, paid: f.paid.checked }); found = {}; cfg = await api('settings'); toast('Settings saved. Checking that the service answers…'); render(); ACT.cfgtest(); }
-    catch (e) { toast('Could not save the settings: ' + e.message + '.'); }
-  },
+  cfg: async f => { if (await saveCfg()) { toast('Settings saved. Checking that the service answers…'); render(); ACT.cfgtest(); } },
   work: f => { work(f.q.value); f.q.value = ''; },
   mxadd: f => { const c = f.c.value.trim(); if (!c) return; if (!mxCols().some(x => x.label.toLowerCase() === c.toLowerCase())) mxP().cols.push(c); mxP().hide = mxP().hide.filter(x => x !== 'c:' + c); mxKeep(); render(); },
   renproj: f => {
@@ -2825,6 +2841,15 @@ function onClick(e) {
   gotoPage(+d.page);
 }
 document.addEventListener('click', onClick);
+// Drag a model row onto another to change the order it is tried in.
+document.addEventListener('dragstart', e => { const li = e.target.closest?.('li[data-k]'); if (li) { dragFrom = li; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); } });
+document.addEventListener('dragover', e => { const li = e.target.closest?.('li[data-k]'); if (dragFrom && li && li.dataset.k === dragFrom.dataset.k) e.preventDefault(); });
+document.addEventListener('drop', e => {
+  const li = e.target.closest?.('li[data-k]'); if (!dragFrom || !li || li.dataset.k !== dragFrom.dataset.k) return;
+  e.preventDefault(); const l = cfg[li.dataset.k], [m] = l.splice(+dragFrom.dataset.i, 1); l.splice(+li.dataset.i, 0, m); dragFrom = null; persist();
+});
+document.addEventListener('dragend', () => { dragFrom = null; });
+
 // Fields save when you leave them. Nothing is re-rendered here: that would swallow the click that caused the blur.
 document.addEventListener('change', e => {
   const d = e.target.dataset;

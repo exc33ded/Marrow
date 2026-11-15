@@ -33,7 +33,7 @@ covers: [server.js]
 | `POST /api/activity` | log a study event |
 | `GET /api/fetch?url=` | fetch a pasted link (below) |
 | `POST /api/ai` | AI proxy |
-| `GET` / `PUT /api/settings`, `GET /api/settings/models`, `POST /api/settings/test` | AI settings |
+| `GET` / `PUT /api/settings`, `POST /api/settings/models`, `POST /api/settings/test` | AI settings |
 | `/api/whisper`, `/api/whisper/use`, `/api/transcribe`, `/api/ytaudio`, `/api/ytsubs` | see [transcription](transcription.md) |
 
 IDs in paths must match `[\w-]{1,64}`.

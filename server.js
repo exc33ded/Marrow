@@ -156,8 +156,7 @@ async function ai(uid, c, messages) {
 }
 
 // The models a provider offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
-async function offered(c, id) {
-  const p = c.providers.find(x => x.id === id); if (!p) throw fail(404, 'unknown provider');
+async function offered(p) { // p is the provider as typed in Settings, so a new one can be tried before it is saved
   const r = await fetch(p.url + '/models', { headers: headers(p), signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${p.url}`); });
   if (r.status === 401 || r.status === 403) throw fail(401, `${p.name} rejected the API key`);
   const j = await r.json().catch(() => ({}));
@@ -398,8 +397,13 @@ http.createServer(async (req, res) => {
       for (const k of cooling.keys()) if (k.startsWith(ctx.uid + '|')) cooling.delete(k);
       return send(res, 200, {});
     }
-    if (p === '/api/settings/models' && M === 'GET') return send(res, 200, await offered(conf(await S()), q('provider')));
-    if (p === '/api/settings/test' && M === 'POST') { const r = await ai(ctx.uid, conf(await S()), [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
+    if (p === '/api/settings/models' && M === 'POST') { // the key comes from the form if typed, else the saved one for that provider
+      const b = await json(req, 1e5), url = String(b.url || '').trim().replace(/\/+$/, '');
+      try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw fail(400, 'the API address must start with http:// or https://'); }
+      const saved = conf(await S()).providers.find(x => x.id === b.id);
+      return send(res, 200, await offered({ name: String(b.name || '').trim() || url, url, key: String(b.key || '').trim() || (b.clearKey ? '' : saved?.key || '') }));
+    }
+    if (p === '/api/settings/test' && M === 'POST') { const b = await json(req, 1e4), c = conf(await S()); if (b.p && b.m) c.chain = [{ p: String(b.p), m: String(b.m) }]; /* one model, or the whole saved list */ const r = await ai(ctx.uid, c, [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
     // ponytail: Whisper and yt-dlp run on this server's computer and are shared by every reader. Fine on your own machine; a small free host can't run them.
     if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState(await S()));
     if (p === '/api/whisper' && (M === 'POST' || M === 'DELETE')) { // what = model:<id> | program | ytdlp
