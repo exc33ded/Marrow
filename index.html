@@ -2174,6 +2174,7 @@ function drawMap(ps, all) {
     ],
   });
   mapLayout(layout === 'tree' ? cy.elements().not('[solo]') : null, layout);
+  if (layout.name === 'cose') springy(cy);
   let picked = null;
   const hint = `<span class="muted">Click a concept to see everything you know about it: what each source says, how it links to other ideas, and your own highlights, cards and pages that mention it.</span>`;
   const trace = n => { if (!n.visible()) return cy.elements().removeClass('dim hl'); cy.elements().addClass('dim').removeClass('hl'); n.closedNeighborhood().removeClass('dim'); n.connectedEdges().addClass('hl'); };
@@ -2201,6 +2202,34 @@ function drawMap(ps, all) {
       : conceptPanel(e.target, all);
     window.renderMathInElement?.($in('#node'), MATH);
   });
+}
+// Obsidian-style: drag a node and its neighbours follow on springs, then the map drifts back to rest.
+// ponytail: all-pairs repulsion each frame, so it is skipped above 400 nodes; use a grid or quadtree if bigger maps need it.
+function springy(c) {
+  let held = null, on = false;
+  const step = () => {
+    if (c.destroyed()) return on = false;
+    const ns = c.nodes(':visible').toArray(), f = new Map(ns.map(n => [n, { x: 0, y: 0 }])); let top = 0;
+    for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) {
+      const a = ns[i].position(), b = ns[j].position(), dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy + 1;
+      if (d2 > 90000) continue; const k = 2200 / d2, d = Math.sqrt(d2), p = f.get(ns[i]), q = f.get(ns[j]);
+      p.x += dx / d * k; p.y += dy / d * k; q.x -= dx / d * k; q.y -= dy / d * k;
+    }
+    c.edges(':visible').forEach(e => {
+      const s = e.source(), t = e.target(), a = s.position(), b = t.position(), dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1, k = (d - 110) * .04, p = f.get(s), q = f.get(t);
+      if (!p || !q) return; p.x += dx / d * k; p.y += dy / d * k; q.x -= dx / d * k; q.y -= dy / d * k;
+    });
+    for (const n of ns) {
+      if (n === held) { n.scratch('v', { x: 0, y: 0 }); continue; }
+      const v = n.scratch('v') || { x: 0, y: 0 }, g = f.get(n);
+      v.x = (v.x + g.x) * .8; v.y = (v.y + g.y) * .8; top = Math.max(top, Math.abs(v.x), Math.abs(v.y));
+      n.position({ x: n.position('x') + v.x, y: n.position('y') + v.y }); n.scratch('v', v);
+    }
+    on = held || top > .15; on ? requestAnimationFrame(step) : 0;
+  };
+  const go = () => { if (!on && c.nodes().length <= 400) { on = true; requestAnimationFrame(step); } };
+  c.on('grab', 'node', e => { held = e.target; go(); });
+  c.on('free', 'node', () => { held = null; go(); });
 }
 // Runs a layout and, once it settles, stops zooming out far past the whole map.
 function mapLayout(eles, layout, root) {
