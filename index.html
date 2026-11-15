@@ -2024,6 +2024,7 @@ function renderRail() {
   $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : ''; $('#outBtn').innerHTML = ic('out', 20) + 'Log out';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
   $('#status').textContent = working;
+  try { history.replaceState(null, '', view === 'read' && P ? `#/read/${P.id}/${tab}` : `#/${view}${view === 'notebook' && N ? '/' + N : ''}`); } catch {} // the screen lives in the URL so a reload comes back to it
 }
 function render() {
   renderRail();
@@ -2967,6 +2968,9 @@ try {
   await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
 } catch (e) { toast('Could not reach the Marrow server (' + e.message + '). Check that it is still running, then reload this page.'); }
 try { const c = JSON.parse(localStorage.newsCache); if (c && feeds.length) { news = c.items.filter(x => feeds.some(f => f.url === x.src)); newsAt = c.at; } } catch {} // posts from the last visit, shown at once
+{ const [v, a, b] = location.hash.slice(2).split('/'); // restore the screen from the URL: #/library, #/notebook/ID, #/read/ID/tab
+  if (v === 'read' && byId(a)) { await openItem(a); if (TABS.some(t => t[0] === b)) tab = b; }
+  else if (PAGE[v]) { N = a || null; v === 'settings' ? go(v) : view = v; } }
 enter($('#page')); render(); loadNews(); // the unread count on Discover's nav button
 loadWh().then(() => view === 'read' && tab === 'brief' && P?.kind === 'video' && !P.pages.length && render()).catch(() => {}); // a video without a transcript offers Whisper
 </script>
