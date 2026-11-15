@@ -340,7 +340,11 @@ http.createServer(async (req, res) => {
     if (p.startsWith('/api/') && /^(cross-site|same-site)$/.test(req.headers['sec-fetch-site'] || '')) throw fail(403, 'cross-site request refused');
 
     if (M === 'GET' && (p === '/' || p === '/index.html')) return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8');
-    if (M === 'GET' && p === '/api/library') return send(res, 200, library());
+    if (M === 'GET' && p === '/api/library') return send(res, 200, { ...library(), projects: JSON.parse(saved('projects') || '[]') });
+    if (M === 'PUT' && p === '/api/projects') { // project names, so a project with nothing in it yet is kept too
+      const b = await json(req, 1e5); if (!Array.isArray(b.list)) throw fail(400, 'list must be an array');
+      db.prepare('INSERT OR REPLACE INTO settings VALUES(?,?)').run('projects', JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean))); return send(res, 200, {});
+    }
     if (M === 'GET' && p === '/api/search') return send(res, 200, search(q('q'), q('phrase')));
     if (M === 'GET' && p === '/api/discover') return send(res, 200, await discover(q('q')));
     if (M === 'POST' && p === '/api/ai') {

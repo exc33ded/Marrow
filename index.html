@@ -488,7 +488,9 @@ const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: ''
 const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'compass'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
 const TABS = [['brief', 'Brief'], ['read', 'Read'], ['teach', 'Teach'], ['cards', 'Cards'], ['map', 'Map'], ['notes', 'Notes'], ['ask', 'Ask']];
 const byId = id => lib.find(p => p.id === id);
-const projects = () => [...new Set([...lsGet('projects', []), ...[...lib, ...notes].map(x => x.project)].filter(Boolean))].sort(); // a project exists once it is created, before it has any sources
+let PJ = []; // names of projects, kept in the database; lets a project exist before it has anything in it
+const saveProjects = () => send('PUT', 'projects', { list: PJ }).catch(e => toast('Could not save the project list: ' + e.message));
+const projects = () => [...new Set([...PJ, ...[...lib, ...notes].map(x => x.project)].filter(Boolean))].sort(); // a project exists once it is created, before it has any sources
 const inScope = () => lib.filter(p => !F.project || p.project === F.project);
 // The matrix and the map share one set of filters, so narrowing 200 sources down in one narrows the other.
 const S = { q: '', kind: '', y0: '', y1: '', sort: 'added' }, M = { shared: null, by: 'cluster' }, picks = new Set();
@@ -1797,7 +1799,7 @@ const ACT = {
     if (!await sure(`Delete the project “${old}”?`, `Its ${ps.length} source${ps.length === 1 ? '' : 's'} and ${ns.length} notebook page${ns.length === 1 ? '' : 's'} are kept and become unfiled. The project's matrix column settings are removed. This cannot be undone.`, 'Delete project')) return;
     for (const p of ps) { p.project = ''; save(p); }
     for (const n of ns) { n.project = ''; saveNote(n); }
-    lsSet('projects', lsGet('projects', []).filter(x => x !== old)); delete mxAll[old]; mxKeep();
+    PJ = PJ.filter(x => x !== old); saveProjects(); delete mxAll[old]; mxKeep();
     ACT.setproject({ dataset: { v: '' } }); toast(`Deleted the project “${old}”. Its sources are under “Not in a project yet”.`);
   },
   moveto: el => { // file the ticked sources under a project
@@ -1987,11 +1989,11 @@ const FORM = {
     const merged = projects().includes(v);
     for (const p of lib) if (p.project === old) { p.project = v; save(p); }
     for (const n of notes) if (n.project === old) { n.project = v; saveNote(n); }
-    lsSet('projects', [...new Set(lsGet('projects', []).map(x => x === old ? v : x).concat(v))]);
+    PJ = [...new Set(PJ.map(x => x === old ? v : x).concat(v))]; saveProjects();
     if (!merged && mxAll[old]) mxAll[v] = mxAll[old]; delete mxAll[old]; mxKeep();
     ACT.setproject({ dataset: { v } }); toast(merged ? `Merged “${old}” into the existing project “${v}”.` : `Renamed to “${v}”.`);
   },
-  newproj: f => { const v = f.p.value.trim(); if (!v) return; lsSet('projects', [...new Set([...lsGet('projects', []), v])]); ACT.setproject({ dataset: { v } }); toast(`Project “${v}” created. Sources you add now are filed in it.`); },
+  newproj: f => { const v = f.p.value.trim(); if (!v) return; PJ = [...new Set([...PJ, v])]; saveProjects(); ACT.setproject({ dataset: { v } }); toast(`Project “${v}” created. Sources you add now are filed in it.`); },
   follow: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); b.disabled = true; toast('Looking for the feed…');
     try {
@@ -2127,7 +2129,9 @@ $('#sel').onclick = e => {
 
 // ---------- boot ----------
 try {
-  ({ items: lib, notes, activity, feeds = [] } = await api('library'));
+  ({ items: lib, notes, activity, feeds = [], projects: PJ = [] } = await api('library'));
+  const old = lsGet('projects', []).filter(x => !PJ.includes(x)); // project names this browser kept before they moved into the database
+  if (old.length) { PJ = [...PJ, ...old]; await saveProjects(); } try { delete localStorage.projects; } catch {}
   F.project = lsGet('project', ''); if (!projects().includes(F.project)) F.project = '';
   // Repair sources analyzed before the fix above: if every checkpoint already has an answer and none was ever checked, the AI wrote them, not the reader.
   for (const p of lib) if (p.sections.length > 1 && p.sections.every(s => s.answer && !s.done && !s.feedback)) { p.sections.forEach(s => delete s.answer); save(p); }
