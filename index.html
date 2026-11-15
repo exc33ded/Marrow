@@ -1496,16 +1496,26 @@ async function create(kind, title, extra, pp) {
   p.parts = pp; p.pages = pp.map(x => x.body); lib.unshift(p);
   await openItem(p.id);
   if (p.pages.join('').length >= 500) analyze();
-  else if (kind !== 'video') toast('Very little readable text here (a scanned PDF?). AI features need selectable text.');
+  else if (kind !== 'video') toast('Very little readable text found, even after OCR. AI features need text to work with.');
 }
 async function addPdf(buf, name, extra = {}) {
   const id = crypto.randomUUID();
   await api('files/' + id, { method: 'PUT', body: buf.slice(0) }); // copy: pdf.js detaches the buffer it is given
   const doc = await pdfjsLib.getDocument({ data: buf }).promise, pages = [];
+  let ocr;
   for (let i = 1; i <= doc.numPages; i++) {
-    const tc = await (await doc.getPage(i)).getTextContent();
-    pages.push({ body: tc.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join('').replace(/[ \t]+/g, ' ') });
+    const pg = await doc.getPage(i), tc = await pg.getTextContent();
+    let body = tc.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join('').replace(/[ \t]+/g, ' ');
+    if (body.trim().length < 20) { // a scan or a screenshot saved as PDF: no text layer, so read the picture
+      toast(`Scanned page: reading it with OCR (${i} of ${doc.numPages})…`);
+      ocr ||= await import('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js').then(m => (m.default || m).createWorker('eng'));
+      const vp = pg.getViewport({ scale: 2 }), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      body = (await ocr.recognize(c)).data.text.replace(/[ \t]+/g, ' ');
+    }
+    pages.push({ body });
   }
+  await ocr?.terminate();
   const meta = await doc.getMetadata().catch(() => null);
   await create('pdf', extra.title || meta?.info?.Title?.trim() || name.replace(/\.pdf$/i, ''), { ...extra, id }, pages);
 }
