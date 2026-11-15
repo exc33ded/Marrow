@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marrow: a research desk for one</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b4460f'/><text x='16' y='23' font-size='20' font-family='Georgia' font-weight='700' text-anchor='middle' fill='white'>M</text></svg>">
-<script>try { const q = new URLSearchParams(location.search), d = document.documentElement.dataset; d.theme = q.get('theme') || localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); const l = q.get('look') ?? localStorage.look; if (l) d.look = l; } catch {}</script>
+<script>try { const q = new URLSearchParams(location.search), d = document.documentElement.dataset; d.theme = q.get('theme') || localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); const l = q.get('look') ?? localStorage.look ?? 'studio'; if (l) d.look = l; } catch {}</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Schibsted+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=Source+Sans+3:wght@400..700&family=JetBrains+Mono:wght@400..700&family=Archivo:wght@400..700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Schibsted+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=Source+Sans+3:wght@400..700&family=JetBrains+Mono:wght@400..700&family=Archivo:wght@400..700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.31.7/dist/editorjs.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.9/dist/header.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@2.0.9/dist/editorjs-list.umd.js"></script>
@@ -27,10 +27,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
 <style>
-:root{--f-body:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;--f-display:Newsreader,"Iowan Old Style",Georgia,serif;--f-mono:"IBM Plex Mono",monospace;--r:4px;--r2:6px;--pri:#b4460f;--pri-h:#c5521a;--on-pri:#fff;--on-n:#fff;--scrim:#0b0f0d8c;--logo-a:#d65f1f;--logo-b:#9c3a0a;--sig:var(--acc)}
+[data-look=""],:root{--f-body:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;--f-display:Newsreader,"Iowan Old Style",Georgia,serif;--f-mono:"IBM Plex Mono",monospace;--r:4px;--r2:6px;--pri:#b4460f;--pri-h:#c5521a;--on-pri:#fff;--on-n:#fff;--scrim:#0b0f0d8c;--logo-a:#d65f1f;--logo-b:#9c3a0a;--sig:var(--acc)}
 [data-theme=dark]{--on-n:#1b1916}
 /* palette: the grey-green of a lab notebook's ruled paper, with rust ink as the one accent */
-:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;--pop:0 6px 18px #0002;--h0:color-mix(in oklab,var(--ink) 18%,var(--bg));--h1:color-mix(in oklab,var(--ok) 34%,var(--bg));--h2:color-mix(in oklab,var(--ok) 56%,var(--bg));--h3:color-mix(in oklab,var(--ok) 78%,var(--bg));--h4:var(--ok);color-scheme:light}
+[data-look=""],:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;--pop:0 6px 18px #0002;--h0:color-mix(in oklab,var(--ink) 18%,var(--bg));--h1:color-mix(in oklab,var(--ok) 34%,var(--bg));--h2:color-mix(in oklab,var(--ok) 56%,var(--bg));--h3:color-mix(in oklab,var(--ok) 78%,var(--bg));--h4:var(--ok);color-scheme:light}
 [data-theme=dark]{--bg:#0f1412;--panel:#161c19;--ink:#e4eae6;--muted:#8c9991;--line:#29322d;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#090c0a;--web:#7fb6e0;--vid:#f2857c;--sh:none;--pop:0 6px 18px #0008;color-scheme:dark}
 *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 *::-webkit-scrollbar{width:10px;height:10px} *::-webkit-scrollbar-track{background:transparent}
@@ -134,7 +134,7 @@ button.card{text-align:left;white-space:normal;align-items:flex-start;gap:6px;pa
 .tag.proj{background:none;border:1px solid var(--line);color:var(--muted)} .tag.ok{background:none;border:1px solid var(--ok);color:var(--ok);cursor:default}
 .chip{border-radius:99px;min-height:32px;padding:.2em .9em;font-size:13.5px} .chip.on{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);font-weight:600}
 .filters{margin:0 0 14px} .filters #q{flex:1;min-width:220px;width:auto}
-.x{border:0;background:none;padding:0 6px;min-height:0;color:var(--muted)}
+.x{border:0;background:none;padding:0 6px;min-height:0;color:var(--muted)} .x svg{vertical-align:-2px}
 mark{background:#ffd60070;color:inherit;border-radius:2px}
 .ring{--p:0;--in:var(--panel);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 11px var(--f-body);flex:none;
   background:radial-gradient(closest-side,var(--in) 74%,transparent 76%),conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0)}
@@ -352,7 +352,7 @@ html[data-look=barcode] #rail button:focus-visible{outline-offset:-2px;box-shado
 html[data-look=barcode] .addbar:focus-within{outline:2px solid var(--ink);outline-offset:2px;border-color:var(--ink)}
 html[data-look=barcode] .addbar:focus-within input:focus-visible,html[data-look=barcode] .askbar input:focus-visible{outline:0}
 /* shape */
-html[data-look=barcode] :is(.tag,.kind,.ring,.chip,#status,#tabs button,.dot,.cover,.cover .kind,.num,#tabs i,.srcchip,.prow,.item,#pall button,progress,.bar,.bar i,article img,article pre,.ce-popover-item,.mprev:not(:empty),.askbar,.askbar form button,.icons,#sel,#cy,.mx td textarea,.msg,.blk){border-radius:0!important}
+html[data-look=barcode] :is(.tag,.kind,.ring,#status,.dot,.cover,.cover .kind,.num,#tabs i,.srcchip,.prow,.item,#pall button,progress,.bar,.bar i,article img,article pre,.ce-popover-item,.mprev:not(:empty),.askbar,.askbar form button,.icons,#sel,#cy,.mx td textarea,.msg,.blk){border-radius:0!important}
 html[data-look=barcode] button:hover,html[data-look=barcode] .btn:hover{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);text-decoration:underline;text-underline-offset:3px}
 html[data-look=barcode] button,html[data-look=barcode] .btn{min-height:30px;padding:.3em .7em;border-color:var(--ink);transition:none}
 html[data-look=barcode] button:active{transform:none;background:var(--ink);color:var(--bg)}
@@ -598,7 +598,7 @@ html[data-look=cyanotype] :is(.kind,.k,.mx th,kbd){font-family:var(--f-body)!imp
 html[data-look=cyanotype] .kind{font-family:var(--f-display)!important;font-style:italic;font-weight:400;text-transform:none;letter-spacing:.02em;font-size:13.5px}
 html[data-look=cyanotype] .k{font-style:italic;font-family:var(--f-display)!important;font-weight:400;text-transform:none;font-size:13px;letter-spacing:.03em}
 /* rail: the shell is the colour */
-html[data-look=cyanotype] #rail{background:var(--rail);border-right:1px solid var(--line);scrollbar-color:#2c5f93 transparent}
+html[data-look=cyanotype] #rail{background:var(--rail);color:#fff;border-right:1px solid var(--line);scrollbar-color:#2c5f93 transparent}
 html[data-look=cyanotype] .logo{background:linear-gradient(160deg,var(--logo-a),var(--logo-b));color:#fff;border:1px solid #fffc;font-weight:400;font-style:italic;box-shadow:inset 0 0 0 2px var(--rail),inset 0 0 0 3px #fff6}
 html[data-look=cyanotype] #rail button{color:#cfe2f3;font-weight:500;letter-spacing:.02em}
 html[data-look=cyanotype] #rail button:hover{background:#ffffff1f;color:#fff}
@@ -914,7 +914,94 @@ html[data-look=survey] #status{border-radius:2px;box-shadow:none}
 html[data-look=survey] #toast{border-radius:2px}
 html[data-look=survey] .pk h3{font-size:24px}
 html[data-look=survey] .lookcard[aria-pressed=true]{outline-color:var(--ok)}
+/* look: studio.css */
+/* studio: neutral greys, Figtree, a black-and-white accent and rounded panels, after the Astryx default theme. The rail is text only */
+[data-look=studio]{--bg:#f1f1f1;--panel:#fff;--ink:#0a0a0a;--muted:#474747;--line:#e3e3e3;--line2:#d4d4d4;--hov:#ebebeb;--acc:#1b1b1b;--acc-bg:#e3e3e3;--ok:#198100;--pdf:#e3e3e3;--web:#0074e2;--vid:#c9303a;--sh:none;--pop:0 1px 2px #0000000f,0 8px 24px #0000001a;--pri:#1b1b1b;--pri-h:#3a3a3a;--on-pri:#fff;--on-n:#fff;--scrim:#00000080;--logo-a:#1b1b1b;--logo-b:#1b1b1b;--sig:#0074e2;--h0:#d4d4d4;--h1:#c4e2b8;--h2:#8cc977;--h3:#4c9f33;--h4:#198100;--f-body:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;--f-display:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;--f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;--r:8px;--r2:12px;--rc:16px;--ease:cubic-bezier(.24,1,.4,1);color-scheme:light}
+[data-look=studio][data-theme=dark]{--bg:#1b1b1b;--panel:#262626;--ink:#f5f5f5;--muted:#a3a3a3;--line:#333;--line2:#525252;--hov:#303030;--acc:#f1f1f1;--acc-bg:#3a3a3a;--ok:#64af4c;--pdf:#141414;--web:#6d9cfe;--vid:#ff705d;--sh:none;--pop:0 1px 2px #0000004d,0 8px 24px #00000066;--pri:#f1f1f1;--pri-h:#fff;--on-pri:#111;--on-n:#111;--scrim:#000000cc;--logo-a:#f1f1f1;--logo-b:#f1f1f1;--sig:#6d9cfe;--h0:#333;--h1:#2a4a22;--h2:#3c7a2c;--h3:#52a03c;--h4:#86d06c;color-scheme:dark}
+html[data-look=studio] body{font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+html[data-look=studio] :is(h1,h2,h3,h4,.q,b.h,.hero,.ttl,.sec h3){font-family:var(--f-display);font-weight:600;letter-spacing:-.015em;line-height:1.25}
+html[data-look=studio] h1,html[data-look=studio] .hero{font-size:34px;letter-spacing:-.025em;line-height:1.15}
+html[data-look=studio] .ttl{font-size:40px;letter-spacing:-.025em}
+html[data-look=studio] .sec{margin:32px 0 10px} html[data-look=studio] .sec h3{font-size:17px}
+html[data-look=studio] .lead{color:var(--muted)}
+html[data-look=studio] a{color:var(--ink);text-underline-offset:3px;text-decoration-color:var(--muted)} html[data-look=studio] a:hover{text-decoration-color:currentColor}
+:where(html[data-look=studio]) :focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+html[data-look=studio] ::selection{background:color-mix(in srgb,var(--web) 22%,transparent);color:inherit}
+html[data-look=studio] ::placeholder{color:var(--muted);opacity:1}
+html[data-look=studio] :is(.k,.kind,.mx th,kbd,.nbside .lbl,.runhead){font-family:var(--f-body)!important;text-transform:none;letter-spacing:0;font-weight:500}
+html[data-look=studio] :is(.k,.kind,.nbside .lbl,.runhead){font-size:12.5px;color:var(--muted)}
+html[data-look=studio] kbd{border:1px solid var(--line2);background:var(--panel);border-radius:6px;font-size:11.5px}
+html[data-look=studio] code{background:var(--hov);border-radius:6px;font-family:var(--f-mono)}
+/* controls: 8px corners, quiet borders, a solid black (white in dark) primary */
+:where(html[data-look=studio]) button,:where(html[data-look=studio]) .btn{background:var(--panel);border:1px solid var(--line2);border-radius:999px;padding:.4em 1.15em;min-height:36px;font-weight:500;transition:background .175s var(--ease),border-color .175s var(--ease),transform .175s var(--ease)}
+:where(html[data-look=studio]) button:hover,:where(html[data-look=studio]) .btn:hover{background:var(--hov);border-color:var(--line2)}
+html[data-look=studio] button.pri{background:var(--pri);border:1px solid var(--pri);color:var(--on-pri);font-weight:600} html[data-look=studio] button.pri:hover{background:var(--pri-h);border-color:var(--pri-h)}
+:where(html[data-look=studio]) input,:where(html[data-look=studio]) textarea,:where(html[data-look=studio]) select{background:var(--panel);border:1px solid var(--line2);border-radius:10px;transition:border-color .175s var(--ease)}
+:where(html[data-look=studio]) input:focus,:where(html[data-look=studio]) textarea:focus,:where(html[data-look=studio]) select:focus{border-color:var(--acc)}
+html[data-look=studio] .addbar{background:var(--panel);border-color:var(--line);border-radius:20px;padding:6px;box-shadow:var(--pop)}
+@media (min-width:901px){html[data-look=studio] .addbar{border-radius:999px;padding:6px 6px 6px 12px}} html[data-look=studio] .addbar:focus-within{border-color:var(--acc)}
+html[data-look=studio] .addbar input{border:0}
+html[data-look=studio] :is(progress,input[type=checkbox]){accent-color:var(--acc)}
+html[data-look=studio] :is(.chip,.tag){border-radius:99px}
+html[data-look=studio] .chip.on{background:var(--pri);border-color:var(--pri);color:var(--on-pri)}
+/* surfaces: white cards with 16px corners on a grey desk; a soft lift on hover */
+html[data-look=studio] .card{border-radius:var(--rc);border-color:var(--line);transition:box-shadow .175s var(--ease),border-color .175s var(--ease)}
+html[data-look=studio] .card:hover{transform:none;border-color:var(--line2);box-shadow:var(--pop)}
+html[data-look=studio] .card.flat:hover,html[data-look=studio] form.card:hover{box-shadow:none;border-color:var(--line)}
+html[data-look=studio] .card h4{font-size:16px;font-weight:600}
+html[data-look=studio] :is(.box,.fact,.term,.mxwrap,.pickbar,.tldr,.cover,#cy){border-radius:var(--r2)}
+html[data-look=studio] :is(.item,.prow,#pall button,.whrow,.seg){border-radius:var(--r)}
+html[data-look=studio] :is(.item,.prow,#pall button,.whrow,.seg):hover{background:var(--hov)}
+html[data-look=studio] :is(.item.on,.prow.on,#pall button.on){background:var(--acc-bg);border-color:transparent;color:var(--ink)}
+html[data-look=studio] .mx th{background:var(--bg)}
+/* rail colours (the sidebar layout is in the shell, after the looks) */
+html[data-look=studio] #rail{background:var(--panel);border-right:1px solid var(--line);padding:14px 8px;gap:2px}
+html[data-look=studio] .kind.only svg{display:none}
+html[data-look=studio] #rail svg{flex:none;opacity:.85} html[data-look=studio] #rail button.on svg{opacity:1}
+html[data-look=studio] .kind.only::after{content:attr(data-l);display:inline-block;font:600 11.5px/1 var(--f-body);padding:4px 8px;border-radius:99px;background:var(--hov);color:var(--ink);white-space:nowrap}
+html[data-look=studio] .runhead{border-bottom-color:var(--line)}
+html[data-look=studio] #rail button{padding:8px 4px;font-size:12.5px;font-weight:500;color:var(--muted);border:0;border-radius:var(--r);background:none;min-height:0}
+html[data-look=studio] #rail button:hover{background:var(--hov);color:var(--ink)}
+html[data-look=studio] #rail button.on{background:var(--acc-bg);color:var(--ink);font-weight:600}
+html[data-look=studio] #rail .n{background:var(--pri);color:var(--on-pri)}
+html[data-look=studio] #rail button:focus-visible{outline-offset:-2px}
+/* reader */
+html[data-look=studio] :is(header,#tools,#panel,#tabs){background:var(--panel)}
+html[data-look=studio] #tabs button{border:0;border-radius:999px;font-weight:500;background:none}
+html[data-look=studio] #tabs button:hover{background:var(--hov)}
+html[data-look=studio] #tabs button.on{background:var(--acc-bg);color:var(--ink);font-weight:600}
+html[data-look=studio] #tabs .on i{background:var(--pri);color:var(--on-pri)}
+html[data-look=studio] .msg{border-radius:var(--r2)} html[data-look=studio] .msg.user{background:var(--acc-bg)}
+/* dialogs, palette, toasts */
+html[data-look=studio] :is(#peek,#sure,#pal){border:1px solid var(--line);border-radius:var(--rc);box-shadow:var(--pop)}
+html[data-look=studio] #sure .danger{background:var(--vid);border-color:var(--vid);color:#fff}
+html[data-look=studio][data-theme=dark] #sure .danger{color:#111}
+html[data-look=studio] :is(#status,#toast){border-radius:99px;box-shadow:var(--pop)}
+html[data-look=studio] :is(.askbar,.icons){border-radius:var(--r2);box-shadow:var(--pop)}
+html[data-look=studio] .lookcard{border-radius:var(--r2)} html[data-look=studio] .lookcard[aria-pressed=true]{outline:2px solid var(--acc);outline-offset:2px}
+html[data-look=studio] :is(.heat i,.hleg i){border-radius:3px}
+html[data-look=studio] .heat i[data-today]{outline:2px solid var(--ink);outline-offset:1px}
+@media (max-width:900px){html[data-look=studio] #rail{padding:4px} html[data-look=studio] #rail button{font-size:11px;padding:10px 2px}}
+@media (prefers-reduced-motion:reduce){html[data-look=studio] *{transition-duration:0s!important}}
 /* LOOKS-END */
+/* shell: shared by every look. Shape and layout only; each look keeps its own colours, type and selected states */
+/* the wordmark replaces the logo tile */
+html[data-theme] #rail .logo{width:auto;height:auto;background:none;box-shadow:none;border:0;border-radius:0;color:inherit;font:700 0/1 var(--f-display);overflow:visible;white-space:nowrap;place-items:center start;padding:2px 10px;margin:0 0 18px}
+html[data-theme] #rail .logo::after{content:"Marrow";font-size:17px;letter-spacing:-.02em}
+/* buttons, chips and the reader's step tabs are pills; cards, list rows and sidebar items keep their own corners */
+html[data-theme] :is(button,.btn,.chip,#tabs button):not(.card,.lookcard,#pall button,#rail button){border-radius:999px}
+html[data-theme] :is(button,.btn):not(.card,.lookcard,.x,.dot,.pico,.addico,.add,#pall button,#rail button,#tabs button,#sel button){padding-inline:1.1em}
+html[data-theme] :is(input:not([type=checkbox],[type=radio],[type=range]),textarea,select){border-radius:10px}
+/* on a desk-sized screen the rail is a sidebar: icon and word side by side in a 212px column */
+@media (min-width:901px){
+html[data-theme] body{grid-template-columns:212px minmax(0,1fr)}
+html[data-theme] #rail{align-items:stretch;padding:14px 10px 12px;gap:1px}
+html[data-theme] #rail button{display:flex;align-items:center;gap:10px;width:100%;height:36px;min-height:0;padding:0 10px;font-size:14px;text-align:left;border-radius:8px}
+html[data-theme] #rail svg{flex:none;width:18px;height:18px}
+html[data-theme] #rail .n{position:static;margin-left:auto;min-width:20px;text-align:center;font:600 11px/18px var(--f-body);font-variant-numeric:tabular-nums;padding:0 6px;border-radius:99px}
+html[data-theme] #rail .sp{border-bottom:1px solid var(--line);margin:0 4px 8px}
+html[data-theme] #palBtn::after{content:"Ctrl K";margin-left:auto;font:500 11px/1 var(--f-body);color:inherit;opacity:.75;border:1px solid currentColor;border-radius:5px;padding:3px 5px}
+}
 #signin{position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;padding:16px}
 #signin form{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:28px;width:min(380px,100%);display:grid;gap:4px}
 #signin h2{margin:0 0 2px} #signin label{font-weight:600;margin-top:12px} #signin button{margin-top:18px;border-color:var(--acc);color:var(--acc);font-weight:600} #signin .err{color:var(--vid);min-height:1.4em;margin:8px 0 0}
@@ -984,21 +1071,39 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// icons: Lucide (lucide.dev, ISC licence), lucide-static 1.73.0, each flattened to one path
+// icons: Lucide (lucide.dev, ISC licence), lucide-static 1.73.0, each flattened to one path
 const IC = {
-  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z', book: 'M4 19.5V5a2 2 0 0 1 2-2h13v14H6a2 2 0 0 0 0 4h13', search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.3-4.3',
-  layers: 'M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 18l10 5 10-5', table: 'M3 5h18v14H3zM3 10h18M3 15h18M9 5v14', pen: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
-  graph: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
-  sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4', moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
-  out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
-  gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
-  compass: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z',
-  file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z', play: 'M3 5h18v14H3zM10 9l5 3-5 3z',
-  folder: 'M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', chevron: 'M9 6l6 6-6 6',
-  bulb: 'M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z', flask: 'M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7.5 15h9',
-  bookmark: 'M6 3h12v18l-6-4-6 4z', help: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01', check: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM8 12l3 3 5-6',
-  link: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7', flag: 'M4 22V4M4 4h13l-2 4 2 4H4', leaf: 'M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 17-9 17zM4 21c2-5 5-8 9-10',
-  star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z', plus: 'M12 5v14M5 12h14', chart: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
-  target: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
+  home: 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+  book: 'm16 6 4 14M12 6v14M8 8v12M4 4v16',
+  search: 'm21 21-4.34-4.34M3 11a8 8 0 1 0 16 0a8 8 0 1 0 -16 0',
+  layers: 'M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83zM2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17',
+  table: 'M3 9h18M9 3v18M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2z',
+  pen: 'M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4M2 6h4M2 10h4M2 14h4M2 18h4M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z',
+  graph: 'm10.586 5.414-5.172 5.172m18.586 13.414-5.172 5.172M6 12h12M10 20a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M10 4a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M18 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M2 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+  sun: 'M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M12 2v2M12 20v2m4.93 4.93 1.41 1.41m17.66 17.66 1.41 1.41M2 12h2M20 12h2m6.34 17.66-1.41 1.41m19.07 4.93-1.41 1.41',
+  moon: 'M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401',
+  out: 'm16 17 5-5-5-5M21 12H9M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4',
+  gear: 'M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0',
+  compass: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z',
+  file: 'M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2zM14 2v5a1 1 0 0 0 1 1h5M10 9H8M16 13H8M16 17H8',
+  globe: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20',
+  play: 'M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996zM2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0',
+  folder: 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z',
+  chevron: 'm9 18 6-6-6-6',
+  bulb: 'M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4',
+  flask: 'M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2M6.453 15h11.094M8.5 2h7',
+  bookmark: 'M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z',
+  help: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0M9 9.5a3 2.5 0 016 0c0 2-2 2-3 3.5M12 17h.01',
+  check: 'M20 6 9 17l-5-5',
+  link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+  flag: 'M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528',
+  leaf: 'M11 20a10 10 0 0010-10 25.9 25.9 0 00-1.04-7.281 1 1 0 00-1.755-.325C15.833 5.5 13 5.5 9.8 6.1A7 7 0 0011 20M2 21a5 5 0 012.911-4.544C7.613 15.212 8.351 15.24 11 13',
+  star: 'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z',
+  plus: 'M5 12h14M12 5v14',
+  chart: 'M3 3v16a2 2 0 0 0 2 2h16M18 17V9M13 17V5M8 17v-3',
+  target: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0M6 12a6 6 0 1 0 12 0a6 6 0 1 0 -12 0M10 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+  x: 'M18 6 6 18m6 6 12 12'
 };
 const ic = (k, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[k]}"/></svg>`;
 const KIND = { pdf: ['Paper', 'file'], web: ['Article', 'globe'], video: ['Video', 'play'] };
@@ -1688,7 +1793,7 @@ const VIEW = {
     return `<div class="row"><button data-act="addnote">+ Note</button><button data-act="nbfrom">Write about this in the Notebook</button><button data-act="export">Export Markdown (Obsidian)</button><button data-act="bib">Copy BibTeX</button></div>` +
       (pages.length ? `<p class="muted">Notebook pages working with this source: ${pages.map(n => `<a href="#" data-act="nbgo" data-id="${esc(n.id)}">${esc(n.title || 'Untitled page')}</a>`).join(' · ')}</p>` : '<p></p>') +
       (P.notes.length ? '' : '<p class="muted">Select text in the source and tap “Note” or a highlight colour to capture it here.</p>') +
-      P.notes.map((n, i) => `<div class="box note ${n.ul ? 'ul' : n.quote ? 'c' + (n.c || 1) : ''}"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">✕</button>
+      P.notes.map((n, i) => `<div class="box note ${n.ul ? 'ul' : n.quote ? 'c' + (n.c || 1) : ''}"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">${ic('x', 14)}</button>
         ${n.quote || n.page ? `<blockquote>${esc(n.quote)} ${cite(P, n.page)}</blockquote>` : ''}
         <textarea data-k="note" data-i="${i}" style="min-height:60px" placeholder="Your thought…">${esc(n.note)}</textarea></div>`).join('');
   },
@@ -1696,7 +1801,7 @@ const VIEW = {
     return P.chat.map(m => `<div class="msg ${m.role}">${md(m.content)}</div>`).join('') +
       (P.chat.length ? '' : `<p class="muted">Ask anything. Answers come from this source and link back to where it says so.</p><div class="row">` +
         ['What is the single key insight?', 'What are the weakest points?', 'How would I reproduce or apply this?', 'What should I read next?'].map(q => `<button data-act="ask" data-q="${q}" style="white-space:normal;text-align:left">${q}</button>`).join('') + '</div>') +
-      (lib.length > 1 ? `<div class="cols" style="margin:14px 0 0"><span class="muted">${askWith.size ? 'Answering from this source and' : 'Answering from this source only.'}</span>${[...askWith].map(byId).filter(Boolean).map(o => `<span class="srcchip"><a href="#" data-open="${esc(o.id)}" title="${esc(o.title)}">${esc(o.title)}</a><button class="x" data-act="askdrop" data-id="${esc(o.id)}" aria-label="Leave ${esc(o.title)} out">✕</button></span>`).join('')}<button class="chip" data-act="askadd">+ Bring in other sources</button></div>` : '') +
+      (lib.length > 1 ? `<div class="cols" style="margin:14px 0 0"><span class="muted">${askWith.size ? 'Answering from this source and' : 'Answering from this source only.'}</span>${[...askWith].map(byId).filter(Boolean).map(o => `<span class="srcchip"><a href="#" data-open="${esc(o.id)}" title="${esc(o.title)}">${esc(o.title)}</a><button class="x" data-act="askdrop" data-id="${esc(o.id)}" aria-label="Leave ${esc(o.title)} out">${ic('x', 14)}</button></span>`).join('')}<button class="chip" data-act="askadd">+ Bring in other sources</button></div>` : '') +
       `<form data-f="ask" class="row" style="flex-wrap:nowrap;margin-top:12px"><input name="q" placeholder="Ask about this source…" aria-label="Ask about this source" autocomplete="off"><button class="pri" ${working ? 'disabled' : ''}>Ask</button></form>${mathBar}`;
   },
 };
@@ -1704,9 +1809,9 @@ const VIEW = {
 // ---------- pages ----------
 const dayKey = t => new Date(t).toDateString();
 // The looks. Each is a [data-look] block of tokens and rules at the end of the stylesheet; the first is the original, with no attribute.
-const LOOKS = [['', 'Lab notebook', 'Grey-green paper, rust ink and a serif voice. The original.'], ['concourse', 'Concourse', 'Airport wayfinding: yellow signs, black type, one message to a line.'], ['barcode', 'Barcode', 'Pure black and white, monospaced figures, nothing grey.'], ['cyanotype', 'Cyanotype', 'Prussian blue and white linework, after the first photographic books of plants.'], ['survey', 'Survey', 'A topographic map: contour browns, forest greens and water blue.'], ['notion', 'Page', 'A quiet white document with soft grey blocks and one blue, in the manner of a workspace app.']];
+const LOOKS = [['studio', 'Studio', 'Neutral greys, Figtree type, pill buttons and a sidebar with Lucide icons. The default.'], ['', 'Lab notebook', 'Grey-green paper, rust ink and a serif voice. The original.'], ['concourse', 'Concourse', 'Airport wayfinding: yellow signs, black type, one message to a line.'], ['barcode', 'Barcode', 'Pure black and white, monospaced figures, nothing grey.'], ['cyanotype', 'Cyanotype', 'Prussian blue and white linework, after the first photographic books of plants.'], ['survey', 'Survey', 'A topographic map: contour browns, forest greens and water blue.'], ['notion', 'Page', 'A quiet white document with soft grey blocks and one blue, in the manner of a workspace app.']];
 const lookPicker = () => { const cur = document.documentElement.dataset.look || '', th = document.documentElement.dataset.theme;
-  return `<div class="sec"><h3>Look</h3><small class="muted">Changes the colours, type and feel of everything. Light and dark work in each.</small></div><div class="looks">${LOOKS.map(([v, n, d]) => `<button class="lookcard" data-act="look" data-v="${v}" aria-pressed="${v === cur}"><span class="sw" ${v ? `data-look="${v}" data-theme="${th}"` : ''}><i style="background:var(--bg)"></i><i style="background:var(--panel)"></i><i style="background:var(--sig)"></i><i style="background:var(--ink)"></i></span><b>${n}</b><small>${d}</small></button>`).join('')}</div>`; };
+  return `<div class="sec"><h3>Look</h3><small class="muted">Changes the colours, type and feel of everything. Light and dark work in each.</small></div><div class="looks">${LOOKS.map(([v, n, d]) => `<button class="lookcard" data-act="look" data-v="${v}" aria-pressed="${v === cur}"><span class="sw" data-look="${v}" data-theme="${th}"><i style="background:var(--bg)"></i><i style="background:var(--panel)"></i><i style="background:var(--sig)"></i><i style="background:var(--ink)"></i></span><b>${n}</b><small>${d}</small></button>`).join('')}</div>`; };
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function streak() {
   const days = new Set(activity.map(a => dayKey(a.ts))); let n = 0, t = Date.now();
@@ -1754,7 +1859,7 @@ const hue = s => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 36
 const card = p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}">
   <div class="cover ${p.vid ? 'shot' : ''}" style="${p.vid ? `background-image:url(https://i.ytimg.com/vi/${String(p.vid).replace(/[^\w-]/g, '')}/mqdefault.jpg)` : `--h:${hue(p.title)}`}">${p.vid ? '' : ic(KIND[p.kind][1], 36)}<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span>${ring(p)}</div>
   <h4>${esc(p.title)}</h4><small class="muted clamp" style="-webkit-line-clamp:2">${esc(byline(p))}</small><span class="sp"></span>
-  <div class="row"><small class="step">${step(p)}</small><span class="sp"></span>${p.project ? `<span class="tag proj">${esc(p.project)}</span>` : ''}<button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete ${esc(p.title)}" title="Delete this source">✕</button></div><div class="bar"><i style="width:${mastery(p)}%"></i></div></div>`;
+  <div class="row"><small class="step">${step(p)}</small><span class="sp"></span>${p.project ? `<span class="tag proj">${esc(p.project)}</span>` : ''}<button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete ${esc(p.title)}" title="Delete this source">${ic('x', 14)}</button></div><div class="bar"><i style="width:${mastery(p)}%"></i></div></div>`;
 const HOW = `<div class="box" style="margin-top:8px"><h3>How Marrow works</h3><p class="muted">Summaries make you feel like you understand. Marrow uses four study methods that research on learning backs, and applies them the same way to a paper, a blog post or a lecture.</p>
 <ol><li><b>Brief.</b> Get the skeleton first: problem, idea, method, results, and the terms you need.</li>
 <li><b>Read or watch.</b> Section by section. Each one tells you what to look for, then asks a checkpoint question you answer from memory.</li>
@@ -1804,7 +1909,7 @@ const PAGE = {
       <form data-f="disc" class="addbar"><input name="q" type="search" value="${esc(disc.q)}" required placeholder="Topic, title or author…" aria-label="Search papers"><button class="pri" ${disc.busy ? 'disabled' : ''}>Search</button></form>` +
       (disc.busy ? '<p class="muted">Searching OpenAlex…</p>' : !disc.rows ? `<div class="row" style="margin-bottom:10px"><button class="chip ${dtab === 'inbox' ? 'on' : ''}" data-act="dtab" data-v="inbox">Following</button><button class="chip ${dtab === 'later' ? 'on' : ''}" data-act="dtab" data-v="later">Read later (${later.length})</button></div>` + (dtab === 'later' ? (!later.length ? '<p class="muted">Nothing saved. Choose “Read later” on a post and it waits here, even after it drops out of the feed.</p>' : `<div class="rows">${later.map(post).join('')}</div>`) : `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories, anything with a feed</small></div>
         <form data-f="follow" class="addbar"><input name="u" required autocomplete="off" placeholder="Blog or feed address, e.g. lilianweng.github.io or rss.arxiv.org/rss/cs.LG" aria-label="Blog or feed address"><button>Follow</button></form>
-        <div class="row" style="margin-bottom:14px">${[['', 'All'], ...feeds.map(f => [f.url, f.title])].map(([u, t]) => { const n = (news || []).filter(x => (!u || x.src === u) && !seen.has(x.link)).length; return `<span class="row" style="gap:2px"><button class="chip ${nf === u ? 'on' : ''}" data-act="nfeed" data-v="${esc(u)}">${esc(t)}${news ? ` (${n})` : ''}</button>${u ? `<a href="#" data-act="unfollow" data-v="${esc(u)}" aria-label="Unfollow ${esc(t)}" style="text-decoration:none">✕</a>` : ''}</span>`; }).join('')}</div>` +
+        <div class="row" style="margin-bottom:14px">${[['', 'All'], ...feeds.map(f => [f.url, f.title])].map(([u, t]) => { const n = (news || []).filter(x => (!u || x.src === u) && !seen.has(x.link)).length; return `<span class="row" style="gap:2px"><button class="chip ${nf === u ? 'on' : ''}" data-act="nfeed" data-v="${esc(u)}">${esc(t)}${news ? ` (${n})` : ''}</button>${u ? `<a href="#" data-act="unfollow" data-v="${esc(u)}" aria-label="Unfollow ${esc(t)}" style="text-decoration:none">${ic('x', 14)}</a>` : ''}</span>`; }).join('')}</div>` +
         (!feeds.length ? '<p class="muted">Follow the blogs and journals you keep up with. New posts show up here, one click from your library.</p>' : !news ? '<p class="muted">Checking for new posts…</p>' : !news.length ? '<p class="muted">Nothing could be loaded from these feeds right now.</p>' : (() => {
           const shown = news.map(x => [x]).filter(([x]) => (!nf || x.src === nf) && (!unreadOnly || !seen.has(x.link)));
           return `<div class="row" style="margin-bottom:10px"><button data-act="nrefresh">${nf ? 'Refresh this feed' : 'Refresh all'}</button><small class="muted">Updated ${new Date(newsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Feeds are rechecked when you open Discover, at most every 15 minutes</small><span class="sp"></span><button class="chip ${unreadOnly ? 'on' : ''}" data-act="nunread">Unread only</button><button data-act="nmarkall">Mark ${nf ? 'this feed' : 'all'} read</button></div>` +
@@ -1884,11 +1989,11 @@ function libRows() {
   if (!$('#libList')) return;
   const f = F.q.toLowerCase(), ps = inScope().filter(p => (!F.kind || p.kind === F.kind) && (!F.status || (F.status === 'done') === !!p.done) && [p.title, p.project, ...(p.tags || []), ...(p.meta?.authors || [])].join(' ').toLowerCase().includes(f));
   $('#libList').innerHTML = (picks.size ? `<div class="row pickbar"><b>${picks.size} selected</b><span class="sp"></span>${sel('moveto', [['?', 'Move to project…'], ...projects().map(x => [x, x]), ['', 'No project']], '?', 'Move to project')}<button class="pri" data-act="workwith">Work with ${picks.size === 1 ? 'it' : 'these'} in the Notebook</button><button data-act="delpicks">Delete</button><button data-act="unpick">Clear selection</button></div>` : '') +
-    ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><input type="checkbox" data-act="pick" data-id="${esc(p.id)}" ${picks.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><span class="kind ${p.kind}" title="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
+    ps.map(p => `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}"><input type="checkbox" data-act="pick" data-id="${esc(p.id)}" ${picks.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><span class="kind only ${p.kind}" title="${KIND[p.kind][0]}" data-l="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 22)}</span>
     <div class="grow"><b>${esc(p.title)}</b><br><small class="muted">${esc(byline(p))}</small> ${(p.tags || []).map(t => `<span class="tag" data-act="ftag" data-v="${esc(t)}">${esc(t)}</span>`).join(' ')}</div>
     ${p.project ? `<span class="tag proj" data-act="fproject" data-v="${esc(p.project)}">${esc(p.project)}</span>` : ''}${p.done ? '<span class="tag ok">Finished</span>' : ''}${ring(p)}
-    <button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete">✕</button></div>`).join('') || `<p class="muted">${lib.length ? 'No titles match. Clear the search or the filters to see everything.' : 'Your library is empty. Paste a link above, or drop a PDF anywhere.'}</p>`;
-  $('#hits').innerHTML = F.hits.length ? `<div class="sec"><h3>Inside your sources</h3><small class="muted">full-text matches</small></div><div class="rows">` + F.hits.map(h => { const p = byId(h.item_id); return !p ? '' : `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}" data-n="${+h.n}"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 18)}</span>
+    <button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete">${ic('x', 14)}</button></div>`).join('') || `<p class="muted">${lib.length ? 'No titles match. Clear the search or the filters to see everything.' : 'Your library is empty. Paste a link above, or drop a PDF anywhere.'}</p>`;
+  $('#hits').innerHTML = F.hits.length ? `<div class="sec"><h3>Inside your sources</h3><small class="muted">full-text matches</small></div><div class="rows">` + F.hits.map(h => { const p = byId(h.item_id); return !p ? '' : `<div class="card" tabindex="0" role="link" data-open="${esc(p.id)}" data-n="${+h.n}"><span class="kind only ${p.kind}" data-l="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 18)}</span>
     <div class="grow"><small class="muted">${esc(p.title)}</small><br>${esc(h.s).replace(/\x01/g, '<mark>').replace(/\x02/g, '</mark>')}</div></div>`; }).join('') + `</div>` : '';
 }
 async function ftSearch() {
@@ -1921,7 +2026,7 @@ function render() {
     if (view === 'notebook') { nbSide(); nbSrc(); mountEd(); }
     return;
   }
-  $('#title').textContent = P.title; $('#kindic').className = 'kind ' + P.kind; $('#kindic').innerHTML = ic(KIND[P.kind][1], 18);
+  $('#title').textContent = P.title; $('#kindic').className = 'kind only ' + P.kind; $('#kindic').dataset.l = KIND[P.kind][0]; $('#kindic').innerHTML = ic(KIND[P.kind][1], 18);
   const mast = $('#mast'); mast.className = 'ring'; mast.style.setProperty('--p', mastery(P)); mast.textContent = mastery(P); mast.title = breakdown(P);
   $('#doneBtn').textContent = P.done ? '✓ Finished' : 'Mark finished'; $('#orig').hidden = !P.url; $('#orig').href = P.url || '#';
   $('#snipBtn').hidden = P.kind !== 'pdf'; $('#tnote').hidden = P.kind !== 'video'; $('#zi').hidden = $('#zo').hidden = P.kind === 'video' && !P.parts.length;
@@ -1937,7 +2042,7 @@ function mxTable() {
   const box = $('#mxBody'); if (!box) return;
   const all = scoped(), rows = all.filter(p => p.brief), ps = mxRowsShown = mxOnly && mxSel.size ? rows.filter(p => mxSel.has(p.id)) : rows, cols = mxShown();
   const bar = mxSel.size ? `<div class="row pickbar"><b>${mxSel.size} selected</b><span class="muted">Export, synthesis, the Notebook and AI fill now use only these.</span><span class="sp"></span><button data-act="mxonly">${mxOnly ? 'Show all rows' : 'Show only these'}</button><button data-act="mxclear">Clear selection</button></div>` : '';
-  box.innerHTML = ps.length ? `${bar}<div class="mxwrap"><table class="mx"><tr><th><input type="checkbox" data-act="mxall" ${ps.every(p => mxSel.has(p.id)) ? 'checked' : ''} aria-label="Select every row shown"> Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">✕</button>` : ''}</th>`).join('')}</tr>` +
+  box.innerHTML = ps.length ? `${bar}<div class="mxwrap"><table class="mx"><tr><th><input type="checkbox" data-act="mxall" ${ps.every(p => mxSel.has(p.id)) ? 'checked' : ''} aria-label="Select every row shown"> Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">${ic('x', 14)}</button>` : ''}</th>`).join('')}</tr>` +
     ps.map(p => `<tr><td><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:10px"><input type="checkbox" data-act="mxsel" data-id="${esc(p.id)}" ${mxSel.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><div><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></div></div></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
       ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p[CQ()]?.[c.custom] ? `<small>${cite(p, p[CQ()][c.custom])}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
       : `<div class="cell" data-act="mxrow">${md(mxVal(p, c), p)}</div>`) + `</td>`).join('') + `</tr>`).join('') + `</table></div>` +
@@ -2281,7 +2386,7 @@ const ago = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? 
 function nbSide() {
   const el = $('#nbList'); if (!el) return;
   const q = ($('#nbq')?.value || '').toLowerCase(), shown = notes.filter(x => (!F.project || x.project === F.project) && (x.title || '').toLowerCase().includes(q)), groups = [...new Set(shown.map(x => x.project || ''))].sort();
-  const row = x => `<div class="prow${docOf(x).folder ? ' in' : ''} ${x.id === N ? 'on' : ''}" tabindex="0" data-act="nbopen" data-id="${esc(x.id)}" title="${esc(x.title || 'Untitled')}"><span class="ico">${pgIc(docOf(x), 16)}</span><span class="t">${esc(x.title || 'Untitled')}</span><button class="x" data-act="nbdel" data-id="${esc(x.id)}" aria-label="Delete ${esc(x.title || 'this page')}">✕</button></div>`, open = (k, list) => q || !nbClosed.has(k) || list.some(x => x.id === N);
+  const row = x => `<div class="prow${docOf(x).folder ? ' in' : ''} ${x.id === N ? 'on' : ''}" tabindex="0" data-act="nbopen" data-id="${esc(x.id)}" title="${esc(x.title || 'Untitled')}"><span class="ico">${pgIc(docOf(x), 16)}</span><span class="t">${esc(x.title || 'Untitled')}</span><button class="x" data-act="nbdel" data-id="${esc(x.id)}" aria-label="Delete ${esc(x.title || 'this page')}">${ic('x', 14)}</button></div>`, open = (k, list) => q || !nbClosed.has(k) || list.some(x => x.id === N);
   el.innerHTML = groups.map(g => {
     const mine = shown.filter(x => (x.project || '') === g), folders = [...new Set(mine.map(x => docOf(x).folder).filter(Boolean))].sort();
     return `<div class="lbl">${esc(g || 'Pages')}</div>` + mine.filter(x => !docOf(x).folder).map(row).join('') + folders.map(f => {
@@ -2296,7 +2401,7 @@ function nbSide() {
 }
 function nbSrc() {
   const el = $('#nbsrc'), n = curNote(); if (!el || !n) return;
-  el.innerHTML = pageSrcs(n).map(p => `<span class="srcchip"><span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}</span><a href="#" data-open="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</a><button class="x" data-act="nbunsrc" data-id="${esc(p.id)}" aria-label="Take ${esc(p.title)} off this page">✕</button></span>`).join('') + `<button class="add" data-act="nbaddsrc">+ Add sources</button>`;
+  el.innerHTML = pageSrcs(n).map(p => `<span class="srcchip"><span class="kind only ${p.kind}" data-l="${KIND[p.kind][0]}">${ic(KIND[p.kind][1], 13)}</span><a href="#" data-open="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</a><button class="x" data-act="nbunsrc" data-id="${esc(p.id)}" aria-label="Take ${esc(p.title)} off this page">${ic('x', 14)}</button></span>`).join('') + `<button class="add" data-act="nbaddsrc">+ Add sources</button>`;
   const acts = $('#nbacts'); if (acts) acts.innerHTML = workActs(n); // suggestions follow the sources on the page
   const q = acts?.parentElement?.querySelector('input[name="q"]'); if (q) { q.placeholder = askPh(pageSrcs(n).length); q.setAttribute('aria-label', q.placeholder); }
 }
@@ -2422,7 +2527,7 @@ document.addEventListener('keydown', e => {
 });
 const ACT = {
   tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
-  look: el => { const v = el.dataset.v; try { v ? localStorage.look = v : delete localStorage.look; } catch {} vt(() => { v ? document.documentElement.dataset.look = v : delete document.documentElement.dataset.look; render(); }); },
+  look: el => { const v = el.dataset.v; try { localStorage.look = v; } catch {} vt(() => { v ? document.documentElement.dataset.look = v : delete document.documentElement.dataset.look; render(); }); },
   logout: async () => { await fetch('/api/logout', { method: 'POST' }).catch(() => {}); location.reload(); },
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,

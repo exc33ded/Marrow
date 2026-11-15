@@ -1,13 +1,19 @@
 // Browser check: every look, in light and dark, on every screen. Needs Playwright and a running server:
 //   npm i --no-save playwright && npx playwright install chromium
-//   node server.js &   then   node test-ui.mjs        (BASE=http://localhost:5173 by default)
+//   npm start &   then   npm run test:ui        (BASE=http://localhost:5173 by default)
+// It logs in as test user A (TEST_EMAIL_A, TEST_PASSWORD in .env.test, see the top of test.js) and reuses that session for every page.
 // Looks are found from index.html, so a look someone adds is covered without editing this file.
-// In CI (CI=true) it also creates one notebook page to exercise the editor. Locally it writes nothing.
+// In CI (CI=true) it also creates one notebook page (in test user A's account) to exercise the editor. Locally it writes nothing.
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE || 'http://localhost:5173';
 const VIEWS = ['home', 'library', 'discover', 'review', 'matrix', 'notebook', 'map', 'settings'];
 const html = await (await fetch(BASE)).text();
+const { TEST_EMAIL_A: email, TEST_PASSWORD: password } = process.env;
+if (!email || !password) { console.error('Set TEST_EMAIL_A and TEST_PASSWORD (see the top of test.js).'); process.exit(2); }
+const login = await fetch(BASE + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+if (!login.ok) { console.error('Could not log in as TEST_EMAIL_A:', (await login.json().catch(() => ({}))).error || login.status); process.exit(2); }
+const cookies = login.headers.getSetCookie().map(c => { const kv = c.split(';')[0], i = kv.indexOf('='); return { name: kv.slice(0, i), value: kv.slice(i + 1), url: BASE }; });
 const looks = ['', ...new Set([...html.matchAll(/(?<![\w\]])\[data-look=([\w-]+)\]/g)].map(m => m[1]))];
 const problems = [];
 const bad = (where, msg) => problems.push(`${where}: ${msg}`);
@@ -33,10 +39,12 @@ const probe = () => {
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL }); // PW_CHANNEL=chrome uses an installed Chrome
 for (const look of looks) for (const theme of ['light', 'dark']) {
   const tag = `${look || 'notebook'}/${theme}`;
-  const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await ctx.addCookies(cookies);
+  const page = await ctx.newPage();
   page.on('pageerror', e => bad(tag, 'script error: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon/.test(m.text())) bad(tag, 'console error: ' + m.text()); });
-  await page.goto(`${BASE}/?${look ? `look=${look}&` : ''}theme=${theme}`);
+  await page.goto(`${BASE}/?look=${look}&theme=${theme}`); // always send look, so an empty one means the original rather than the default
   await page.waitForSelector('#nav button');
   const applied = await page.evaluate(() => document.documentElement.dataset.look || '');
   if (applied !== look) bad(tag, `look did not apply (data-look is "${applied}")`);

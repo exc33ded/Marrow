@@ -35,33 +35,40 @@ AI-generated flashcards and feedback must quote the source; quotes are checked a
 
 ## Run
 
-Requires Node 22.13+ (it uses Node's built-in SQLite). No dependencies to install.
+Requires Node 22.13+ and a [Supabase](https://supabase.com) project (accounts, the library and PDFs live there). No dependencies to install.
+
+1. In Supabase, open the SQL Editor, paste `schema.sql` and run it. It creates the tables, the row-level security that keeps each reader's data private, and the `files` bucket for PDFs. It is safe to run again.
+2. Create accounts under Authentication > Users. There is no sign-up page; whoever runs the server hands out logins.
+3. Copy `.env.example` to `.env` and fill in `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (never the secret/service-role key) and `APP_SECRET` (64 hex characters; the command to make one is in the file). Keep a copy of `APP_SECRET`: it encrypts every reader's AI keys, and if it is lost they have to enter them again.
 
 ```bash
-node server.js
+npm start        # node --env-file=.env server.js
 ```
 
-Open http://localhost:5173, then open **Settings** (the gear, bottom left) and add the AI services you have a key for: [OpenRouter](https://openrouter.ai), OpenAI, Claude, Gemini, a local Ollama, or anything else that speaks the OpenAI chat format. Each provider has its own address and key. "Find models" asks a provider what it offers, and you pick models from that list or type a name. Put the chosen models in the order Marrow should try them (↑ ↓): when one fails or is rate limited, the next one answers, and a model can come from any provider. Figures use their own list, since the model must accept images. "Test the connection" tells you which model answered. Keys are stored on your computer in `data/marrow.db`, are never sent to the browser, and can be replaced or removed from the same screen. On OpenRouter only free models are used unless you allow paid ones; other providers are always asked, so choose their models with care.
+Open http://localhost:5173, log in, then open **Settings** (the gear, bottom left) and add the AI services you have a key for: [OpenRouter](https://openrouter.ai), OpenAI, Claude, Gemini, a local Ollama, or anything else that speaks the OpenAI chat format. Each provider has its own address and key. "Find models" asks a provider what it offers, and you pick models from that list or type a name. Put the chosen models in the order Marrow should try them (↑ ↓): when one fails or is rate limited, the next one answers, and a model can come from any provider. Figures use their own list, since the model must accept images. "Test the connection" tells you which model answered. Each reader brings their own keys; the server has none. Keys are encrypted with `APP_SECRET` before they are stored in the database, are never sent to the browser (Settings shows only the last four characters), and can be replaced or removed from the same screen. On OpenRouter only free models are used unless you allow paid ones; other providers are always asked, so choose their models with care.
 
-A key can also be supplied in a `.env` file (`cp .env.example .env`, then `node --env-file=.env server.js`) and is used for OpenRouter; a key saved in Settings takes precedence.
+**Transcription.** In Settings, download the *YouTube helper* (yt-dlp) to fetch a video's existing captions with one click, or Whisper to transcribe anything: the Whisper program is fetched from whisper.cpp's GitHub releases on Windows (on a Mac run `brew install whisper-cpp` first), then pick a model and download it from Hugging Face. Videos use YouTube's captions when available and fall back to Whisper; you can also transcribe any audio or video file from a video's page. Audio is decoded in the browser, so no ffmpeg is needed, and Whisper runs on the server's computer: nothing but the video's captions or sound is fetched, and the audio goes no further than your own server. Everything is stored under `data/whisper/` and can be removed again from Settings. Whisper and the YouTube helper are shared by every reader of the server.
 
-**Transcription.** In Settings, download the *YouTube helper* (yt-dlp) to fetch a video's existing captions with one click, or Whisper to transcribe anything: the Whisper program is fetched from whisper.cpp's GitHub releases on Windows (on a Mac run `brew install whisper-cpp` first), then pick a model and download it from Hugging Face. Videos use YouTube's captions when available and fall back to Whisper; you can also transcribe any audio or video file from a video's page. Audio is decoded in the browser, so no ffmpeg is needed, and Whisper runs on this computer: nothing but the video's captions or sound is fetched, and nothing is uploaded. Everything is stored under `data/whisper/` and can be removed again from Settings.
+**Tests.** The server and browser checks log in to your Supabase project as two throwaway users. Create them under Authentication > Users (auto-confirm on) and put `TEST_EMAIL_A`, `TEST_EMAIL_B` and `TEST_PASSWORD` in `.env.test`. The checks only touch those two accounts.
 
-- `npm test` runs the server check (`test.js`: storage, search, link-fetching rules) and the frontend check (`test-frontend.js`: the script parses, every look is complete and readable).
-- `npm run test:ui` opens the running app in a real browser and visits every screen in every look, light and dark. It needs `npm i --no-save playwright` first; `PW_CHANNEL=chrome` uses the Chrome you already have.
+- `npm test` runs the server check (`test.js`: logins, storage, search, one reader never seeing another's data, link-fetching rules) and the frontend check (`test-frontend.js`: the script parses, every look is complete and readable).
+- `npm run test:ui` opens the running app in a real browser, logged in as test user A, and visits every screen in every look, light and dark. It needs `npm i --no-save playwright` first; `PW_CHANNEL=chrome` uses the Chrome you already have.
 - Add `#test` to the URL to run the browser self-check (see the console).
 
 ## How it works
 
-- `server.js` – serves the app, stores the library, proxies AI calls (the key never reaches the browser, and only free models are allowed), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only; set `HOST=0.0.0.0` in `.env` to reach it from other devices.
+- `server.js` – serves the app, logs readers in (Supabase Auth; the session lives in HttpOnly cookies), reads and writes their library in Supabase as that reader, proxies AI calls with the reader's own keys (which never reach the browser), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only; set `HOST=0.0.0.0` in `.env` to reach it from other devices, and `ALLOWED_HOSTS` for a domain name.
 - `index.html` – the whole app.
-- `data/marrow.db` – the SQLite database: `items` (sources), `parts` (their text, indexed with FTS5), `cards`, `notes`, `activity`. PDFs sit next to it in `data/files/`. Copy the `data/` folder to back everything up, or use Backup in the Library for a single portable file.
+- `schema.sql` – the Supabase database: `items` (sources), `parts` (their text, with Postgres full-text search), `cards`, `notes` (highlights, and notebook pages), `activity`, `feeds`, `settings`. Row-level security means each reader only ever sees their own rows. PDFs are in the private `files` storage bucket, one folder per reader. Use Backup in the Library for a single portable file of everything.
+- `data/` – only Whisper's and the YouTube helper's downloads.
 
-Upgrading from the first version: your papers were stored in the browser. Open Marrow in that same browser once and they are moved into the database automatically (the browser copy is left alone). Old backup files still restore.
+More detail is in [`docs/`](docs/): how to use each part, and how the code fits together.
+
+Upgrading from the first version: your papers were stored in the browser. Open Marrow in that same browser once, logged in, and they are moved into your account automatically (the browser copy is left alone). Old backup files still restore.
 
 ## Looks
 
-Settings has a **Look** picker: Lab notebook (the original), Concourse, Barcode, Cyanotype, Survey and Page. Each changes colour, type, edges and density; light and dark work in every one. The choice is remembered in the browser. Adding `?look=survey&theme=dark` to the address previews one without saving it.
+Settings has a **Look** picker: Studio (the default: neutral greys, Figtree, words instead of icons in the rail), Lab notebook (the original), Concourse, Barcode, Cyanotype, Survey and Page. Each changes colour, type, edges and density; light and dark work in every one. The choice is remembered in the browser. Adding `?look=survey&theme=dark` to the address previews one without saving it.
 
 **Add your own.** At the end of the stylesheet in `index.html` (between the `LOOKS-BEGIN` and `LOOKS-END` markers):
 
@@ -84,4 +91,4 @@ You do not touch the tests: both checks find looks on their own. `node test-fron
 
 ## Checks on every push
 
-`.github/workflows/ci.yml` runs the server check on Node 22 and 24, the frontend check, and the browser test on a fresh database, on every push and pull request. A final job called **CI passed** is green only when all three are. To make it required: GitHub > Settings > Branches > add a rule for `main` > *Require status checks to pass before merging* > select **CI passed**.
+`.github/workflows/ci.yml` runs the server check on Node 22 and 24, the frontend check, and the browser test, on every push and pull request. The server and browser checks need your Supabase project and the two test users, so add `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `APP_SECRET`, `TEST_EMAIL_A`, `TEST_EMAIL_B` and `TEST_PASSWORD` as repository secrets (GitHub > Settings > Secrets and variables > Actions). A final job called **CI passed** is green only when all three are. To make it required: GitHub > Settings > Branches > add a rule for `main` > *Require status checks to pass before merging* > select **CI passed**.
