@@ -28,8 +28,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
 <style>
 /* palette: the grey-green of a lab notebook's ruled paper, with rust ink as the one accent */
-:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;color-scheme:light}
-[data-theme=dark]{--bg:#0f1412;--panel:#161c19;--ink:#e4eae6;--muted:#8c9991;--line:#29322d;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#090c0a;--web:#7fb6e0;--vid:#f2857c;--sh:none;color-scheme:dark}
+:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;--pop:0 6px 18px #0002;color-scheme:light}
+[data-theme=dark]{--bg:#0f1412;--panel:#161c19;--ink:#e4eae6;--muted:#8c9991;--line:#29322d;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#090c0a;--web:#7fb6e0;--vid:#f2857c;--sh:none;--pop:0 6px 18px #0008;color-scheme:dark}
 *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 *::-webkit-scrollbar{width:10px;height:10px} *::-webkit-scrollbar-track{background:transparent}
 *::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:2px solid transparent;background-clip:content-box}
@@ -162,13 +162,14 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .nbside #nbq{border:0;background:none;padding:6px 10px;font-size:14px} .nbside #nbq:focus-visible{outline:0;background:var(--bg)}
 .prow{display:flex;align-items:center;gap:8px;height:30px;padding:0 4px 0 10px;border-radius:4px;cursor:pointer;color:var(--muted);font-weight:500}
 .prow:hover{background:var(--bg)} .prow.on{background:var(--bg);color:var(--ink);font-weight:600}
-.prow .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .prow .ico{width:18px;text-align:center;flex:none}
+.prow .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .prow .ico{width:18px;display:flex;justify-content:center;color:var(--muted);flex:none}
+.prow.in{padding-left:30px} .prow.fold{color:var(--ink);font-weight:600} .prow.fold small{color:var(--muted);font-weight:400;padding-right:6px} .prow.fold .ico:first-child{width:14px} .prow.fold[aria-expanded=true] .ico:first-child svg{transform:rotate(90deg)} .prow.fold .ico svg{transition:transform .15s var(--e)}
 .prow .x{opacity:0} .prow:hover .x,.prow .x:focus-visible{opacity:1}
 .nbmain{overflow:auto;display:flex;flex-direction:column;min-height:0}
 .nbtop{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:4px;min-height:44px;padding:0 14px;font-size:13.5px;color:var(--muted);background:var(--bg)}
 .nbtop button{border:0;background:none;min-height:28px;padding:2px 8px;font-size:13.5px;color:var(--muted)} .nbtop button:hover{background:var(--line);color:var(--ink)}
 .nbpage{max-width:790px;width:100%;margin:0 auto;padding:36px 60px 0;flex:1}
-.pico{font-size:62px;line-height:1.1;background:none;border:0;padding:2px 6px;min-height:0;margin:0 0 4px -8px} .pico:hover{background:var(--line)}
+.pico{color:var(--acc);line-height:1;background:none;border:0;padding:2px 6px;min-height:0;margin:0 0 4px -8px} .pico:hover{background:var(--line)}
 .addico{border:0;background:none;color:var(--muted);font-size:13.5px;padding:2px 6px;min-height:0;margin-left:-6px;opacity:0;transition:opacity .15s} .nbpage:hover .addico,.addico:focus-visible{opacity:1} .addico:hover{background:var(--line)}
 .icons{display:grid;grid-template-columns:repeat(8,34px);gap:2px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);width:max-content;margin-bottom:8px;animation:pop .16s var(--e)}
 .icons button{border:0;background:none;min-height:0;height:34px;padding:0;font-size:20px} .icons button:hover{background:var(--line)} .icons button:last-child{grid-column:span 8;font-size:13px;color:var(--muted)}
@@ -191,7 +192,7 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 #ed .cdx-list__item{padding:2px 0;line-height:1.65} #ed .cdx-block{padding:4px 0}
 #ed .ce-delimiter{line-height:0;height:auto;padding:14px 0} #ed .ce-delimiter::before{content:"";display:block;height:0;border-top:1px solid var(--line)}
 #ed .inline-code{background:var(--line);color:var(--vid);border-radius:3px;padding:.12em .35em;font-size:.86em} #ed .cdx-marker{background:#ffd60066;color:inherit}
-#ed .callout{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:13px 14px;margin:4px 0} #ed .callout>span{font-size:19px;line-height:1.35} #ed .callout>div{flex:1;min-width:0}
+#ed .callout{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:13px 14px;margin:4px 0} #ed .callout>span{color:var(--acc);line-height:0;padding-top:2px} #ed .callout>div{flex:1;min-width:0}
 #ed details.tgl{margin:4px 0} #ed details.tgl summary{cursor:pointer;list-style:none;display:flex;align-items:flex-start}
 #ed details.tgl summary::-webkit-details-marker{display:none}
 #ed details.tgl summary::before{content:"";flex:none;width:6px;height:6px;margin:7px 7px 0 3px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
@@ -227,8 +228,8 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .item:hover{background:var(--panel)} .item.on{border-color:var(--acc);background:var(--acc-bg)}
 .item b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ttl{font:700 42px/1.15 Newsreader,Georgia,serif;border:0;background:none;padding:0;border-radius:0}
-#peek{border:1px solid var(--line);border-radius:6px;padding:0;background:var(--panel);color:var(--ink);width:min(700px,92vw);max-height:82vh;box-shadow:0 24px 80px #0007}
-#sure{border:1px solid var(--line);border-radius:6px;padding:0;background:var(--panel);color:var(--ink);width:min(440px,92vw);box-shadow:0 24px 80px #0007} #sure h3{margin-top:0} #sure .danger{background:var(--vid);color:#fff;border:0;font-weight:600} [data-theme=dark] #sure .danger{color:#1b1916}
+#peek{border:1px solid var(--line);border-radius:6px;padding:0;background:var(--panel);color:var(--ink);width:min(700px,92vw);max-height:82vh;box-shadow:var(--pop)}
+#sure{border:1px solid var(--line);border-radius:6px;padding:0;background:var(--panel);color:var(--ink);width:min(440px,92vw);box-shadow:var(--pop)} #sure h3{margin-top:0} #sure .danger{background:var(--vid);color:#fff;border:0;font-weight:600} [data-theme=dark] #sure .danger{color:#1b1916}
 #peek[open],#sure[open]{animation:pop .2s var(--e)} #peek::backdrop,#sure::backdrop{background:#0b0f0d8c} .pk{padding:26px 32px 22px} .pk h3{font-size:22px;margin-top:.5em} .pk h3 a{color:inherit;text-decoration:none}
 .peekbody{font:19px/1.62 Newsreader,Georgia,serif;margin:18px 0 22px}
 .set label{display:block;font-weight:600;margin:16px 0 4px} .set small{display:block;margin-top:4px} .set textarea{min-height:92px;font:13px/1.5 "IBM Plex Mono",monospace} .set label.row{display:flex;flex-wrap:nowrap;align-items:flex-start;font-weight:400}
@@ -298,7 +299,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 #toast{position:fixed;bottom:20px;left:50%;translate:-50% 14px;opacity:0;pointer-events:none;transition:opacity .18s,translate .3s var(--e);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:4px;z-index:30;max-width:90vw}
 #toast.on{opacity:1;translate:-50% 0;pointer-events:auto}
 #status{position:fixed;left:92px;bottom:16px;z-index:25;background:var(--acc-bg);color:var(--ink);border:1px solid var(--acc);border-radius:99px;padding:7px 14px;font-size:13.5px;box-shadow:var(--sh);max-width:min(520px,80vw);animation:rise .3s var(--e)}
-#pal{border:1px solid var(--line);border-radius:4px;padding:0;background:var(--panel);color:var(--ink);width:min(620px,92vw);margin-top:13vh;box-shadow:0 24px 80px #0007;overflow:hidden}
+#pal{border:1px solid var(--line);border-radius:4px;padding:0;background:var(--panel);color:var(--ink);width:min(620px,92vw);margin-top:13vh;box-shadow:var(--pop);overflow:hidden}
 #pal[open]{animation:pop .2s var(--e)} #pal::backdrop{background:#14110c80}
 #palq{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:16px 18px;font-size:17px} #palq:focus-visible{outline:0}
 #pall{padding:6px;max-height:52vh;overflow:auto}
@@ -384,6 +385,12 @@ const IC = {
   gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
   compass: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z',
   file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z', play: 'M3 5h18v14H3zM10 9l5 3-5 3z',
+  folder: 'M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', chevron: 'M9 6l6 6-6 6',
+  bulb: 'M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z', flask: 'M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7.5 15h9',
+  bookmark: 'M6 3h12v18l-6-4-6 4z', help: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01', check: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM8 12l3 3 5-6',
+  link: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7', flag: 'M4 22V4M4 4h13l-2 4 2 4H4', leaf: 'M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 17-9 17zM4 21c2-5 5-8 9-10',
+  star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z', plus: 'M12 5v14M5 12h14', chart: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
+  target: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
 };
 const ic = (k, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[k]}"/></svg>`;
 const KIND = { pdf: ['Paper', 'file'], web: ['Article', 'globe'], video: ['Video', 'play'] };
@@ -688,7 +695,7 @@ const blocksMd = bs => bs.map(({ type, data: d }) =>
   : type === 'list' ? d.items.map((it, i) => (d.style === 'ordered' ? i + 1 + '. ' : d.style === 'checklist' ? `- [${it.meta?.checked ? 'x' : ' '}] ` : '- ') + unhtml(it.content ?? it)).join('\n')
   : type === 'quote' ? '> ' + unhtml(d.text) + (d.caption ? '\n> ' + unhtml(d.caption) : '')
   : type === 'code' ? '```\n' + d.code + '\n```' : type === 'delimiter' ? '---' : type === 'math' ? `$$${d.tex}$$`
-  : type === 'callout' ? '> 💡 ' + unhtml(d.text) : type === 'toggle' ? `**${unhtml(d.title)}**\n\n${unhtml(d.text)}`
+  : type === 'callout' ? '> ' + unhtml(d.text) : type === 'toggle' ? `**${unhtml(d.title)}**\n\n${unhtml(d.text)}`
   : type === 'table' ? d.content.map((r, i) => '| ' + r.map(unhtml).join(' | ') + ' |' + (i ? '' : '\n|' + r.map(() => ' --- |').join(''))).join('\n')
   : unhtml(d.text)).join('\n\n');
 if (location.hash === '#test') { // self-check: open /#test and look at the console
@@ -1174,9 +1181,10 @@ const PAGE = {
     return `<div class="nb">${side}<div class="nbmain">
       <div class="nbtop"><span>Notebook</span><span>/</span><span id="nbcrumb"></span><span class="sp"></span><span id="nbwhen"></span><button data-act="nbexport">Export</button><button data-act="nbdel">Delete</button></div>
       <div id="toc" class="toc"></div>
-      <div class="nbpage">${d.icon ? `<button class="pico" data-act="nbicon" aria-label="Change the page icon">${esc(d.icon)}</button>` : `<button class="addico" data-act="nbicon">☺ Add icon</button>`}<div id="icons"></div>
+      <div class="nbpage">${d.icon ? `<button class="pico" data-act="nbicon" aria-label="Change the page icon">${pgIc(d, 44)}</button>` : `<button class="addico" data-act="nbicon">${ic('plus', 14)} Add icon</button>`}<div id="icons"></div>
         <input class="ttl" data-k="nbtitle" value="${esc(n.title)}" placeholder="Untitled" aria-label="Page title">
         <div class="props"><div class="prop"><span>${ic('layers', 15)}Project</span><div><input data-k="nbproject" list="projects" value="${esc(n.project)}" placeholder="Empty" aria-label="Project"></div></div>
+        <div class="prop"><span>${ic('folder', 15)}Folder</span><div><input data-k="nbfolder" list="folders" value="${esc(docOf(n).folder)}" placeholder="None. Type a name to start a folder" aria-label="Folder"><datalist id="folders">${[...new Set(notes.filter(x => (x.project || '') === (n.project || '')).map(x => docOf(x).folder).filter(Boolean))].map(f => `<option value="${esc(f)}">`).join('')}</datalist></div></div>
           <div class="prop"><span>${ic('book', 15)}Sources</span><div id="nbsrc"></div></div></div>
         <div id="ed"></div></div>
       <div class="askbar"><div class="acts" id="nbacts">${workActs(n)}</div>
@@ -1471,12 +1479,13 @@ async function migrate() {
 // ---------- notebook: pages of blocks that carry the sources you are working with ----------
 // A page's `note` field holds JSON: { blocks: [Editor.js blocks], sources: [ids] }. Older pages and AI drafts are Markdown and are converted when opened.
 const docOf = n => n.doc ||= (() => {
-  try { const j = JSON.parse(n.note); if (Array.isArray(j?.blocks)) return { blocks: j.blocks, sources: j.sources || [], icon: j.icon || '' }; } catch {}
+  try { const j = JSON.parse(n.note); if (Array.isArray(j?.blocks)) return { blocks: j.blocks, sources: j.sources || [], icon: j.icon || '', folder: j.folder || '' }; } catch {}
   return { blocks: mdBlocks(n.note || ''), sources: [] };
 })();
 const putDoc = n => { n.note = JSON.stringify(docOf(n)); n.updated = Date.now(); return saveNote(n); };
 const pageSrcs = n => docOf(n).sources.map(byId).filter(Boolean);
-const ICONS = ['📄', '📚', '🧪', '🔬', '🧠', '💡', '📝', '📊', '🧬', '⚙️', '🔭', '🗺️', '📌', '❓', '✅', '🧩', '📐', '🔗', '🗂️', '⏳', '🏁', '✍️', '🌱', '💧'];
+const ICONS = ['file', 'book', 'flask', 'bulb', 'pen', 'chart', 'graph', 'layers', 'table', 'compass', 'globe', 'bookmark', 'help', 'check', 'link', 'flag', 'leaf', 'star', 'target'];
+const pgIc = (d, s) => ic(IC[d.icon] && ICONS.includes(d.icon) ? d.icon : 'file', s); // pages saved with an emoji icon show the default until you pick a new one
 const WORK1 = [['Summarise it', 'Summarise this source: the problem, the core idea, the method, the results, and its limitations, in a few tight paragraphs. Point to the passages that matter.'],
   ['Find the gaps', 'What does this source leave unanswered? List the open questions and untested assumptions, and say where it gestures at them.'],
   ['Explain it simply', 'Explain this source simply, as if to a smart friend outside the field: the intuition first, then how it works, with a concrete example. Say what it does not cover.']];
@@ -1517,7 +1526,7 @@ class Callout { // a boxed aside with an icon
   static get toolbox() { return { title: 'Callout', icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0-3 11.2V17h6v-2.8A6 6 0 0 0 12 3zM9.5 21h5"/></svg>' }; }
   static get sanitize() { return { text: RICH }; }
   constructor({ data }) { this.data = data; }
-  render() { const w = document.createElement('div'); w.className = 'callout'; w.innerHTML = '<span>💡</span>'; w.append(this.el = editable(this.data.text, 'Something worth setting apart')); return w; }
+  render() { const w = document.createElement('div'); w.className = 'callout'; w.innerHTML = `<span>${ic('bulb', 20)}</span>`; w.append(this.el = editable(this.data.text, 'Something worth setting apart')); return w; }
   save() { return { text: this.el.innerHTML }; }
 }
 class Toggle { // a heading line that folds the text under it away
@@ -1588,14 +1597,22 @@ function mountEd() {
     });
   };
 }
+const nbClosed = new Set(); // folders the reader has folded away; only for this visit
 const ago = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : new Date(t).toLocaleDateString(); };
 function nbSide() {
   const el = $('#nbList'); if (!el) return;
   const q = ($('#nbq')?.value || '').toLowerCase(), shown = notes.filter(x => (!F.project || x.project === F.project) && (x.title || '').toLowerCase().includes(q)), groups = [...new Set(shown.map(x => x.project || ''))].sort();
-  el.innerHTML = groups.map(g => `<div class="lbl">${esc(g || 'Pages')}</div>` + shown.filter(x => (x.project || '') === g).map(x => `<div class="prow ${x.id === N ? 'on' : ''}" tabindex="0" data-act="nbopen" data-id="${esc(x.id)}" title="${esc(x.title || 'Untitled')}"><span class="ico">${esc(docOf(x).icon || '📄')}</span><span class="t">${esc(x.title || 'Untitled')}</span><button class="x" data-act="nbdel" data-id="${esc(x.id)}" aria-label="Delete ${esc(x.title || 'this page')}">✕</button></div>`).join('')).join('')
+  const row = x => `<div class="prow${docOf(x).folder ? ' in' : ''} ${x.id === N ? 'on' : ''}" tabindex="0" data-act="nbopen" data-id="${esc(x.id)}" title="${esc(x.title || 'Untitled')}"><span class="ico">${pgIc(docOf(x), 16)}</span><span class="t">${esc(x.title || 'Untitled')}</span><button class="x" data-act="nbdel" data-id="${esc(x.id)}" aria-label="Delete ${esc(x.title || 'this page')}">✕</button></div>`, open = (k, list) => q || !nbClosed.has(k) || list.some(x => x.id === N);
+  el.innerHTML = groups.map(g => {
+    const mine = shown.filter(x => (x.project || '') === g), folders = [...new Set(mine.map(x => docOf(x).folder).filter(Boolean))].sort();
+    return `<div class="lbl">${esc(g || 'Pages')}</div>` + mine.filter(x => !docOf(x).folder).map(row).join('') + folders.map(f => {
+      const list = mine.filter(x => docOf(x).folder === f), k = g + '|' + f, on = open(k, list);
+      return `<div class="prow fold" tabindex="0" role="button" aria-expanded="${on}" data-act="nbfold" data-v="${esc(k)}"><span class="ico">${ic('chevron', 14)}</span><span class="ico">${ic('folder', 16)}</span><span class="t">${esc(f)}</span><small>${list.length}</small></div>` + (on ? list.map(row).join('') : '');
+    }).join('');
+  }).join('')
     || `<p class="muted" style="padding:10px">${notes.length ? 'No page has that in its title.' : 'No pages yet.'}</p>`;
   const n = curNote(); if (!n) return;
-  if ($('#nbcrumb')) $('#nbcrumb').textContent = (n.project ? n.project + ' / ' : '') + (n.title || 'Untitled');
+  if ($('#nbcrumb')) $('#nbcrumb').textContent = (n.project ? n.project + ' / ' : '') + (docOf(n).folder ? docOf(n).folder + ' / ' : '') + (n.title || 'Untitled');
   if ($('#nbwhen')) $('#nbwhen').textContent = 'Edited ' + ago(n.updated);
 }
 function nbSrc() {
@@ -1906,6 +1923,7 @@ const ACT = {
   },
   // notebook
   nbnew: () => newPage(),
+  nbfold: el => { const k = el.dataset.v; nbClosed.has(k) ? nbClosed.delete(k) : nbClosed.add(k); nbSide(); },
   nbfrom: () => newPage([P.id], P.title),
   nbgo: el => { N = el.dataset.id; go('notebook'); },
   nbopen: el => { N = el.dataset.id; render(); },
@@ -1915,7 +1933,7 @@ const ACT = {
     try { await api('notes/' + n.id, { method: 'DELETE' }); } catch (e) { return toast('Could not delete the page (' + e.message + '). Try again.'); }
     notes = notes.filter(x => x !== n); if (n.id === N) N = null; render();
   },
-  nbicon: () => { const el = $('#icons'); el.innerHTML = el.innerHTML ? '' : `<div class="icons">${ICONS.map(x => `<button data-act="nbseticon" data-v="${x}">${x}</button>`).join('')}<button data-act="nbseticon" data-v="">Remove icon</button></div>`; },
+  nbicon: () => { const el = $('#icons'); el.innerHTML = el.innerHTML ? '' : `<div class="icons">${ICONS.map(x => `<button data-act="nbseticon" data-v="${x}" aria-label="${x}" title="${x}">${ic(x, 20)}</button>`).join('')}<button data-act="nbseticon" data-v="">Remove icon</button></div>`; },
   nbseticon: async el => { const n = curNote(); if (edDirty) await keepEd(); docOf(n).icon = el.dataset.v; putDoc(n); dropEd(); render(); }, // the page is redrawn with its new icon, after the editor's text is saved
   tocgo: el => [...document.querySelectorAll('#ed h2,#ed h3,#ed h4')].filter(h => h.textContent.trim())[+el.dataset.i]?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
   nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`, 'text/markdown'); },
@@ -1947,6 +1965,7 @@ const SET = {
   col: (v, d) => { const p = byId(d.id); (p[CS()] ||= {})[d.c] = v; delete p[CQ()]?.[d.c]; }, // an edited cell is the reader's, no longer backed by the AI's quote
   nbtitle: v => { curNote().title = v; nbSide(); },
   nbproject: v => curNote().project = v.trim(),
+  nbfolder: v => { const n = curNote(); docOf(n).folder = v.trim(); n.note = JSON.stringify(docOf(n)); nbSide(); }, // the folder lives in the page's saved text, so it is stored with the page
 };
 const FORM = {
   ask: f => ask(f.q.value),
