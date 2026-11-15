@@ -1,14 +1,12 @@
-// Marrow server: serves the app, keeps the library in SQLite (data/marrow.db, PDFs in data/files),
-// proxies AI calls (the OpenRouter key never reaches the browser), and fetches web pages, PDFs and paper search results.
+// Marrow server: serves the app and proxies AI calls, page fetches and paper search. Accounts, the library and PDFs live in Supabase
+// (Auth, Postgres with row-level security, Storage); the server only ever talks to Supabase as the logged-in user.
 // Run: node --env-file=.env server.js
 const http = require('http'), fs = require('fs'), path = require('path'), net = require('net'), dns = require('dns').promises;
-const { randomUUID } = require('crypto');
-const { DatabaseSync } = require('node:sqlite');
+const { randomBytes, createCipheriv, createDecipheriv } = require('crypto');
 
-const KEY = process.env.OPENROUTER_API_KEY;
 const PORT = process.env.PORT || 5173;
-const HOST = process.env.HOST || '127.0.0.1'; // local only; set HOST=0.0.0.0 to reach it from other devices on your network
-const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'), FILES = path.join(DATA, 'files');
+const HOST = process.env.HOST || '127.0.0.1'; // local only; set HOST=0.0.0.0 to reach it from other devices or a host's proxy
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // only Whisper's downloads live here now
 // Free models only, tried in order until one answers. Override with MODELS=a,b,c in .env.
 const MODELS = (process.env.MODELS ||
   'baidu/ernie-5.5-flash-preview:free,nvidia/nemotron-3-ultra-550b-a55b:free,google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,openrouter/free'
@@ -18,95 +16,83 @@ const VISION = (process.env.VISION_MODELS ||
   'nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,openrouter/free'
 ).split(',');
 
-// ---------- database ----------
-fs.mkdirSync(FILES, { recursive: true });
-const db = new DatabaseSync(path.join(DATA, 'marrow.db'));
-db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
-CREATE TABLE IF NOT EXISTS items(              -- one row per source: a paper, a web article or a video
-  id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN('pdf','web','video')), title TEXT NOT NULL, url TEXT,
-  project TEXT NOT NULL DEFAULT '', done INTEGER NOT NULL DEFAULT 0, added INTEGER NOT NULL, opened INTEGER,
-  data TEXT NOT NULL DEFAULT '{}');            -- JSON: tags, AI briefing, sections, concepts, chat
-CREATE TABLE IF NOT EXISTS parts(              -- the source's text: PDF pages, article paragraphs, transcript chunks
-  id INTEGER PRIMARY KEY, item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
-  n INTEGER NOT NULL, t REAL, body TEXT NOT NULL, html TEXT);
-CREATE INDEX IF NOT EXISTS parts_item ON parts(item_id, n);
-CREATE TABLE IF NOT EXISTS cards(
-  id INTEGER PRIMARY KEY, item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE, pos INTEGER NOT NULL,
-  q TEXT, a TEXT, quote TEXT, src INTEGER, ease REAL, ivl INTEGER, due INTEGER);
-CREATE INDEX IF NOT EXISTS cards_item ON cards(item_id, pos);
-CREATE TABLE IF NOT EXISTS notes(              -- item_id set: highlight/note on a source. NULL: a notebook page
-  id TEXT PRIMARY KEY, item_id TEXT REFERENCES items(id) ON DELETE CASCADE, pos INTEGER, title TEXT, project TEXT,
-  note TEXT, quote TEXT, page INTEGER, a INTEGER, b INTEGER, eb INTEGER, c INTEGER, ul INTEGER, updated INTEGER);
-CREATE INDEX IF NOT EXISTS notes_item ON notes(item_id, pos);
-CREATE TABLE IF NOT EXISTS activity(ts INTEGER NOT NULL, kind TEXT NOT NULL, item_id TEXT);
-CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT NOT NULL);       -- AI service: url, key, models, vision, paid
-CREATE TABLE IF NOT EXISTS feeds(url TEXT PRIMARY KEY, title TEXT NOT NULL, added INTEGER NOT NULL);  -- blogs and journals being followed
-CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(body, content='parts', content_rowid='id', tokenize='porter unicode61');
-CREATE TRIGGER IF NOT EXISTS parts_ai AFTER INSERT ON parts BEGIN INSERT INTO fts(rowid, body) VALUES(new.id, new.body); END;
-CREATE TRIGGER IF NOT EXISTS parts_ad AFTER DELETE ON parts BEGIN INSERT INTO fts(fts, rowid, body) VALUES('delete', old.id, old.body); END;`);
+// ---------- Supabase ----------
+const SB = (process.env.SUPABASE_URL || '').replace(/\/+$/, ''), PK = process.env.SUPABASE_PUBLISHABLE_KEY, APP_KEY = Buffer.from(process.env.APP_SECRET || '', 'hex');
+if (!SB || !PK || APP_KEY.length !== 32) {
+  console.error('Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and APP_SECRET (64 hex characters) in .env.\nNew secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  process.exit(1);
+}
+const sb = (p, { token, method = 'GET', body, headers } = {}) => fetch(SB + p, {
+  method, signal: AbortSignal.timeout(120000), body: body === undefined || Buffer.isBuffer(body) ? body : JSON.stringify(body),
+  headers: { apikey: PK, ...(token && { Authorization: 'Bearer ' + token }), ...(body !== undefined && !Buffer.isBuffer(body) && { 'Content-Type': 'application/json' }), ...headers } });
+// Postgres through PostgREST, as the user: row-level security does the isolation, so no query here filters by user.
+async function db(ctx, p, o) {
+  const r = await sb('/rest/v1/' + p, { token: ctx.token, ...o }), t = await r.text();
+  if (!r.ok) { let m; try { m = JSON.parse(t).message; } catch {} throw fail(r.status >= 500 ? 502 : [401, 403].includes(r.status) ? r.status : 400, m || 'the database refused that'); }
+  return t ? JSON.parse(t) : null;
+}
+const rpc = (ctx, fn, args = {}) => db(ctx, 'rpc/' + fn, { method: 'POST', body: args });
+const upsert = (ctx, table, rows, on) => db(ctx, `${table}?on_conflict=${on}`, { method: 'POST', body: rows, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } });
+const settingsOf = async ctx => Object.fromEntries((await db(ctx, 'settings?select=k,v')).map(r => [r.k, r.v]));
 
-// AI settings: what was saved in the app wins over .env, which wins over the defaults. The key is only ever read here, on the server.
-const saved = k => db.prepare('SELECT v FROM settings WHERE k=?').get(k)?.v;
-const list = v => String(v).split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+// Sessions: Supabase's access and refresh tokens live in HttpOnly cookies, so page scripts never see them.
+// A verified token is remembered for 5 minutes so each request doesn't call Supabase Auth; an expired one is refreshed from the refresh cookie.
+const cookies = req => Object.fromEntries((req.headers.cookie || '').split(/;\s*/).filter(c => c.includes('=')).map(c => { const i = c.indexOf('='); return [c.slice(0, i), decodeURIComponent(c.slice(i + 1))]; }));
+function setSession(req, res, t) {
+  const secure = req.headers['x-forwarded-proto'] === 'https' || req.socket.encrypted ? '; Secure' : '';
+  const c = (k, v, age) => `${k}=${encodeURIComponent(v)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure}`;
+  res.setHeader('Set-Cookie', t ? [c('mw_at', t.access_token, 2592000), c('mw_rt', t.refresh_token, 2592000)] : [c('mw_at', '', 0), c('mw_rt', '', 0)]);
+}
+const verified = new Map(), refreshing = new Map();
+async function whoIs(token) {
+  const hit = verified.get(token); if (hit && hit.until > Date.now()) return hit;
+  const r = await sb('/auth/v1/user', { token }); if (!r.ok) return null;
+  const u = await r.json(), v = { token, uid: u.id, email: u.email, until: Date.now() + 5 * 60e3 };
+  verified.set(token, v); if (verified.size > 500) verified.delete(verified.keys().next().value);
+  return v;
+}
+async function session(req, res) {
+  const { mw_at, mw_rt } = cookies(req);
+  let v = mw_at && await whoIs(mw_at);
+  if (!v && mw_rt) { // concurrent requests share one refresh: the refresh token is single-use
+    if (!refreshing.has(mw_rt)) refreshing.set(mw_rt, sb('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: mw_rt } }).then(r => r.ok ? r.json() : null).catch(() => null).finally(() => setTimeout(() => refreshing.delete(mw_rt), 15000)));
+    const t = await refreshing.get(mw_rt);
+    if (t) { setSession(req, res, t); v = await whoIs(t.access_token); }
+  }
+  if (!v) throw fail(401, 'log in');
+  return v;
+}
+
+// Each reader's AI keys are stored encrypted with APP_SECRET, so reading the database (or a backup) does not reveal them. They are decrypted only here, to call the provider.
+const seal = s => {
+  if (!s) return '';
+  const iv = randomBytes(12), c = createCipheriv('aes-256-gcm', APP_KEY, iv), ct = Buffer.concat([c.update(s, 'utf8'), c.final()]);
+  return 'enc1:' + [iv, c.getAuthTag(), ct].map(b => b.toString('base64')).join('.');
+};
+const unseal = s => {
+  if (!s?.startsWith('enc1:')) return s || '';
+  try { const [iv, tag, ct] = s.slice(5).split('.').map(x => Buffer.from(x, 'base64')), d = createDecipheriv('aes-256-gcm', APP_KEY, iv); d.setAuthTag(tag); return Buffer.concat([d.update(ct), d.final()]).toString('utf8'); }
+  catch { return ''; } // wrong APP_SECRET: the reader has to enter the key again
+};
+
+// AI settings of one reader (S = their settings rows). The server supplies no key of its own: each reader brings their own.
 // Providers each have their own address and key; "chain" and "vision" are ordered lists of { p: provider id, m: model } tried top to bottom.
-// Before providers existed there was one url, key and model list; those become a provider called "main" until the reader saves.
-const jsonOf = k => { try { return JSON.parse(saved(k)); } catch {} };
 const isOR = url => /(^|\.)openrouter\.ai$/.test(new URL(url).hostname);
-const conf = () => {
-  const old = (saved('url') || process.env.AI_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
-  const providers = (jsonOf('providers') || [{ id: 'main', name: isOR(old) ? 'OpenRouter' : new URL(old).hostname, url: old, key: saved('key') || '' }])
-    .map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), fromEnv: !p.key && !!KEY && isOR(p.url), key: p.key || (isOR(p.url) && KEY) || '' }));
-  const first = providers[0].id, chainOf = (k, def) => jsonOf(k) || list(saved(k === 'chain' ? 'models' : 'vision') || def).map(m => ({ p: first, m }));
-  return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: saved('paid') === '1' };
+const conf = S => {
+  const jsonOf = k => { try { return JSON.parse(S[k]); } catch {} };
+  const providers = (jsonOf('providers') || [{ id: 'main', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '' }]).map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), key: unseal(p.key) }));
+  const first = providers[0].id, chainOf = (k, def) => jsonOf(k) || def.map(m => ({ p: first, m }));
+  return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: S.paid === '1' };
 };
-const anyKey = c => c.providers.some(p => p.key || !isOR(p.url));
-// node:sqlite binds neither undefined, booleans nor objects.
-const bind = v => v === undefined ? null : typeof v === 'boolean' ? +v : v !== null && typeof v === 'object' ? JSON.stringify(v) : v;
-const inserter = (table, cols) => {
-  const st = db.prepare(`INSERT OR REPLACE INTO ${table}(${cols}) VALUES(${cols.map(() => '?')})`);
-  return o => st.run(...cols.map(k => bind(o[k])));
-};
-const CARD = ['q', 'a', 'quote', 'src', 'ease', 'ivl', 'due'], NOTE = ['note', 'quote', 'page', 'a', 'b', 'eb', 'c', 'ul'];
-const addCard = inserter('cards', ['item_id', 'pos', ...CARD]), addNote = inserter('notes', ['id', 'item_id', 'pos', ...NOTE]);
-const addPart = inserter('parts', ['item_id', 'n', 't', 'body', 'html']), addPage = inserter('notes', ['id', 'title', 'project', 'note', 'updated']);
-const upsert = db.prepare(`INSERT INTO items(id,kind,title,url,project,done,added,opened,data) VALUES(?,?,?,?,?,?,?,?,?)
-  ON CONFLICT(id) DO UPDATE SET title=excluded.title, url=excluded.url, project=excluded.project, done=excluded.done, opened=excluded.opened, data=excluded.data`);
-const tx = fn => { db.exec('BEGIN'); try { fn(); db.exec('COMMIT'); } catch (e) { db.exec('ROLLBACK'); throw e; } };
 
-// ponytail: an item is saved whole, so its cards and notes are rewritten each time. Diff them if items grow to thousands of cards.
-function putItem(id, { cards = [], notes = [], parts, kind, title, url, project, done, added, opened, id: _, ...data }) {
-  tx(() => {
-    upsert.run(id, bind(kind), String(title || 'Untitled'), bind(url), String(project || ''), done ? 1 : 0, +added || Date.now(), bind(opened), JSON.stringify(data));
-    db.prepare('DELETE FROM cards WHERE item_id=?').run(id);
-    cards.forEach((c, pos) => addCard({ ...c, item_id: id, pos }));
-    db.prepare('DELETE FROM notes WHERE item_id=?').run(id);
-    notes.forEach((n, pos) => addNote({ ...n, id: randomUUID(), item_id: id, pos }));
-    if (Array.isArray(parts)) {
-      db.prepare('DELETE FROM parts WHERE item_id=?').run(id);
-      parts.forEach((p, i) => addPart({ t: p.t, html: p.html, body: String(p.body ?? ''), item_id: id, n: i + 1 }));
-    }
-  });
-}
+// ponytail: an item is saved whole, so its cards and notes are rewritten each time (inside the put_item function). Diff them if items grow to thousands of cards.
+const putItem = (ctx, id, { cards = [], notes = [], parts, kind, title, url, project, done, added, opened, id: _, ...data }) =>
+  rpc(ctx, 'put_item', { p_id: id, p: { kind, title: String(title || 'Untitled'), url, project: String(project || ''), done: done ? 1 : 0, added: +added || Date.now(), opened, data, cards, notes,
+    parts: Array.isArray(parts) ? parts.map(p => ({ t: p.t, html: p.html, body: String(p.body ?? '') })) : null } });
 const drop = r => { for (const k in r) if (r[k] === null) delete r[k]; return { ...r }; }; // NULL columns become absent fields
-function library() {
-  const by = rows => rows.reduce((m, { item_id, ...r }) => ((m[item_id] ||= []).push(drop(r)), m), {});
-  const cards = by(db.prepare(`SELECT item_id,${CARD} FROM cards ORDER BY item_id,pos`).all());
-  const notes = by(db.prepare(`SELECT item_id,${NOTE} FROM notes WHERE item_id IS NOT NULL ORDER BY item_id,pos`).all());
-  return {
-    items: db.prepare('SELECT * FROM items ORDER BY added DESC').all().map(({ data, ...r }) => ({ ...JSON.parse(data), ...drop(r), cards: cards[r.id] || [], notes: notes[r.id] || [] })),
-    notes: db.prepare('SELECT id,title,project,note,updated FROM notes WHERE item_id IS NULL ORDER BY updated DESC').all().map(drop),
-    activity: db.prepare('SELECT ts, kind, item_id FROM activity WHERE ts > ? ORDER BY ts').all(Date.now() - 400 * 864e5), // each study step: when, what kind, which source
-    feeds: db.prepare('SELECT url,title FROM feeds ORDER BY added').all().map(drop),
-  };
-}
-// Full-text search over everything in the library. \x01 and \x02 mark the matched words (the client escapes, then styles them).
-function search(q, phrase) {
-  const words = q.match(/[\p{L}\p{N}]+/gu) || [];
-  if (!words.length) return [];
-  const match = phrase ? `"${words.join(' ')}"` : words.map(w => `"${w}"`).join(' ');
-  return db.prepare(`SELECT p.item_id, p.n, snippet(fts, 0, char(1), char(2), '…', 18) AS s FROM fts JOIN parts p ON p.id = fts.rowid
-    WHERE fts MATCH ? ORDER BY rank LIMIT 40`).all(match).map(drop);
-}
+// Full-text search over the reader's library. \x01 and \x02 mark the matched words (the client escapes, then styles them).
+const search = (ctx, q, phrase) => (q.match(/[\p{L}\p{N}]+/gu) || []).length ? rpc(ctx, 'search_parts', { q, phrase: !!phrase }) : [];
+
 
 // ---------- http helpers ----------
 const send = (res, code, body, type = 'application/json') => {
@@ -141,12 +127,12 @@ async function fetchPublic(link) {
 }
 
 // A model that just failed is skipped for 10 minutes, so one flaky provider doesn't slow every request.
-const cooling = new Map();
+const cooling = new Map(); // keyed by reader, provider and model
 const headers = p => ({ 'Content-Type': 'application/json', 'X-Title': 'Marrow', ...(p.key && { Authorization: `Bearer ${p.key}`, ...(/anthropic\.com$/.test(new URL(p.url).hostname) && { 'x-api-key': p.key, 'anthropic-version': '2023-06-01' }) }) });
-async function ai(messages) {
-  const c = conf(), errs = [], badKey = new Set();
+async function ai(uid, c, messages) {
+  const errs = [], badKey = new Set(), ck = (p, m) => uid + '|' + p + '|' + m;
   const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.chain;
-  const open = all.filter(e => !(cooling.get(e.p + '|' + e.m) > Date.now()));
+  const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now()));
   for (const { p: pid, m: model } of open.length ? open : all) {
     const p = c.providers.find(x => x.id === pid);
     if (!p || badKey.has(pid)) continue;
@@ -163,15 +149,15 @@ async function ai(messages) {
       err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' : j.error?.message || `answered ${r.status} with no text`;
     } catch (e) { err = e.name === 'TimeoutError' ? 'no answer within 90 s' : e.message === 'fetch failed' ? `could not reach ${p.url}` : e.message; }
     errs.push(`${p.name} / ${model}: ${err}`);
-    cooling.set(pid + '|' + model, Date.now() + 10 * 60e3);
+    cooling.set(ck(pid, model), Date.now() + 10 * 60e3);
     console.warn('model failed ->', errs.at(-1));
   }
   throw fail(502, errs.length ? errs.join('; ') : 'no model is allowed to answer. Add one in Settings (on OpenRouter only free models are used unless you allow paid ones)');
 }
 
 // The models a provider offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
-async function offered(id) {
-  const p = conf().providers.find(x => x.id === id); if (!p) throw fail(404, 'unknown provider');
+async function offered(c, id) {
+  const p = c.providers.find(x => x.id === id); if (!p) throw fail(404, 'unknown provider');
   const r = await fetch(p.url + '/models', { headers: headers(p), signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${p.url}`); });
   if (r.status === 401 || r.status === 403) throw fail(401, `${p.name} rejected the API key`);
   const j = await r.json().catch(() => ({}));
@@ -214,7 +200,7 @@ const whisperCli = () => within(BIN, WIN ? 'whisper-cli.exe' : 'whisper-cli') ||
 const ytDlp = () => (fs.existsSync(YTDLP) && YTDLP) || onPath('yt-dlp');
 const modelFile = id => path.join(WH, `ggml-${id}.bin`);
 const haveModels = () => WMODELS.map(m => m[0]).filter(id => fs.existsSync(modelFile(id)));
-const inUse = () => haveModels().includes(saved('whisper')) ? saved('whisper') : haveModels()[0] || '';
+const inUse = S => haveModels().includes(S.whisper) ? S.whisper : haveModels()[0] || '';
 // Runs in the background; the Settings page polls /api/whisper for progress. A cancelled download leaves nothing behind.
 const start = (key, fn) => {
   if (jobs[key] && !jobs[key].error) throw fail(409, 'that is already downloading');
@@ -252,16 +238,16 @@ async function getYtDlp() {
   delete jobs.ytdlp;
 }
 const pub = j => j && { got: j.got, total: j.total, unpacking: j.unpacking, error: j.error };
-const whisperState = () => ({
+const whisperState = S => ({
   models: WMODELS.map(([id, name, size, note]) => ({ id, name, size, note, have: fs.existsSync(modelFile(id)), job: pub(jobs['model:' + id]) })),
-  use: inUse(), platform: process.platform,
+  use: inUse(S), platform: process.platform,
   program: { have: !!whisperCli(), mine: !!within(BIN, WIN ? 'whisper-cli.exe' : 'whisper-cli'), job: pub(jobs.program) },
   ytdlp: { have: !!ytDlp(), mine: fs.existsSync(YTDLP), job: pub(jobs.ytdlp) },
 });
 // whisper-cli -oj writes { transcription: [{ offsets: { from: ms }, text }] }.
 const segsOf = j => (j.transcription || []).map(s => ({ t: s.offsets.from / 1000, body: s.text.trim() })).filter(s => s.body);
-async function transcribe(id, req) {
-  const cli = whisperCli(), model = inUse(), key = 'tx:' + id;
+async function transcribe(id, req, S, key) {
+  const cli = whisperCli(), model = inUse(S);
   if (!cli || !model) throw fail(400, 'set up Whisper in Settings first: the program and one model');
   if (jobs[key]) throw fail(409, 'this video is already being transcribed');
   const base = path.join(WH, 'tx-' + id), wav = base + '.wav', job = jobs[key] = { pct: 0 }; let n = 0;
@@ -348,52 +334,74 @@ async function youtubeCaptions(vid) {
 }
 
 // ---------- routes ----------
+// Names this server may be reached by, besides localhost and plain IP addresses: ALLOWED_HOSTS=marrow.example.com,...
+const HOSTS = (process.env.ALLOWED_HOSTS || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
+const store = (uid, id) => `/storage/v1/object/files/${uid}/${id}.pdf`;
 http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://x'), M = req.method, p = url.pathname, q = k => url.searchParams.get(k) || '';
-    // Only this machine's own pages may talk to the API: no other website (Origin), no DNS-rebinding name (Host).
-    const host = (req.headers.host || '').replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
-    if (host !== 'localhost' && !net.isIP(host)) throw fail(403, 'unknown host');
-    if (req.headers.origin && req.headers.origin !== 'http://' + req.headers.host) throw fail(403, 'cross-site request refused');
+    // Only this server's own pages may talk to the API: no other website (Origin), no DNS-rebinding name (Host).
+    const host = (req.headers.host || '').replace(/:\d+$/, '').replace(/^\[|\]$/g, '').toLowerCase();
+    if (host !== 'localhost' && !net.isIP(host) && !HOSTS.includes(host)) throw fail(403, 'unknown host');
+    if (req.headers.origin) { let o; try { o = new URL(req.headers.origin).host; } catch {} if (o !== req.headers.host) throw fail(403, 'cross-site request refused'); }
     // Browsers leave Origin off plain GETs (an <img> or <script>), so also refuse pages from another site.
     if (p.startsWith('/api/') && /^(cross-site|same-site)$/.test(req.headers['sec-fetch-site'] || '')) throw fail(403, 'cross-site request refused');
 
     if (M === 'GET' && (p === '/' || p === '/index.html')) return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8');
-    if (M === 'GET' && p === '/api/library') return send(res, 200, { ...library(), projects: JSON.parse(saved('projects') || '[]') });
+    // Accounts are made by the admin in the Supabase dashboard; there is no sign-up route. Every other /api route needs a logged-in reader.
+    if (p === '/api/login' && M === 'POST') {
+      const { email, password } = await json(req, 1e4);
+      const r = await sb('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: String(email || '').trim(), password: String(password || '') } });
+      if (r.status === 429) throw fail(429, 'too many attempts: wait a minute and try again');
+      if (r.status >= 500) throw fail(502, 'the login service is not answering');
+      const t = await r.json().catch(() => ({}));
+      if (!r.ok || !t.access_token) throw fail(401, 'wrong email or password');
+      setSession(req, res, t); return send(res, 200, { email: t.user?.email });
+    }
+    if (p === '/api/logout' && M === 'POST') {
+      const { mw_at } = cookies(req); if (mw_at) { verified.delete(mw_at); sb('/auth/v1/logout', { method: 'POST', token: mw_at }).catch(() => {}); }
+      setSession(req, res, null); return send(res, 200, {});
+    }
+    const ctx = await session(req, res), S = () => settingsOf(ctx);
+    if (p === '/api/me') return send(res, 200, { email: ctx.email });
+
+    if (M === 'GET' && p === '/api/library') return send(res, 200, await rpc(ctx, 'library'));
     if (M === 'PUT' && p === '/api/projects') { // project names, so a project with nothing in it yet is kept too
       const b = await json(req, 1e5); if (!Array.isArray(b.list)) throw fail(400, 'list must be an array');
-      db.prepare('INSERT OR REPLACE INTO settings VALUES(?,?)').run('projects', JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean))); return send(res, 200, {});
+      await upsert(ctx, 'settings', [{ k: 'projects', v: JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean)) }], 'user_id,k'); return send(res, 200, {});
     }
-    if (M === 'GET' && p === '/api/search') return send(res, 200, search(q('q'), q('phrase')));
+    if (M === 'GET' && p === '/api/search') return send(res, 200, await search(ctx, q('q'), q('phrase')));
     if (M === 'GET' && p === '/api/discover') return send(res, 200, await discover(q('q')));
     if (M === 'POST' && p === '/api/ai') {
       const { messages } = await json(req, 6e6); // source text plus one cropped image
       if (!Array.isArray(messages)) throw fail(400, 'messages required');
-      return send(res, 200, await ai(messages));
+      return send(res, 200, await ai(ctx.uid, conf(await S()), messages));
     }
     if (p === '/api/settings' && M === 'GET') { // keys never leave the server: only whether there is one, and its last four characters
-      const c = conf();
-      return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, providers: c.providers.map(({ id, name, url, key, fromEnv }) => ({ id, name, url, hasKey: !!key, fromEnv, hint: key.slice(-4) })) });
+      const c = conf(await S());
+      return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
     }
     if (p === '/api/settings' && M === 'PUT') {
-      const b = await json(req, 1e5), put = (k, v) => db.prepare('INSERT OR REPLACE INTO settings VALUES(?,?)').run(k, String(v)), have = jsonOf('providers') || [];
+      const b = await json(req, 1e5); let have = []; try { have = JSON.parse((await S()).providers) || []; } catch {}
       if (!Array.isArray(b.providers) || !b.providers.length) throw fail(400, 'add at least one provider');
       const ids = new Set(), providers = b.providers.map(x => {
         const id = String(x.id || ''), url = String(x.url || '').trim(), name = String(x.name || '').trim() || url;
         try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw fail(400, `${name}: the API address must start with http:// or https://`); }
         if (!id || ids.has(id)) throw fail(400, 'duplicate provider'); ids.add(id);
-        const prev = have.find(h => h.id === id) || (id === 'main' && { key: saved('key') });
-        return { id, name, url, key: typeof x.key === 'string' && x.key.trim() ? x.key.trim() : x.clearKey ? '' : prev?.key || '' };
+        const prev = have.find(h => h.id === id); // its key is already encrypted
+        return { id, name, url, key: typeof x.key === 'string' && x.key.trim() ? seal(x.key.trim()) : x.clearKey ? '' : prev?.key || '' };
       });
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
       const chain = clean(b.chain); if (!chain.length) throw fail(400, 'pick at least one model');
       const vision = clean(b.vision);
-      put('providers', JSON.stringify(providers)); put('chain', JSON.stringify(chain)); put('vchain', JSON.stringify(vision.length ? vision : chain)); put('paid', b.paid ? 1 : 0);
-      cooling.clear(); return send(res, 200, {});
+      await upsert(ctx, 'settings', [{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }], 'user_id,k');
+      for (const k of cooling.keys()) if (k.startsWith(ctx.uid + '|')) cooling.delete(k);
+      return send(res, 200, {});
     }
-    if (p === '/api/settings/models' && M === 'GET') return send(res, 200, await offered(q('provider')));
-    if (p === '/api/settings/test' && M === 'POST') { const r = await ai([{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
-    if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState());
+    if (p === '/api/settings/models' && M === 'GET') return send(res, 200, await offered(conf(await S()), q('provider')));
+    if (p === '/api/settings/test' && M === 'POST') { const r = await ai(ctx.uid, conf(await S()), [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
+    // ponytail: Whisper and yt-dlp run on this server's computer and are shared by every reader. Fine on your own machine; a small free host can't run them.
+    if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState(await S()));
     if (p === '/api/whisper' && (M === 'POST' || M === 'DELETE')) { // what = model:<id> | program | ytdlp
       const what = q('what'), id = what.startsWith('model:') && what.slice(6);
       if (id ? !WMODELS.some(m => m[0] === id) : !['program', 'ytdlp'].includes(what)) throw fail(400, 'unknown download');
@@ -405,16 +413,16 @@ http.createServer(async (req, res) => {
         jobs[what]?.ac?.abort(); delete jobs[what];
         fs.rmSync(id ? modelFile(id) : what === 'program' ? BIN : YTDLP, { recursive: true, force: true });
       }
-      return send(res, 200, whisperState());
+      return send(res, 200, whisperState(await S()));
     }
     if (p === '/api/whisper/use' && M === 'PUT') {
       if (!haveModels().includes(q('id'))) throw fail(400, 'download that model first');
-      db.prepare('INSERT OR REPLACE INTO settings VALUES(?,?)').run('whisper', q('id')); return send(res, 200, whisperState());
+      await upsert(ctx, 'settings', [{ k: 'whisper', v: q('id') }], 'user_id,k'); return send(res, 200, whisperState(await S()));
     }
     if (p === '/api/transcribe') {
-      const id = q('id'), key = 'tx:' + id, j = jobs[key];
+      const id = q('id'), key = 'tx:' + ctx.uid + ':' + id, j = jobs[key];
       if (!/^[\w-]{1,64}$/.test(id)) throw fail(400, 'which source?');
-      if (M === 'POST') { await transcribe(id, req); return send(res, 200, {}); }
+      if (M === 'POST') { await transcribe(id, req, await S(), key); return send(res, 200, {}); }
       if (M === 'DELETE') { j?.ch?.kill(); delete jobs[key]; return send(res, 200, {}); }
       if (M === 'GET') { if (!j) throw fail(404, 'nothing is being transcribed'); if (j.segs || j.error) delete jobs[key]; return send(res, 200, { pct: j.pct, segs: j.segs, error: j.error }); }
     }
@@ -428,16 +436,16 @@ http.createServer(async (req, res) => {
     }
     if (M === 'POST' && p === '/api/activity') {
       const { kind, item_id } = await json(req, 1e4);
-      db.prepare('INSERT INTO activity VALUES(?,?,?)').run(Date.now(), String(kind), bind(item_id));
+      await db(ctx, 'activity', { method: 'POST', body: { ts: Date.now(), kind: String(kind), item_id: item_id ?? null }, headers: { Prefer: 'return=minimal' } });
       return send(res, 200, {});
     }
     if (M === 'PUT' && p === '/api/feeds') {
       const f = await json(req, 1e4);
       if (!/^https?:\/\//.test(f.url)) throw fail(400, 'feed address required');
-      db.prepare('INSERT OR REPLACE INTO feeds VALUES(?,?,?)').run(f.url, String(f.title || f.url), Date.now());
+      await upsert(ctx, 'feeds', [{ url: f.url, title: String(f.title || f.url), added: Date.now() }], 'user_id,url');
       return send(res, 200, {});
     }
-    if (M === 'DELETE' && p === '/api/feeds') { db.prepare('DELETE FROM feeds WHERE url=?').run(q('url')); return send(res, 200, {}); }
+    if (M === 'DELETE' && p === '/api/feeds') { await db(ctx, 'feeds?url=eq.' + encodeURIComponent(q('url')), { method: 'DELETE' }); return send(res, 200, {}); }
     if (M === 'GET' && p === '/api/fetch') {
       const { r, url: final } = await fetchPublic(q('url'));
       if (!r.ok) throw fail(502, `the site answered ${r.status}`);
@@ -450,19 +458,25 @@ http.createServer(async (req, res) => {
     }
     const m = p.match(/^\/api\/(items|files|notes)\/([\w-]{1,64})(\/parts)?$/);
     if (m) {
-      const [, what, id, parts] = m, file = path.join(FILES, id + '.pdf');
-      if (what === 'items' && parts && M === 'GET') return send(res, 200, db.prepare('SELECT n,t,body,html FROM parts WHERE item_id=? ORDER BY n').all(id).map(drop));
-      if (what === 'items' && M === 'PUT') { putItem(id, await json(req)); return send(res, 200, {}); }
-      if (what === 'items' && M === 'DELETE') { db.prepare('DELETE FROM items WHERE id=?').run(id); fs.rmSync(file, { force: true }); return send(res, 200, {}); }
-      if (what === 'notes' && M === 'PUT') { const n = await json(req, 5e6); addPage({ title: n.title, project: n.project, note: n.note, updated: Date.now(), id }); return send(res, 200, {}); }
-      if (what === 'notes' && M === 'DELETE') { db.prepare('DELETE FROM notes WHERE id=? AND item_id IS NULL').run(id); return send(res, 200, {}); }
+      const [, what, id, parts] = m;
+      if (what === 'items' && parts && M === 'GET') return send(res, 200, (await db(ctx, `parts?item_id=eq.${id}&select=n,t,body,html&order=n`)).map(drop));
+      if (what === 'items' && M === 'PUT') { await putItem(ctx, id, await json(req)); return send(res, 200, {}); }
+      if (what === 'items' && M === 'DELETE') { await db(ctx, 'items?id=eq.' + id, { method: 'DELETE' }); await sb(store(ctx.uid, id), { method: 'DELETE', token: ctx.token }).catch(() => {}); return send(res, 200, {}); }
+      if (what === 'notes' && M === 'PUT') { const n = await json(req, 5e6); await upsert(ctx, 'notes', [{ id, title: n.title, project: n.project, note: n.note, updated: Date.now() }], 'id'); return send(res, 200, {}); }
+      if (what === 'notes' && M === 'DELETE') { await db(ctx, `notes?id=eq.${id}&item_id=is.null`, { method: 'DELETE' }); return send(res, 200, {}); }
       if (what === 'files' && M === 'PUT') {
         const buf = await slurp(req, 150e6);
         if (!buf.subarray(0, 1024).includes('%PDF-')) throw fail(415, 'not a PDF');
-        fs.writeFileSync(file, buf); return send(res, 200, {});
+        const r = await sb(store(ctx.uid, id), { method: 'POST', token: ctx.token, body: buf, headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'true' } });
+        if (!r.ok) { const e = await r.json().catch(() => ({})); throw fail(r.status === 413 ? 413 : r.status >= 500 ? 502 : 400, e.message || `the file store refused the PDF (${r.status})`); }
+        return send(res, 200, {});
       }
-      if (what === 'files' && M === 'GET') return fs.existsSync(file) ? send(res, 200, fs.readFileSync(file), 'application/pdf') : send(res, 404, { error: 'the PDF file is missing' });
+      if (what === 'files' && M === 'GET') {
+        // the unique ?t= keeps Supabase's CDN from serving a PDF that was just deleted or replaced
+        const r = await sb(store(ctx.uid, id).replace('/object/', '/object/authenticated/') + '?t=' + Date.now(), { token: ctx.token });
+        return r.ok ? send(res, 200, Buffer.from(await r.arrayBuffer()), 'application/pdf') : send(res, 404, { error: 'the PDF file is missing' });
+      }
     }
     send(res, 404, { error: 'not found' });
   } catch (e) { send(res, Number.isInteger(e.code) && e.code >= 400 && e.code < 600 ? e.code : 500, { error: e.message }); }
-}).listen(PORT, HOST, () => console.log(`Marrow -> http://localhost:${PORT}` + (anyKey(conf()) ? '' : '  (no API key yet: add one in Settings)')));
+}).listen(PORT, HOST, () => console.log(`Marrow -> http://localhost:${PORT}`));

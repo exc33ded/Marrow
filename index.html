@@ -108,11 +108,11 @@ kbd{font:600 11px var(--f-body);border:1px solid currentColor;border-radius:5px;
 .hero{font-size:40px;margin:0} .lead{font-size:16.5px;margin:.2em 0 1.4em}
 .addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px;box-shadow:var(--sh);margin:0 0 22px}
 .addbar input{border:0;background:none;font-size:15.5px;min-width:0} .addbar input:focus-visible{outline:0} .addbar:focus-within{border-color:var(--acc)}
-.heatwrap{overflow-x:auto;padding-bottom:6px;--cs:14px}
-.heat{display:grid;grid-template-columns:auto max-content;column-gap:8px;row-gap:5px;width:max-content;font-size:11px;color:var(--muted)}
-.hm{grid-column:2;display:grid;grid-template-columns:repeat(53,var(--cs));column-gap:3px;height:14px} .hm span{white-space:nowrap}
-.hd{display:grid;grid-template-rows:repeat(7,var(--cs));row-gap:3px;align-items:center;line-height:1} .hd span:nth-child(1){grid-row:2} .hd span:nth-child(2){grid-row:4} .hd span:nth-child(3){grid-row:6}
-.hg{display:grid;grid-template-rows:repeat(7,var(--cs));grid-auto-flow:column;grid-auto-columns:var(--cs);gap:3px}
+.heatwrap{padding-bottom:6px;--cs:14px}
+.heat{display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:5px;width:100%;font-size:11px;color:var(--muted)}
+.hm{grid-column:2;display:grid;grid-template-columns:repeat(53,1fr);column-gap:3px;height:14px} .hm span{white-space:nowrap}
+.hd{display:grid;grid-template-rows:repeat(7,1fr);row-gap:3px;align-items:center;line-height:1} .hd span:nth-child(1){grid-row:2} .hd span:nth-child(2){grid-row:4} .hd span:nth-child(3){grid-row:6}
+.hg{display:grid;grid-template-rows:repeat(7,auto);grid-auto-flow:column;grid-auto-columns:1fr;gap:3px} .hg i{aspect-ratio:1}
 .heat i,.hleg i{display:block;border-radius:2px;background:var(--h0)} .hleg i{width:var(--cs);height:var(--cs)}
 i[data-l="1"]{background:var(--h1)} i[data-l="2"]{background:var(--h2)} i[data-l="3"]{background:var(--h3)} i[data-l="4"]{background:var(--h4)}
 .heat i[data-today]{outline:1.5px solid var(--ink);outline-offset:1px}
@@ -318,7 +318,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 @media (max-width:900px){
   body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
   #rail{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px;justify-content:space-between} .logo,#rail .sp{display:none}
-  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn,#rail #setBtn{display:none}
+  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn,#rail #setBtn,#rail #outBtn{display:none}
   .wrap{padding:22px 16px 60px} .hero{font-size:32px}
   .addbar{flex-wrap:wrap} .addbar input{flex:1 1 100%}
   .nb{grid-template-columns:1fr;height:auto} .nbside{border-right:0;border-bottom:1px solid var(--line);max-height:32vh} .nbpage{padding:24px 18px} .bench{padding:10px 18px}
@@ -915,9 +915,22 @@ html[data-look=survey] #toast{border-radius:2px}
 html[data-look=survey] .pk h3{font-size:24px}
 html[data-look=survey] .lookcard[aria-pressed=true]{outline-color:var(--ok)}
 /* LOOKS-END */
+#signin{position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;padding:16px}
+#signin form{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:28px;width:min(380px,100%);display:grid;gap:4px}
+#signin h2{margin:0 0 2px} #signin label{font-weight:600;margin-top:12px} #signin button{margin-top:18px;border-color:var(--acc);color:var(--acc);font-weight:600} #signin .err{color:var(--vid);min-height:1.4em;margin:8px 0 0}
 </style>
 </head>
 <body>
+<div id="signin" hidden>
+  <form id="signinForm" autocomplete="on">
+    <h2>Log in to Marrow</h2>
+    <small class="muted">Accounts are created by the person who runs this server. Ask them for one.</small>
+    <label for="siEmail">Email</label><input id="siEmail" name="email" type="email" autocomplete="username" required>
+    <label for="siPw">Password</label><input id="siPw" name="password" type="password" autocomplete="current-password" required>
+    <p id="signinErr" class="err" role="alert"></p>
+    <button type="submit">Log in</button>
+  </form>
+</div>
 <nav id="rail" aria-label="Sections">
   <div class="logo" title="Marrow">M</div>
   <div id="nav"></div>
@@ -925,6 +938,7 @@ html[data-look=survey] .lookcard[aria-pressed=true]{outline-color:var(--ok)}
   <button id="palBtn" data-act="palette" title="Search everything, or paste a link to add it (Ctrl K)"></button>
   <button id="setBtn" data-view="settings"></button>
   <button id="themeBtn" data-act="theme"></button>
+  <button id="outBtn" data-act="logout" title="Log out"></button>
 </nav>
 <div id="page"></div>
 <div id="reader" hidden>
@@ -975,6 +989,7 @@ const IC = {
   layers: 'M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 18l10 5 10-5', table: 'M3 5h18v14H3zM3 10h18M3 15h18M9 5v14', pen: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
   graph: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
   sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4', moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+  out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
   compass: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z',
   file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8', globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z', play: 'M3 5h18v14H3zM10 9l5 3-5 3z',
@@ -1028,8 +1043,23 @@ const fname = s => String(s).replace(/[^\w ]+/g, '').trim().slice(0, 60) || 'mar
 
 // ---------- storage: everything lives in the server's SQLite database ----------
 const JH = { 'Content-Type': 'application/json' };
-async function api(path, opts) {
+// Accounts are made by the admin (no sign-up). A 401 anywhere shows the login form, then the request is repeated, so nothing in progress is lost.
+let signing;
+const signIn = () => signing ||= new Promise(ok => {
+  const box = $('#signin'), f = $('#signinForm'), err = $('#signinErr'), btn = f.querySelector('button');
+  box.hidden = false; $('#siEmail').focus();
+  f.onsubmit = async e => {
+    e.preventDefault(); err.textContent = ''; btn.disabled = true;
+    try {
+      const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email.value, password: f.password.value }) });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'could not log in');
+      f.password.value = ''; box.hidden = true; signing = null; ok();
+    } catch (x) { err.textContent = x.message; } finally { btn.disabled = false; }
+  };
+});
+async function api(path, opts, again) {
   const r = await fetch('/api/' + path, opts), isJ = r.headers.get('content-type')?.includes('json');
+  if (r.status === 401 && !again) { await signIn(); return api(path, opts, true); }
   if (!r.ok) throw new Error(isJ ? (await r.json()).error : r.statusText);
   return isJ ? r.json() : r.arrayBuffer();
 }
@@ -1074,7 +1104,7 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
 
 // ---------- state ----------
-let feeds = [], news = null, newsAt = 0, cfg = null, found = {}, ffilter = {}; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
+let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, ffilter = {}; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
 const PRESETS = [['OpenRouter', 'https://openrouter.ai/api/v1'], ['OpenAI', 'https://api.openai.com/v1'], ['Claude (Anthropic)', 'https://api.anthropic.com/v1'], ['Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/openai'], ['Ollama (this computer)', 'http://localhost:11434/v1'], ['Other', '']];
 // One ordered list of models. Each row says which provider answers it; ↑ ↓ change the order they are tried in.
 const foundHTML = (p, i) => { // what a provider offers: a filter and a short scrolling list; clicking a name adds it
@@ -1398,7 +1428,7 @@ async function addLink(v, extra, pdfOnly) {
 // ---------- following blogs and journals (RSS / Atom) ----------
 function parseFeed(xml) {
   const d = new DOMParser().parseFromString(String(xml), 'text/xml'), tx = (el, s) => el.querySelector(s)?.textContent.trim() || '';
-  if (d.querySelector('parsererror')) return null;
+  if (d.querySelector('parsererror') || !/^(rss|feed|rdf)/i.test(d.documentElement.localName)) return null;
   return { title: tx(d, 'channel > title, feed > title'), items: [...d.querySelectorAll('item, entry')].slice(0, 15).map(e => ({
     title: tx(e, 'title'), link: e.querySelector('link[href]:not([rel]), link[rel=alternate]')?.getAttribute('href') || tx(e, 'link'),
     date: Date.parse(tx(e, 'pubDate, published, updated')) || 0,
@@ -1407,21 +1437,33 @@ function parseFeed(xml) {
 }
 async function getFeed(url) {
   let j = await api('fetch?url=' + encodeURIComponent(url)), f = parseFeed(j.html);
-  if (!f?.items.length) { // probably a blog's home page: use the feed it advertises
+  if (!f) { // not a feed, so probably a blog's home page: use the feed it advertises
     const alt = new DOMParser().parseFromString(String(j.html), 'text/html').querySelector('link[rel~=alternate][type*=rss], link[rel~=alternate][type*=atom]')?.getAttribute('href');
     if (!alt) throw new Error('no feed at that address. Try the site’s RSS or Atom link');
     url = new URL(alt, j.url).href; j = await api('fetch?url=' + encodeURIComponent(url)); f = parseFeed(j.html);
-    if (!f?.items.length) throw new Error('that feed is empty or unreadable');
+    if (!f) throw new Error('that feed is unreadable');
   }
   const title = f.title || hostOf(url);
   return { url, title, items: f.items.flatMap(x => { try { return x.title ? [{ ...x, link: new URL(x.link, j.url).href, feed: title, src: url }] : []; } catch { return []; } }) };
 }
-async function loadNews(force) {
+// ponytail: read state lives in this browser (links only, newest 2000); move to the settings table if it must follow the user across devices
+const keepSeen = () => { try { localStorage.seen = JSON.stringify([...seen].slice(-2000)); } catch {} };
+const keepLater = () => { try { localStorage.later = JSON.stringify(later); } catch {} };
+// ponytail: the post cache is one localStorage entry (newest 200); Discover opens from it, then refreshes in the background
+const keepNews = () => { try { localStorage.newsCache = JSON.stringify({ at: newsAt, items: news }); } catch {} };
+const post = x => { const l = esc(x.link), saved = later.some(y => y.link === x.link), a = seen.has(x.link);
+  return `<div class="card flat" ${a && dtab === 'inbox' ? 'style="opacity:.6"' : ''}><div class="grow"><b>${esc(x.title)}</b><br><small class="muted">${esc([x.feed, x.date ? new Date(x.date).toLocaleDateString() : ''].filter(Boolean).join(' · '))}</small>
+    <div class="muted clamp" style="font-size:13.5px;margin-top:4px">${esc(x.summary)}</div></div>
+    ${new Set(lib.map(tkey)).has(norm(x.title).slice(0, 40)) || lib.some(p => p.url === x.link) ? '<span class="tag ok">In library</span>' : `<button class="pri" data-act="fadd" data-v="${l}">Add</button>`}
+    <a class="btn" href="${l}" data-act="nopen" data-v="${l}">Open ↗</a>
+    <button data-act="nlater" data-v="${l}">${saved ? 'Remove from read later' : 'Read later'}</button>
+    ${dtab === 'inbox' ? `<button data-act="nread" data-v="${l}">${a ? 'Mark unread' : 'Mark read'}</button>` : ''}</div>`; };
+async function loadNews(force, only) { // only: one feed's address, to refresh just that feed and keep the other posts as they are
   if (!force && news && Date.now() - newsAt < 15 * 60e3) return;
-  newsAt = Date.now();
-  const got = await Promise.all(feeds.map(f => getFeed(f.url).catch(() => null)));
-  news = got.flatMap(g => g ? g.items : []).sort((a, b) => b.date - a.date).slice(0, 40);
-  if (view === 'discover') soft();
+  const got = await Promise.all(feeds.filter(f => !only || f.url === only).map(f => getFeed(f.url).catch(() => null)));
+  if (only) { if (got[0]) news = [...(news || []).filter(x => x.src !== only), ...got[0].items]; else toast('Could not reach that feed. Its older posts are kept.'); } else { newsAt = Date.now(); news = got.flatMap(g => g ? g.items : []); }
+  news = news.sort((a, b) => b.date - a.date).slice(0, 200);
+  keepNews(); if (view === 'discover') soft(); else renderRail();
 }
 const addFiles = async files => { for (const f of files) if (f.type === 'application/pdf') await addPdf(await f.arrayBuffer(), f.name).catch(e => toast('Could not read ' + f.name + ': ' + e.message)); };
 
@@ -1760,14 +1802,15 @@ const PAGE = {
     const have = new Set(lib.map(tkey));
     return `<div class="wrap"><h1>Discover</h1><p class="muted lead">Search 250 million scholarly works through OpenAlex. Open-access papers go straight into your library.</p>
       <form data-f="disc" class="addbar"><input name="q" type="search" value="${esc(disc.q)}" required placeholder="Topic, title or author…" aria-label="Search papers"><button class="pri" ${disc.busy ? 'disabled' : ''}>Search</button></form>` +
-      (disc.busy ? '<p class="muted">Searching OpenAlex…</p>' : !disc.rows ? `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories, anything with a feed</small></div>
+      (disc.busy ? '<p class="muted">Searching OpenAlex…</p>' : !disc.rows ? `<div class="row" style="margin-bottom:10px"><button class="chip ${dtab === 'inbox' ? 'on' : ''}" data-act="dtab" data-v="inbox">Following</button><button class="chip ${dtab === 'later' ? 'on' : ''}" data-act="dtab" data-v="later">Read later (${later.length})</button></div>` + (dtab === 'later' ? (!later.length ? '<p class="muted">Nothing saved. Choose “Read later” on a post and it waits here, even after it drops out of the feed.</p>' : `<div class="rows">${later.map(post).join('')}</div>`) : `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories, anything with a feed</small></div>
         <form data-f="follow" class="addbar"><input name="u" required autocomplete="off" placeholder="Blog or feed address, e.g. lilianweng.github.io or rss.arxiv.org/rss/cs.LG" aria-label="Blog or feed address"><button>Follow</button></form>
-        <div class="row" style="margin-bottom:14px">${feeds.map(f => `<span class="tag proj">${esc(f.title)} <a href="#" data-act="unfollow" data-v="${esc(f.url)}" aria-label="Unfollow ${esc(f.title)}" style="text-decoration:none">✕</a></span>`).join('')}</div>` +
-        (!feeds.length ? '<p class="muted">Follow the blogs and journals you keep up with. New posts show up here, one click from your library.</p>' : !news ? '<p class="muted">Checking for new posts…</p>' : !news.length ? '<p class="muted">Nothing could be loaded from these feeds right now.</p>' :
-          `<div class="rows">` + news.map((x, i) => `<div class="card flat"><div class="grow"><b>${esc(x.title)}</b><br><small class="muted">${esc([x.feed, x.date ? new Date(x.date).toLocaleDateString() : ''].filter(Boolean).join(' · '))}</small>
-            <div class="muted clamp" style="font-size:13.5px;margin-top:4px">${esc(x.summary)}</div></div>
-            ${have.has(norm(x.title).slice(0, 40)) || lib.some(p => p.url === x.link) ? '<span class="tag ok">In library</span>' : `<button class="pri" data-act="fadd" data-i="${i}">Add</button>`}
-            <a class="btn" href="${esc(x.link)}" target="_blank" rel="noopener">Open ↗</a></div>`).join('') + `</div>`)
+        <div class="row" style="margin-bottom:14px">${[['', 'All'], ...feeds.map(f => [f.url, f.title])].map(([u, t]) => { const n = (news || []).filter(x => (!u || x.src === u) && !seen.has(x.link)).length; return `<span class="row" style="gap:2px"><button class="chip ${nf === u ? 'on' : ''}" data-act="nfeed" data-v="${esc(u)}">${esc(t)}${news ? ` (${n})` : ''}</button>${u ? `<a href="#" data-act="unfollow" data-v="${esc(u)}" aria-label="Unfollow ${esc(t)}" style="text-decoration:none">✕</a>` : ''}</span>`; }).join('')}</div>` +
+        (!feeds.length ? '<p class="muted">Follow the blogs and journals you keep up with. New posts show up here, one click from your library.</p>' : !news ? '<p class="muted">Checking for new posts…</p>' : !news.length ? '<p class="muted">Nothing could be loaded from these feeds right now.</p>' : (() => {
+          const shown = news.map(x => [x]).filter(([x]) => (!nf || x.src === nf) && (!unreadOnly || !seen.has(x.link)));
+          return `<div class="row" style="margin-bottom:10px"><button data-act="nrefresh">${nf ? 'Refresh this feed' : 'Refresh all'}</button><small class="muted">Updated ${new Date(newsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Feeds are rechecked when you open Discover, at most every 15 minutes</small><span class="sp"></span><button class="chip ${unreadOnly ? 'on' : ''}" data-act="nunread">Unread only</button><button data-act="nmarkall">Mark ${nf ? 'this feed' : 'all'} read</button></div>` +
+            (!shown.length ? '<p class="muted">All caught up. Turn off “Unread only” to see older posts.</p>' : `<div class="rows">` + shown.map(([x]) => post(x)).join('') + `</div>`);
+        })()))
+        
         : !disc.rows.length ? '<p class="muted">Nothing found. Try fewer or different words.</p><p><a href="#" data-act="dclear">← Back to what you follow</a></p>' :
         `<p><a href="#" data-act="dclear">← Back to what you follow</a></p><div class="rows">` + disc.rows.map((r, i) => `<div class="card flat"><div class="grow"><b>${esc(r.title)}</b><br>
           <small class="muted">${esc([r.authors.slice(0, 4).join(', ') + (r.authors.length > 4 ? ' et al.' : ''), r.year, r.venue, r.cites + ' citations'].filter(Boolean).join(' · '))}</small>
@@ -1784,7 +1827,7 @@ const PAGE = {
           <label for="pn${i}">Name</label><input id="pn${i}" data-cf="name" data-i="${i}" value="${esc(p.name)}" autocomplete="off">
           <label for="pu${i}">API address</label><input id="pu${i}" data-cf="url" data-i="${i}" required value="${esc(p.url)}" autocomplete="off">
           <label for="pk${i}">API key</label><input id="pk${i}" data-cf="key" data-i="${i}" type="password" autocomplete="off" placeholder="${p.clearKey ? 'No key' : p.hasKey ? 'Leave empty to keep the saved key, or paste a new one' : 'Paste your key'}">
-          <small class="muted">${p.clearKey ? 'The saved key is removed when you save.' : p.hasKey ? `A key ending in ${esc(p.hint)} is ${p.fromEnv ? 'in the .env file' : 'saved'}.${p.fromEnv ? '' : ` <a href="#" data-act="cfgdel" data-i="${i}">Remove it</a>`}` : 'No key. A model on this computer, such as Ollama, does not need one.'} Keys stay on this computer in data/marrow.db and never reach the browser.</small>
+          <small class="muted">${p.clearKey ? 'The saved key is removed when you save.' : p.hasKey ? `A key ending in ${esc(p.hint)} is ${p.fromEnv ? 'in the .env file' : 'saved'}.${p.fromEnv ? '' : ` <a href="#" data-act="cfgdel" data-i="${i}">Remove it</a>`}` : 'No key. A model on this computer, such as Ollama, does not need one.'} Your key is stored encrypted on the server and never reaches the browser.</small>
           <p class="row" style="margin:8px 0 0"><button type="button" data-act="cfgfind" data-i="${i}">Find models</button>${c.providers.length > 1 ? `<button type="button" data-act="cfgrmp" data-i="${i}">Remove provider</button>` : ''}</p>
           ${foundHTML(p, i)}
         </div>`).join('')}
@@ -1856,8 +1899,8 @@ async function ftSearch() {
 const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }, { left: '$', right: '$', display: false }] };
 function renderRail() {
   const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
-  $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}</button>`).join('');
-  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : '';
+  $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}${v === 'discover' && news ? ((c) => c ? `<span class="n">${c}</span>` : '')(news.filter(x => !seen.has(x.link)).length) : ''}</button>`).join('');
+  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : ''; $('#outBtn').innerHTML = ic('out', 20) + 'Log out';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
   $('#status').textContent = working;
 }
@@ -1872,7 +1915,6 @@ function render() {
     $('#page').innerHTML = PAGE[view]();
     $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><label>Project ${projSel()}<span>· ${inScope().length} source${inScope().length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></label></div>`);
     window.renderMathInElement?.($('#page'), MATH);
-    document.querySelectorAll('.heatwrap').forEach(e => e.scrollLeft = e.scrollWidth); // start at today, on a narrow screen
     if (view === 'library') libRows();
     if (view === 'matrix') mxTable();
     if (view === 'map') drawBig();
@@ -2381,6 +2423,7 @@ document.addEventListener('keydown', e => {
 const ACT = {
   tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
   look: el => { const v = el.dataset.v; try { v ? localStorage.look = v : delete localStorage.look; } catch {} vt(() => { v ? document.documentElement.dataset.look = v : delete document.documentElement.dataset.look; render(); }); },
+  logout: async () => { await fetch('/api/logout', { method: 'POST' }).catch(() => {}); location.reload(); },
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
   palette: () => { palPick = null; $('#palq').value = ''; $('#palq').placeholder = 'Jump to a source, a note or a page. Or paste a link to add it.'; palI = 0; palette(); $('#pal').showModal(); },
@@ -2508,12 +2551,20 @@ const ACT = {
   dclear: () => { disc.rows = null; disc.q = ''; render(); },
   fadd: async el => {
     el.disabled = true; toast('Fetching that link…');
-    try { await addLink(news[+el.dataset.i].link); } catch (e) { toast(e.message); el.disabled = false; }
+    try { await addLink(el.dataset.v); seen.add(el.dataset.v); keepSeen(); } catch (e) { toast(/answered 40[13]/.test(e.message) ? 'That site does not let Marrow download its pages. Use Open to read it there, or Read later to come back to it.' : e.message); el.disabled = false; }
   },
+  nrefresh: () => { const f = feeds.find(x => x.url === nf); toast(f ? `Checking ${f.title}…` : 'Checking all your feeds…'); loadNews(true, f?.url).then(() => toast(`${plural((news || []).filter(x => (!f || x.src === f.url) && !seen.has(x.link)).length, 'unread post')} in ${f ? f.title : plural(feeds.length, 'feed')}.`)); },
+  dtab: el => { dtab = el.dataset.v; render(); },
+  nlater: el => { const l = el.dataset.v, i = later.findIndex(x => x.link === l); if (i >= 0) later.splice(i, 1); else { const x = news?.find(y => y.link === l); if (x) { later.unshift(x); seen.add(l); keepSeen(); toast('Saved. It is under Read later.'); } } keepLater(); render(); },
+  nfeed: el => { nf = el.dataset.v; render(); },
+  nunread: () => { unreadOnly = !unreadOnly; render(); },
+  nread: el => { const l = el.dataset.v; seen.has(l) ? seen.delete(l) : seen.add(l); keepSeen(); render(); },
+  nopen: el => { seen.add(el.dataset.v); keepSeen(); window.open(el.dataset.v, '_blank', 'noopener'); render(); },
+  nmarkall: () => { (news || []).filter(x => !nf || x.src === nf).forEach(x => seen.add(x.link)); keepSeen(); render(); },
   unfollow: async el => {
-    const url = el.dataset.v;
+    const url = el.dataset.v, feeds0 = feeds;
     try { await api('feeds?url=' + encodeURIComponent(url), { method: 'DELETE' }); } catch (e) { return toast(e.message); }
-    feeds = feeds.filter(f => f.url !== url); news = (news || []).filter(x => x.src !== url); render();
+    feeds = feeds.filter(f => f.url !== url); news = (news || []).filter(x => x.src !== url); if (nf === url) nf = ''; toast(`Unfollowed ${feeds0.find(f => f.url === url)?.title || 'that feed'}. Follow it again from its address any time.`); render();
   },
   // matrix
   mxcsv: () => dl(`matrix-${fname(F.project || 'library')}.csv`, '﻿' + csv([['Source', 'By', ...mxShown().map(c => c.label)], ...mxRows()]), 'text/csv'),
@@ -2644,7 +2695,7 @@ const FORM = {
     try {
       const g = await getFeed(/^https?:\/\//.test(v) ? v : 'https://' + v);
       if (!feeds.some(x => x.url === g.url)) { await send('PUT', 'feeds', { url: g.url, title: g.title }); feeds.push({ url: g.url, title: g.title }); }
-      news = [...(news || []).filter(x => x.src !== g.url), ...g.items].sort((a, b) => b.date - a.date).slice(0, 40);
+      news = [...(news || []).filter(x => x.src !== g.url), ...g.items].sort((a, b) => b.date - a.date).slice(0, 200); keepNews();
       toast(`Following ${g.title}.`); render();
     } catch (e) { toast('Could not follow that: ' + e.message); b.disabled = false; }
   },
@@ -2785,7 +2836,8 @@ try {
   for (const p of lib) if (p.sections.length > 1 && p.sections.every(s => s.answer && !s.done && !s.feedback)) { p.sections.forEach(s => delete s.answer); save(p); }
   await migrate().catch(e => toast('Could not move your old in-browser library over: ' + e.message + '. It is still safe in this browser.'));
 } catch (e) { toast('Could not reach the Marrow server (' + e.message + '). Check that it is still running, then reload this page.'); }
-enter($('#page')); render();
+try { const c = JSON.parse(localStorage.newsCache); if (c && feeds.length) { news = c.items.filter(x => feeds.some(f => f.url === x.src)); newsAt = c.at; } } catch {} // posts from the last visit, shown at once
+enter($('#page')); render(); loadNews(); // the unread count on Discover's nav button
 loadWh().then(() => view === 'read' && tab === 'brief' && P?.kind === 'video' && !P.pages.length && render()).catch(() => {}); // a video without a transcript offers Whisper
 </script>
 </body>

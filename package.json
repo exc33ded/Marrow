@@ -2,10 +2,12 @@
   "name": "marrow",
   "private": true,
   "description": "A research desk for one.",
-  "engines": { "node": ">=22.13" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
-    "start": "node server.js",
-    "test": "node test.js && node test-frontend.js",
+    "start": "node --env-file=.env server.js",
+    "test": "node --env-file=.env --env-file=.env.test test.js && node test-frontend.js",
     "test:ui": "node test-ui.mjs"
   }
 }
