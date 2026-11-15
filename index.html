@@ -28,7 +28,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
 <style>
 /* palette: the grey-green of a lab notebook's ruled paper, with rust ink as the one accent */
-:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;--pop:0 6px 18px #0002;color-scheme:light}
+:root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;--pop:0 6px 18px #0002;--h0:color-mix(in oklab,var(--ink) 18%,var(--bg));--h1:color-mix(in oklab,var(--ok) 34%,var(--bg));--h2:color-mix(in oklab,var(--ok) 56%,var(--bg));--h3:color-mix(in oklab,var(--ok) 78%,var(--bg));--h4:var(--ok);color-scheme:light}
 [data-theme=dark]{--bg:#0f1412;--panel:#161c19;--ink:#e4eae6;--muted:#8c9991;--line:#29322d;--acc:#f08a4b;--acc-bg:#3a2415;--ok:#6cc08c;--pdf:#090c0a;--web:#7fb6e0;--vid:#f2857c;--sh:none;--pop:0 6px 18px #0008;color-scheme:dark}
 *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 *::-webkit-scrollbar{width:10px;height:10px} *::-webkit-scrollbar-track{background:transparent}
@@ -107,11 +107,16 @@ kbd{font:600 11px "Schibsted Grotesk",system-ui;border:1px solid currentColor;bo
 .hero{font-size:40px;margin:0} .lead{font-size:16.5px;margin:.2em 0 1.4em}
 .addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:8px;box-shadow:var(--sh);margin:0 0 22px}
 .addbar input{border:0;background:none;font-size:15.5px;min-width:0} .addbar input:focus-visible{outline:0} .addbar:focus-within{border-color:var(--acc)}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:26px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;box-shadow:var(--sh);text-align:left;white-space:normal;min-height:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
-.tile b{font:700 34px/1 Newsreader,Georgia,serif;margin-bottom:6px} .tile small{color:var(--muted)}
-.heat{display:grid;grid-template-rows:repeat(7,auto);grid-template-columns:repeat(12,1fr);grid-auto-flow:column;gap:3px;margin-top:8px;width:100%;max-width:190px}
-.heat i{border-radius:3px;aspect-ratio:1;background:color-mix(in srgb,var(--ok) calc(var(--a)*100%),var(--line))}
+.heatwrap{overflow-x:auto;padding-bottom:6px;--cs:14px}
+.heat{display:grid;grid-template-columns:auto max-content;column-gap:8px;row-gap:5px;width:max-content;font-size:11px;color:var(--muted)}
+.hm{grid-column:2;display:grid;grid-template-columns:repeat(53,var(--cs));column-gap:3px;height:14px} .hm span{white-space:nowrap}
+.hd{display:grid;grid-template-rows:repeat(7,var(--cs));row-gap:3px;align-items:center;line-height:1} .hd span:nth-child(1){grid-row:2} .hd span:nth-child(2){grid-row:4} .hd span:nth-child(3){grid-row:6}
+.hg{display:grid;grid-template-rows:repeat(7,var(--cs));grid-auto-flow:column;grid-auto-columns:var(--cs);gap:3px}
+.heat i,.hleg i{display:block;border-radius:2px;background:var(--h0)} .hleg i{width:var(--cs);height:var(--cs)}
+i[data-l="1"]{background:var(--h1)} i[data-l="2"]{background:var(--h2)} i[data-l="3"]{background:var(--h3)} i[data-l="4"]{background:var(--h4)}
+.heat i[data-today]{outline:1.5px solid var(--ink);outline-offset:1px}
+.hleg{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-top:4px;flex-wrap:wrap} .hleg span{margin:0 4px}
+.facts{display:flex;flex-wrap:wrap;gap:4px 20px;margin:0 0 4px;font-weight:600} .facts a{color:var(--ink)}
 .sec{display:flex;align-items:baseline;gap:10px;margin:26px 0 10px} .sec h3{margin:0;font-size:20px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px;box-shadow:var(--sh);cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:transform .15s,border-color .15s;min-width:0}
@@ -1054,18 +1059,29 @@ const VIEW = {
 
 // ---------- pages ----------
 const dayKey = t => new Date(t).toDateString();
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function streak() {
   const days = new Set(activity.map(dayKey)); let n = 0, t = Date.now();
   if (!days.has(dayKey(t))) t -= 864e5; // today doesn't break a streak until it's over
   while (days.has(dayKey(t))) { n++; t -= 864e5; }
   return n;
 }
+// A year of study, one square a day, in GitHub's layout: weeks run left to right, Sunday on top. Five levels, scaled to this reader's busiest day.
 function heat() {
   const c = {}; for (const t of activity) c[dayKey(t)] = (c[dayKey(t)] || 0) + 1;
-  return `<div class="heat">` + Array.from({ length: 84 }, (_, i) => {
-    const d = Date.now() - (83 - i) * 864e5, n = c[dayKey(d)] || 0;
-    return `<i style="--a:${n ? Math.min(1, .3 + n / 12) : 0}" title="${esc(new Date(d).toLocaleDateString())}: ${n} study step${n === 1 ? '' : 's'}"></i>`;
-  }).join('') + `</div>`;
+  const W = 53, today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today); start.setDate(today.getDate() - today.getDay() - (W - 1) * 7);
+  const days = []; let max = 0, total = 0, active = 0;
+  for (let i = 0; i < W * 7; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i); if (d > today) break;
+    const n = c[d.toDateString()] || 0; max = Math.max(max, n); total += n; if (n) active++; days.push([d, n]);
+  }
+  const months = []; for (let w = 0; w < W; w++) for (let k = 0; k < 7; k++) { const d = new Date(start); d.setDate(start.getDate() + w * 7 + k); if (d.getDate() === 1 && d <= today) months.push(`<span style="grid-column:${w + 1}">${d.toLocaleDateString(undefined, { month: 'short' })}</span>`); }
+  const lv = n => n ? Math.min(4, Math.ceil(4 * n / max)) : 0, step = n => plural(n, 'study step');
+  const cells = days.map(([d, n]) => `<i data-l="${lv(n)}"${+d === +today ? ' data-today' : ''} title="${esc(d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }))}: ${n ? step(n) : 'nothing studied'}"></i>`).join('');
+  return `<div class="heatwrap"><div class="heat"><div class="hm" aria-hidden="true">${months.join('')}</div><div class="hd" aria-hidden="true"><span>Mon</span><span>Wed</span><span>Fri</span></div>
+    <div class="hg" role="img" aria-label="Study activity over the last year: ${step(total)} on ${plural(active, 'day')}">${cells}</div></div>
+    <div class="hleg" aria-hidden="true">Less ${[0, 1, 2, 3, 4].map(l => `<i data-l="${l}"></i>`).join('')} More<span>A study step is a card reviewed, a checkpoint answered or an answer taught back. Hover a square for its day.</span></div></div>`;
 }
 const ADDBAR = `<form data-f="add" class="addbar"><input name="u" autocomplete="off" aria-label="Add a source" placeholder="Paste a link: article, blog post, YouTube video, arXiv ID, DOI, PDF…"><button class="pri">Add</button><button type="button" data-act="upload">Upload PDF</button></form>`;
 // What to do next with a source, so every card is an invitation rather than a title.
@@ -1090,7 +1106,7 @@ const SAMPLES = [['pdf', 'Attention Is All You Need', 'Vaswani et al. · 2017 ·
 const PAGE = {
   home() {
     const h = new Date().getHours(), all = inScope(), d = due(all).length, started = all.filter(mastery), count = k => all.filter(p => p.kind === k).length;
-    const byOpen = ps => [...ps].sort((a, b) => (b.opened || 0) - (a.opened || 0)), next = byOpen(all.filter(p => p.opened && !p.done))[0], plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+    const byOpen = ps => [...ps].sort((a, b) => (b.opened || 0) - (a.opened || 0)), next = byOpen(all.filter(p => p.opened && !p.done))[0];
     const newProj = `<form data-f="newproj" class="card flat"><b>New project</b><input name="p" required maxlength="60" autocomplete="off" placeholder="e.g. Hydrology" aria-label="New project name"><button class="pri">Create project</button></form>`;
     if (!lib.length && !projects().length) return `<div class="wrap"><h1 class="hero">Your research desk.</h1>
       <p class="muted lead">Papers, articles and lectures in one place, read in a way that makes them stick.</p>${ADDBAR}
@@ -1105,13 +1121,8 @@ const PAGE = {
     const loose = lib.filter(p => !p.project);
     return `<div class="wrap"><h1 class="hero">${F.project ? esc(F.project) : h < 5 ? 'Still up?' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'}</h1>
       <p class="muted lead">${next ? `Next up: <a href="#" data-open="${esc(next.id)}">${esc(next.title)}</a> · ${step(next).replace(/^Next: /, '')}` : F.project ? 'Nothing in this project yet. Paste a link below and it is filed here.' : 'One desk for everything you read, watch and think about.'}</p>${ADDBAR}
-      <div class="tiles">
-        <button class="tile" data-view="library"><b>${all.length}</b>source${all.length === 1 ? '' : 's'}<small>${[['pdf', 'paper'], ['web', 'article'], ['video', 'video']].map(([k, l]) => plural(count(k), l)).join(' · ')}</small></button>
-        <button class="tile" data-view="review"><b>${d}</b>card${d === 1 ? '' : 's'} due<small>${d ? 'Review now →' : 'All caught up'}</small></button>
-        <div class="tile"><b>${streak()}</b>day streak<small>Days in a row you studied</small></div>
-        <div class="tile"><b>${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}%</b>mastery<small>Average across the ${started.length} you have started</small></div>
-        <div class="tile"><small>Last 12 weeks</small>${heat()}</div>
-      </div>` +
+      <p class="facts"><a href="#" data-view="library">${plural(all.length, 'source')}</a><a href="#" data-view="review">${plural(d, 'card')} due</a><span>${plural(streak(), 'day')} streak</span><span title="Average across the ${started.length} you have started">${started.length ? Math.round(started.reduce((a, p) => a + mastery(p), 0) / started.length) : 0}% mastery</span></p>
+      <div class="sec"><h3>Study activity</h3><small class="muted">${plural(streak(), 'day')} streak</small></div>${heat()}` +
       (F.project ? (all.length ? group('Sources in this project', all) : '') + `<details class="box" style="margin-top:26px"><summary>Project settings</summary><form data-f="renproj" class="row" style="margin:12px 0"><input name="p" required maxlength="60" autocomplete="off" value="${esc(F.project)}" aria-label="Project name" style="max-width:320px"><button>Rename project</button></form>
           <p class="muted">Deleting a project keeps its sources and notebook pages; they become unfiled.</p><button data-act="delproj">Delete this project</button></details><p><a href="#" data-act="setproject" data-v="">← All projects</a></p>`
         : `<div class="sec"><h3>Projects</h3><small class="muted">each keeps its own sources, matrix, map and notebook pages</small></div><div class="grid">${projects().map(projCard).join('')}${newProj}</div>` +
@@ -1164,7 +1175,7 @@ const PAGE = {
   },
   review() {
     return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(inScope(), true)}
-      <div class="sec"><h3>Last 12 weeks</h3><small class="muted">${streak()} day streak</small></div>${heat()}</div>`;
+      <div class="sec"><h3>Study activity</h3><small class="muted">${plural(streak(), 'day')} streak</small></div>${heat()}</div>`;
   },
   matrix() {
     return `<div class="wrap wide"><div class="row"><h1>Literature matrix</h1><span class="sp"></span>
@@ -1238,6 +1249,7 @@ function render() {
     const at = NAV.findIndex(x => x[0] === view); // a journal's running head: where you are, how much is here, today's date
     $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><span>Marrow · ${at < 0 ? 'Settings' : String(at + 1).padStart(2, '0') + ' ' + NAV[at][1]}</span><label>Project ${projSel()}<span>· ${inScope().length} source${inScope().length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></label></div>`);
     window.renderMathInElement?.($('#page'), MATH);
+    document.querySelectorAll('.heatwrap').forEach(e => e.scrollLeft = e.scrollWidth); // start at today, on a narrow screen
     if (view === 'library') libRows();
     if (view === 'matrix') mxTable();
     if (view === 'map') drawBig();
