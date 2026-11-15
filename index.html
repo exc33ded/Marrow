@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Marrow — your research desk</title>
+<title>Marrow: a research desk for one</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b4460f'/><text x='16' y='23' font-size='20' font-family='Georgia' font-weight='700' text-anchor='middle' fill='white'>M</text></svg>">
 <script>try { const q = new URLSearchParams(location.search), d = document.documentElement.dataset; d.theme = q.get('theme') || localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); const l = q.get('look') ?? localStorage.look; if (l) d.look = l; } catch {}</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.min.css">
@@ -1473,7 +1473,7 @@ function renderBlocks(start) {
     ? `<div class="blk seg" data-n="${i + 1}"><a href="#" class="ts" data-page="${i + 1}">${clock(x.t) || '·'}</a><span>${esc(x.body)}</span></div>`
     : `<div class="blk" data-n="${i + 1}">${x.html ? DOMPurify.sanitize(x.html, PURE) : `<p>${esc(x.body)}</p>`}</div>`).join('');
   box.innerHTML = P.kind === 'video'
-    ? `<div class="vid"><div id="yt"><div id="player"></div></div>${body || '<p class="muted pad">No transcript yet. Add one in the Brief tab to unlock the briefing, checkpoints, cards and search. You can already watch and take notes.</p>'}</div>`
+    ? `<div class="vid"><div id="yt"><div id="player"></div></div>${body || '<p class="muted pad">No transcript yet. Add one in the Brief tab to get the briefing, checkpoints, cards and search. You can watch and take notes in the meantime.</p>'}</div>`
     : `<article><span class="kind web">${ic('globe', 14)}${esc(P.meta?.venue || hostOf(P.url))}</span><h1>${esc(P.title)}</h1><p class="muted">${esc([byline(P), Math.max(1, Math.round(P.pages.join(' ').split(/\s+/).length / 230)) + ' min read'].join(' · '))}</p>${body}</article>`;
   box.scrollTop = 0;
   if (P.kind === 'video') player(P.vid, start);
@@ -1607,7 +1607,7 @@ const VIEW = {
         <textarea data-k="sec" data-i="${i}" placeholder="Answer in your own words, without looking back…">${esc(x.answer)}</textarea>${mathBar}
         <p><button class="pri" data-act="check" data-i="${i}" ${working ? 'disabled' : ''}>Check my understanding</button></p>
         ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” ${cite(P, x.evPage)}</blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the source. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
-      (next < 0 ? `<p><button class="pri" data-act="tab" data-t="teach">All sections done — now teach it →</button></p>` : '');
+      (next < 0 ? `<p><button class="pri" data-act="tab" data-t="teach">All sections done. Now teach it →</button></p>` : '');
   },
   teach() {
     const f = P.feynman || {};
@@ -1699,7 +1699,7 @@ const card = p => `<div class="card" tabindex="0" role="link" data-open="${esc(p
   <div class="cover ${p.vid ? 'shot' : ''}" style="${p.vid ? `background-image:url(https://i.ytimg.com/vi/${String(p.vid).replace(/[^\w-]/g, '')}/mqdefault.jpg)` : `--h:${hue(p.title)}`}">${p.vid ? '' : ic(KIND[p.kind][1], 36)}<span class="kind ${p.kind}">${ic(KIND[p.kind][1], 13)}${KIND[p.kind][0]}</span>${ring(p)}</div>
   <h4>${esc(p.title)}</h4><small class="muted clamp" style="-webkit-line-clamp:2">${esc(byline(p))}</small><span class="sp"></span>
   <div class="row"><small class="step">${step(p)}</small><span class="sp"></span>${p.project ? `<span class="tag proj">${esc(p.project)}</span>` : ''}<button class="x" data-act="del" data-id="${esc(p.id)}" aria-label="Delete ${esc(p.title)}" title="Delete this source">✕</button></div><div class="bar"><i style="width:${mastery(p)}%"></i></div></div>`;
-const HOW = `<div class="box" style="margin-top:8px"><h3>How Marrow works</h3><p class="muted">Summaries make you feel like you understand. Marrow makes you actually understand, with the four things research on learning says work, for a paper, a blog post or a lecture alike.</p>
+const HOW = `<div class="box" style="margin-top:8px"><h3>How Marrow works</h3><p class="muted">Summaries make you feel like you understand. Marrow uses four study methods that research on learning backs, and applies them the same way to a paper, a blog post or a lecture.</p>
 <ol><li><b>Brief.</b> Get the skeleton first: problem, idea, method, results, and the terms you need.</li>
 <li><b>Read or watch.</b> Section by section. Each one tells you what to look for, then asks a checkpoint question you answer from memory.</li>
 <li><b>Teach.</b> Explain it in your own words. The AI finds the gaps and misconceptions you can't see yourself.</li>
@@ -1746,7 +1746,7 @@ const PAGE = {
     const have = new Set(lib.map(tkey));
     return `<div class="wrap"><h1>Discover</h1><p class="muted lead">Search 250 million scholarly works through OpenAlex. Open-access papers go straight into your library.</p>
       <form data-f="disc" class="addbar"><input name="q" type="search" value="${esc(disc.q)}" required placeholder="Topic, title or author…" aria-label="Search papers"><button class="pri" ${disc.busy ? 'disabled' : ''}>Search</button></form>` +
-      (disc.busy ? '<p class="muted">Searching OpenAlex…</p>' : !disc.rows ? `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories — anything with a feed</small></div>
+      (disc.busy ? '<p class="muted">Searching OpenAlex…</p>' : !disc.rows ? `<div class="sec"><h3>Following</h3><small class="muted">blogs, journals, arXiv categories, anything with a feed</small></div>
         <form data-f="follow" class="addbar"><input name="u" required autocomplete="off" placeholder="Blog or feed address, e.g. lilianweng.github.io or rss.arxiv.org/rss/cs.LG" aria-label="Blog or feed address"><button>Follow</button></form>
         <div class="row" style="margin-bottom:14px">${feeds.map(f => `<span class="tag proj">${esc(f.title)} <a href="#" data-act="unfollow" data-v="${esc(f.url)}" aria-label="Unfollow ${esc(f.title)}" style="text-decoration:none">✕</a></span>`).join('')}</div>` +
         (!feeds.length ? '<p class="muted">Follow the blogs and journals you keep up with. New posts show up here, one click from your library.</p>' : !news ? '<p class="muted">Checking for new posts…</p>' : !news.length ? '<p class="muted">Nothing could be loaded from these feeds right now.</p>' :
@@ -2381,7 +2381,7 @@ const ACT = {
   askall: () => { askWith = new Set(related(P).map(x => x.q.id)); ask('How does this source relate to the others in my library? Where do they agree, disagree, or build on each other, and what should I read in which order?'); },
   check: el => {
     const i = +el.dataset.i, s = P.sections[i];
-    if (!(s.answer || '').trim()) return toast('Write your answer first — even a rough one. The attempt is the point.');
+    if (!(s.answer || '').trim()) return toast('Write your answer first, even a rough one. The attempt is the point.');
     run('Checking your answer…', async p => {
       const ctx = p.pages.slice(Math.max(0, s.page - 1), p.sections[i + 1]?.page ?? (p.kind === 'pdf' ? s.page + 2 : p.pages.length)).join('\n').slice(0, 30000);
       const j = await aiJSON(`You are a rigorous but encouraging tutor. Grade the student's answer against the excerpt from the source. JSON: {"score":0-100,"feedback":"2-4 sentences addressed to the student: what is right, what is wrong or missing","model":"a strong 2-3 sentence answer","evidence":"one sentence copied VERBATIM from the excerpt that supports the strong answer"}. Score understanding, not wording. Plain text, no LaTeX.`,
@@ -2391,7 +2391,7 @@ const ACT = {
     });
   },
   teach: () => {
-    if ((P.feynman?.text || '').trim().length < 80) return toast('Give it a real go — at least a few sentences.');
+    if ((P.feynman?.text || '').trim().length < 80) return toast('Give it a real go. A few sentences at least.');
     run('Comparing your explanation with the source…', async p => {
       const j = await aiJSON(`You are a rigorous tutor using the Feynman technique. Compare the student's explanation with the source itself (markers like [p.N] number its parts). JSON: {"score":0-100,"got_right":["..."],"missing":["important ideas they left out"],"misconceptions":["things they said that are wrong, with the correction"],"next":"one concrete thing to revisit (cite the part like p.4) or do next"}. Be specific and honest; empty arrays are fine.`,
         `SOURCE:\n${fullText(p)}\n\nSTUDENT EXPLANATION:\n${p.feynman.text}`);
@@ -2532,7 +2532,7 @@ const ACT = {
   synth: () => {
     const ps = mxPick().slice(0, 40);
     if (ps.length < 2) return toast('A synthesis needs at least two analyzed sources.');
-    run('Drafting a synthesis — about a minute…', async () => {
+    run('Drafting a synthesis, about a minute…', async () => {
       const body = await ai([{ role: 'system', content: `You help a researcher write a literature review. From the summaries below (and the researcher's own takes, where given), write a synthesis in Markdown with these sections: ## Themes, ## Where the sources agree, ## Where they disagree or differ in method, ## Gaps and open questions, ## Suggested reading order. Refer to each source as (First author's surname, Year) or by a short title. Compare and connect; do not summarize the sources one by one. Use only what the summaries say and never invent findings, numbers or citations. If the sources are unrelated, say so plainly.` },
         { role: 'user', content: ps.map(p => `SOURCE: "${p.title}" — ${byline(p)}\nProblem: ${p.brief.problem}\nIdea: ${p.brief.idea}\nMethod: ${p.brief.method}\nFindings: ${p.brief.results}\nLimitations: ${p.brief.limitations}` + (p.take ? `\nResearcher's take: ${p.take}` : '')).join('\n\n') }]);
       const n = { id: crypto.randomUUID(), title: `Synthesis: ${F.project || 'whole library'}`, project: F.project, note: '', updated: Date.now(),
