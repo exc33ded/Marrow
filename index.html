@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marrow — your research desk</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b4460f'/><text x='16' y='23' font-size='20' font-family='Georgia' font-weight='700' text-anchor='middle' fill='white'>M</text></svg>">
-<script>try { document.documentElement.dataset.theme = localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); } catch {}</script>
+<script>try { const q = new URLSearchParams(location.search), d = document.documentElement.dataset; d.theme = q.get('theme') || localStorage.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); const l = q.get('look') ?? localStorage.look; if (l) d.look = l; } catch {}</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Schibsted+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Schibsted+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=Source+Sans+3:wght@400..700&family=JetBrains+Mono:wght@400..700&family=Archivo:wght@400..700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.31.7/dist/editorjs.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.9/dist/header.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@2.0.9/dist/editorjs-list.umd.js"></script>
@@ -27,7 +27,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
 <style>
-:root{--f-body:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;--f-display:Newsreader,"Iowan Old Style",Georgia,serif;--f-mono:"IBM Plex Mono",monospace;--r:4px;--r2:6px;--pri:#b4460f;--pri-h:#c5521a;--on-pri:#fff;--on-n:#fff;--scrim:#0b0f0d8c;--logo-a:#d65f1f;--logo-b:#9c3a0a}
+:root{--f-body:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;--f-display:Newsreader,"Iowan Old Style",Georgia,serif;--f-mono:"IBM Plex Mono",monospace;--r:4px;--r2:6px;--pri:#b4460f;--pri-h:#c5521a;--on-pri:#fff;--on-n:#fff;--scrim:#0b0f0d8c;--logo-a:#d65f1f;--logo-b:#9c3a0a;--sig:var(--acc)}
 [data-theme=dark]{--on-n:#1b1916}
 /* palette: the grey-green of a lab notebook's ruled paper, with rust ink as the one accent */
 :root{--bg:#edf1ee;--panel:#fbfcfb;--ink:#171c19;--muted:#5d6962;--line:#d8dfda;--acc:#b4460f;--acc-bg:#f8e4d4;--ok:#2f7d4f;--pdf:#dde4df;--web:#2a6a9c;--vid:#b3261e;--sh:none;--pop:0 6px 18px #0002;--h0:color-mix(in oklab,var(--ink) 18%,var(--bg));--h1:color-mix(in oklab,var(--ok) 34%,var(--bg));--h2:color-mix(in oklab,var(--ok) 56%,var(--bg));--h3:color-mix(in oklab,var(--ok) 78%,var(--bg));--h4:var(--ok);color-scheme:light}
@@ -150,7 +150,7 @@ mark{background:#ffd60070;color:inherit;border-radius:2px}
 .fbar,.cols{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
 .fbar input[type=search]{flex:1;min-width:200px;width:auto} .fbar input[type=number]{width:84px}
 .cols{font-size:13px;gap:6px} .cols form{display:flex;gap:6px;margin-left:8px} .cols form input{width:220px;padding:.3em .7em} .cols form button{min-height:32px;padding:.2em .8em}
-.runhead{display:flex;justify-content:space-between;gap:12px;font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:26px}
+.runhead{display:flex;justify-content:flex-end;gap:12px;font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:26px}
 .k,.kind,.mx th,kbd{font-family:var(--f-mono)!important}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px} .mapgrid #node{margin:0;overflow:auto;max-height:calc(100vh - 290px)} .mapgrid #node h3{font-size:19px}
 #mapsrcs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-size:13px} #mapsrcs .chip,.rel .chip{min-height:26px;padding:0 .7em;font-size:12.5px;display:inline-flex;gap:5px;align-items:center} #mapsrcs select{width:auto;max-width:min(440px,100%);min-height:26px;padding:.15em .5em;font-size:12.5px} .rel{margin:.35em 0;line-height:1.9}
@@ -329,6 +329,11 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
   body.study #panel{display:flex}
   #status{left:12px;bottom:74px}
 }
+.looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:18px} .lookcard{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;white-space:normal;padding:12px} .lookcard small{color:var(--muted);font-size:12.5px;line-height:1.4} .lookcard[aria-pressed=true]{outline:2px solid var(--acc);outline-offset:1px}
+.lookcard .sw{display:flex;gap:0;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--bg)} .lookcard .sw i{width:30px;height:22px}
+/* LOOKS-BEGIN */
+
+/* LOOKS-END */
 </style>
 </head>
 <body>
@@ -1060,6 +1065,10 @@ const VIEW = {
 
 // ---------- pages ----------
 const dayKey = t => new Date(t).toDateString();
+// The looks. Each is a [data-look] block of tokens and rules at the end of the stylesheet; the first is the original, with no attribute.
+const LOOKS = [['', 'Lab notebook', 'Grey-green paper, rust ink and a serif voice. The original.'], ['concourse', 'Concourse', 'Airport wayfinding: yellow signs, black type, one message to a line.'], ['barcode', 'Barcode', 'Pure black and white, monospaced figures, nothing grey.'], ['cyanotype', 'Cyanotype', 'Prussian blue and white linework, after the first photographic books of plants.'], ['survey', 'Survey', 'A topographic map: contour browns, forest greens and water blue.']];
+const lookPicker = () => { const cur = document.documentElement.dataset.look || '', th = document.documentElement.dataset.theme;
+  return `<div class="sec"><h3>Look</h3><small class="muted">Changes the colours, type and feel of everything. Light and dark work in each.</small></div><div class="looks">${LOOKS.map(([v, n, d]) => `<button class="lookcard" data-act="look" data-v="${v}" aria-pressed="${v === cur}"><span class="sw" ${v ? `data-look="${v}" data-theme="${th}"` : ''}><i style="background:var(--bg)"></i><i style="background:var(--panel)"></i><i style="background:var(--sig)"></i><i style="background:var(--ink)"></i></span><b>${n}</b><small>${d}</small></button>`).join('')}</div>`; };
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function streak() {
   const days = new Set(activity.map(dayKey)); let n = 0, t = Date.now();
@@ -1159,7 +1168,7 @@ const PAGE = {
   },
   settings() {
     const c = cfg;
-    return `<div class="wrap narrow"><h1>Settings</h1><p class="muted lead">Which AI service Marrow asks. Any service that speaks the OpenAI chat format works: OpenRouter, OpenAI, or a model running on this computer.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
+    return `<div class="wrap narrow"><h1>Settings</h1>${lookPicker()}<div class="sec"><h3>AI service</h3></div><p class="muted lead">Which AI service Marrow asks. Any service that speaks the OpenAI chat format works: OpenRouter, OpenAI, or a model running on this computer.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
       <form data-f="cfg" class="box set">
         <label for="cfgurl">API address</label><input id="cfgurl" name="url" required value="${esc(c.url)}" placeholder="https://openrouter.ai/api/v1" autocomplete="off">
         <small class="muted">OpenRouter: https://openrouter.ai/api/v1 · OpenAI: https://api.openai.com/v1 · Ollama on this computer: http://localhost:11434/v1</small>
@@ -1247,8 +1256,7 @@ function render() {
     if (view === 'notebook' && ed && edN === N && $('#ed')) { nbSide(); nbSrc(); return; } // the open page keeps its editor, caret and all
     dropEd();
     $('#page').innerHTML = PAGE[view]();
-    const at = NAV.findIndex(x => x[0] === view); // a journal's running head: where you are, how much is here, today's date
-    $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><span>Marrow · ${at < 0 ? 'Settings' : String(at + 1).padStart(2, '0') + ' ' + NAV[at][1]}</span><label>Project ${projSel()}<span>· ${inScope().length} source${inScope().length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></label></div>`);
+    $('#page > .wrap')?.insertAdjacentHTML('afterbegin', `<div class="runhead"><label>Project ${projSel()}<span>· ${inScope().length} source${inScope().length === 1 ? '' : 's'} · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span></label></div>`);
     window.renderMathInElement?.($('#page'), MATH);
     document.querySelectorAll('.heatwrap').forEach(e => e.scrollLeft = e.scrollWidth); // start at today, on a narrow screen
     if (view === 'library') libRows();
@@ -1758,6 +1766,7 @@ document.addEventListener('keydown', e => {
 });
 const ACT = {
   tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
+  look: el => { const v = el.dataset.v; try { v ? localStorage.look = v : delete localStorage.look; } catch {} vt(() => { v ? document.documentElement.dataset.look = v : delete document.documentElement.dataset.look; render(); }); },
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
   palette: () => { palPick = null; $('#palq').value = ''; $('#palq').placeholder = 'Jump to a source, a note or a page. Or paste a link to add it.'; palI = 0; palette(); $('#pal').showModal(); },
