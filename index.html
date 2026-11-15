@@ -1988,7 +1988,7 @@ const PAGE = {
   matrix() {
     return `<div class="wrap wide"><div class="row"><h1>Literature matrix</h1><span class="sp"></span>
         <button data-act="mxwork">Work with these in the Notebook</button><button data-act="mxcsv">Export CSV</button><button data-act="mxmd">Export Markdown</button><button class="pri" data-act="synth" ${working ? 'disabled' : ''}>Draft a synthesis</button></div>
-      <p class="muted">One row per analyzed source. Show only the columns you need, add your own, and click a cell to read it in full. Click a column heading to see that column alone. Tick rows to export, synthesize or fill only those.</p>${filterBar(true)}
+      <p class="muted">One row per analyzed source. Show only the columns you need, add your own, and click a cell to read it in full. Click a column heading to see that column alone. Tick rows to export or fill only those. A synthesis needs 2 to 40 ticked rows.</p>${filterBar(true)}
       <div class="cols"><span class="muted">Columns</span>${mxCols().map(c => `<button class="chip ${mxP().hide.includes(c.key) ? '' : 'on'}" data-act="mxcol" data-v="${esc(c.key)}">${esc(c.label)}</button>`).join('')}
         <form data-f="mxadd"><input name="c" required maxlength="40" autocomplete="off" placeholder="Add a column, e.g. Dataset" aria-label="New column name"><button>Add column</button></form></div>
       <div id="mxBody"></div></div>`;
@@ -2086,6 +2086,8 @@ function mxTable() {
       (all.length > ps.length ? `<p class="muted">${all.length - ps.length} more ${all.length - ps.length === 1 ? 'source is' : 'sources are'} not analyzed yet and not shown.</p>` : '')
     : `<p class="box">${all.length ? 'These sources are not analyzed yet. Open one and its row appears here once the briefing is ready.' : lib.length ? 'No sources match these filters. Clear a filter to see more.' : 'Nothing here yet. Add a source and its row appears once its briefing is ready.'}</p>`;
   window.renderMathInElement?.(box, MATH);
+  const sb = $('[data-act=synth]'); // the synthesis button says what it will use, and waits until 2 to 40 sources are ticked
+  if (sb) { const n = mxSel.size ? mxPick().length : 0; sb.disabled = !!working || n < 2 || n > 40; sb.textContent = n >= 2 && n <= 40 ? `Draft a synthesis from ${n}` : n > 40 ? 'Draft a synthesis (tick 40 or fewer)' : 'Draft a synthesis (tick 2 or more rows)'; }
 }
 
 function drawMap(ps, all) {
@@ -2756,8 +2758,11 @@ const ACT = {
     newPage(ids.slice(0, 25), F.project);
   },
   synth: () => {
-    const ps = mxPick().slice(0, 40);
-    if (ps.length < 2) return toast('A synthesis needs at least two analyzed sources.');
+    // Never "everything by default": the sources are chosen on purpose, and too many are refused rather than quietly cut to the first few.
+    if (!mxSel.size) return toast('Tick the sources to synthesize first, 2 to 40 of them. Comparing a whole library at once would only blur it.');
+    const ps = mxPick();
+    if (ps.length < 2) return toast('A synthesis needs at least two analyzed sources. Tick more rows.');
+    if (ps.length > 40) return toast(`You ticked ${ps.length} sources. Pick at most 40 so every one is read.`);
     run('Drafting a synthesis, about a minute…', async () => {
       const body = await ai([{ role: 'system', content: `You help a researcher write a literature review. From the summaries below (and the researcher's own takes, where given), write a synthesis in Markdown with these sections: ## Themes, ## Where the sources agree, ## Where they disagree or differ in method, ## Gaps and open questions, ## Suggested reading order. Refer to each source as (First author's surname, Year) or by a short title. Compare and connect; do not summarize the sources one by one. Use only what the summaries say and never invent findings, numbers or citations. If the sources are unrelated, say so plainly.` },
         { role: 'user', content: ps.map(p => `SOURCE: "${p.title}" — ${byline(p)}\nProblem: ${p.brief.problem}\nIdea: ${p.brief.idea}\nMethod: ${p.brief.method}\nFindings: ${p.brief.results}\nLimitations: ${p.brief.limitations}` + (p.take ? `\nResearcher's take: ${p.take}` : '')).join('\n\n') }]);
