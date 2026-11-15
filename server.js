@@ -137,11 +137,12 @@ const cooling = new Map();
 async function ai(messages) {
   const c = conf(), openrouter = /(^|\.)openrouter\.ai$/.test(new URL(c.url).hostname);
   if (!c.key && openrouter) throw fail(400, 'no API key yet. Add one in Settings');
-  let lastErr = 'no model is allowed to answer. On OpenRouter only free models are used unless you allow paid ones in Settings';
+  const errs = [];
   const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.models;
   const ready = all.filter(m => !(cooling.get(m) > Date.now()));
   for (const model of ready.length ? ready : all) {
     if (openrouter && !c.paid && !model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money unless told to
+    let err;
     try {
       const r = await fetch(c.url + '/chat/completions', {
         method: 'POST',
@@ -149,15 +150,27 @@ async function ai(messages) {
         body: JSON.stringify({ model, messages, temperature: 0.3 }),
         signal: AbortSignal.timeout(90000),
       });
-      const j = await r.json();
+      const j = await r.json().catch(() => ({})); // an error page is not JSON
       const text = j.choices?.[0]?.message?.content;
       if (text) return { text, model };
-      lastErr = `${model}: ${j.error?.message || r.status}`;
-    } catch (e) { lastErr = `${model}: ${e.message}`; }
+      // A rejected key fails every model the same way, so say so at once instead of walking the whole list.
+      if (r.status === 401 || r.status === 403) throw fail(401, 'the service rejected the API key. Check it in Settings');
+      err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' : j.error?.message || `answered ${r.status} with no text`;
+    } catch (e) { if (e.code === 401) throw e; err = e.name === 'TimeoutError' ? 'no answer within 90 s' : e.cause?.code === 'ECONNREFUSED' || e.message === 'fetch failed' ? `could not reach ${c.url}` : e.message; }
+    errs.push(`${model}: ${err}`);
     cooling.set(model, Date.now() + 10 * 60e3);
-    console.warn('model failed ->', lastErr);
+    console.warn('model failed ->', errs.at(-1));
   }
-  throw fail(502, lastErr);
+  throw fail(502, errs.length ? errs.join('; ') : 'no model is allowed to answer. On OpenRouter only free models are used unless you allow paid ones in Settings');
+}
+
+// The models a service offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
+async function offered() {
+  const c = conf(), r = await fetch(c.url + '/models', { headers: c.key ? { Authorization: `Bearer ${c.key}` } : {}, signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${c.url}`); });
+  if (r.status === 401 || r.status === 403) throw fail(401, 'the service rejected the API key. Check it in Settings');
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !Array.isArray(j.data)) throw fail(502, `${c.url}/models did not return a model list (${r.status})`);
+  return j.data.map(m => m.id).filter(Boolean).sort().map(id => ({ id, free: id.endsWith(':free') }));
 }
 
 async function discover(q) {
@@ -365,6 +378,7 @@ http.createServer(async (req, res) => {
       cooling.clear(); return send(res, 200, {});
     }
     if (p === '/api/settings/key' && M === 'DELETE') { db.prepare("DELETE FROM settings WHERE k='key'").run(); return send(res, 200, {}); }
+    if (p === '/api/settings/models' && M === 'GET') return send(res, 200, await offered());
     if (p === '/api/settings/test' && M === 'POST') { const r = await ai([{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model }); }
     if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState());
     if (p === '/api/whisper' && (M === 'POST' || M === 'DELETE')) { // what = model:<id> | program | ytdlp

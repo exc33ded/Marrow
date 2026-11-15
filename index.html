@@ -1771,6 +1771,8 @@ const PAGE = {
         <small class="muted">${c.keyFrom === 'saved' ? `A key ending in ${esc(c.hint)} is saved. <a href="#" data-act="cfgdel">Delete the saved key</a>` : c.keyFrom === 'env' ? `Using the key from the .env file (ends in ${esc(c.hint)}). A key saved here takes its place; to remove the .env one, edit that file.` : 'No key yet. A local service such as Ollama does not need one.'}
           The key is kept on this computer in data/marrow.db and is never sent to the browser.</small>
         <label for="cfgmodels">Models, tried in order until one answers</label><textarea id="cfgmodels" name="models" required spellcheck="false">${esc(c.models)}</textarea>
+        <p class="row" style="margin:6px 0 0"><button type="button" data-act="cfgfind">Find models on this service</button><small class="muted">Asks the saved address and key which models it offers. Click one to add it to the list.</small></p>
+        <div id="cfgfound" class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px"></div>
         <label for="cfgvision">Models for explaining figures (they must accept images)</label><textarea id="cfgvision" name="vision" spellcheck="false">${esc(c.vision)}</textarea>
         <label class="row"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow models that cost money. Without this, OpenRouter is only asked for models ending in “:free”.</label>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
@@ -2432,6 +2434,14 @@ const ACT = {
     if (!await sure('Delete the saved API key?', 'Marrow stops being able to ask the AI until you add a key again (or falls back to the one in the .env file, if there is one).', 'Delete key')) return;
     try { await api('settings/key', { method: 'DELETE' }); cfg = await api('settings'); toast('The saved key is deleted.'); render(); } catch (e) { toast('Could not delete the key (' + e.message + ').'); }
   },
+  cfgfind: async () => { // lists what the saved service offers; clicking one appends it to the models box
+    const box = $('#cfgfound'); box.textContent = 'Asking the service…';
+    try {
+      const ms = await api('settings/models');
+      box.innerHTML = ms.length ? ms.slice(0, 200).map(m => `<button type="button" class="tag" data-act="cfgadd" data-id="${esc(m.id)}">${esc(m.id)}${m.free ? ' · free' : ''}</button>`).join('') + (ms.length > 200 ? `<small class="muted">${ms.length - 200} more not shown</small>` : '') : 'The service listed no models.';
+    } catch (e) { box.textContent = `${e.message}. This asks what is saved, so save any edits first.`; }
+  },
+  cfgadd: el => { const t = $('#cfgmodels'), have = t.value.split(/[,\n]/).map(x => x.trim()).filter(Boolean); if (!have.includes(el.dataset.id)) t.value = [...have, el.dataset.id].join('\n'); },
   cfgtest: async () => { // asks the saved service for a one-word reply and says, in place, whether it worked
     const say = (msg, color) => { const el = $('#cfgstate'); if (el) { el.textContent = msg; el.style.color = color; } }, t = Date.now();
     say('Checking: asking the model for a one-word reply…', 'var(--muted)');
