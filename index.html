@@ -1074,7 +1074,15 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
 
 // ---------- state ----------
-let feeds = [], news = null, newsAt = 0, cfg = null;
+let feeds = [], news = null, newsAt = 0, cfg = null, found = {}; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
+const PRESETS = [['OpenRouter', 'https://openrouter.ai/api/v1'], ['OpenAI', 'https://api.openai.com/v1'], ['Claude (Anthropic)', 'https://api.anthropic.com/v1'], ['Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/openai'], ['Ollama (this computer)', 'http://localhost:11434/v1'], ['Other', '']];
+// One ordered list of models. Each row says which provider answers it; ↑ ↓ change the order they are tried in.
+const chainHTML = (k, label) => {
+  const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?';
+  return `<h4 style="margin:16px 0 4px">${label}</h4><ol class="chain" style="padding-left:22px;margin:0">${rows.map((e, i) => `<li style="margin:3px 0"><span class="row" style="gap:6px"><small class="muted">${esc(name(e.p))}</small> <code style="flex:1;min-width:0;overflow-wrap:anywhere">${esc(e.m)}</code>
+    <button type="button" data-act="cfgmv" data-k="${k}" style="width:auto;flex:none;padding:3px 10px" data-i="${i}" data-d="-1" aria-label="Move ${esc(e.m)} up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-act="cfgmv" data-k="${k}" style="width:auto;flex:none;padding:3px 10px" data-i="${i}" data-d="1" aria-label="Move ${esc(e.m)} down" ${i < rows.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-act="cfgrm" data-k="${k}" style="width:auto;flex:none;padding:3px 10px" data-i="${i}" aria-label="Remove ${esc(e.m)}">Remove</button></span></li>`).join('') || '<li class="muted">Empty.' + (k === 'vision' ? ' Figures then use the model list above.' : '') + '</li>'}</ol>
+    <p class="row" style="margin:8px 0 0"><select id="add-${k}-p" aria-label="Provider" style="width:auto;flex:none">${cfg.providers.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><input id="add-${k}-m" class="grow" placeholder="model name" list="cfgdl" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgadd" data-k="${k}" style="width:auto;flex:none">Add</button></p>`;
+};
 let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, fx = false;
 let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
 const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: '', rows: null, busy: false };
@@ -1763,18 +1771,22 @@ const PAGE = {
   },
   settings() {
     const c = cfg;
-    return `<div class="wrap narrow"><h1>Settings</h1>${lookPicker()}<div class="sec"><h3>AI service</h3></div><p class="muted lead">Which AI service Marrow asks. Any service that speaks the OpenAI chat format works: OpenRouter, OpenAI, or a model running on this computer.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
+    return `<div class="wrap narrow"><h1>Settings</h1>${lookPicker()}<div class="sec"><h3>AI services</h3></div><p class="muted lead">Add each service you have a key for (Claude, OpenAI, OpenRouter, a model on this computer), then pick the models and put them in the order Marrow should try them. If one fails, the next one answers. Any service that speaks the OpenAI chat format works.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
       <form data-f="cfg" class="box set">
-        <label for="cfgurl">API address</label><input id="cfgurl" name="url" required value="${esc(c.url)}" placeholder="https://openrouter.ai/api/v1" autocomplete="off">
-        <small class="muted">OpenRouter: https://openrouter.ai/api/v1 · OpenAI: https://api.openai.com/v1 · Ollama on this computer: http://localhost:11434/v1</small>
-        <label for="cfgkey">API key</label><input id="cfgkey" name="key" type="password" autocomplete="off" placeholder="${c.hasKey ? 'Leave empty to keep the current key, or paste a new one to replace it' : 'Paste your key'}">
-        <small class="muted">${c.keyFrom === 'saved' ? `A key ending in ${esc(c.hint)} is saved. <a href="#" data-act="cfgdel">Delete the saved key</a>` : c.keyFrom === 'env' ? `Using the key from the .env file (ends in ${esc(c.hint)}). A key saved here takes its place; to remove the .env one, edit that file.` : 'No key yet. A local service such as Ollama does not need one.'}
-          The key is kept on this computer in data/marrow.db and is never sent to the browser.</small>
-        <label for="cfgmodels">Models, tried in order until one answers</label><textarea id="cfgmodels" name="models" required spellcheck="false">${esc(c.models)}</textarea>
-        <p class="row" style="margin:6px 0 0"><button type="button" data-act="cfgfind">Find models on this service</button><small class="muted">Asks the saved address and key which models it offers. Click one to add it to the list.</small></p>
-        <div id="cfgfound" class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px"></div>
-        <label for="cfgvision">Models for explaining figures (they must accept images)</label><textarea id="cfgvision" name="vision" spellcheck="false">${esc(c.vision)}</textarea>
-        <label class="row"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow models that cost money. Without this, OpenRouter is only asked for models ending in “:free”.</label>
+        <h4 style="margin:0 0 4px">Providers</h4>
+        ${c.providers.map((p, i) => `<div class="box flat" style="margin:0 0 10px">
+          <label for="pn${i}">Name</label><input id="pn${i}" data-cf="name" data-i="${i}" value="${esc(p.name)}" autocomplete="off">
+          <label for="pu${i}">API address</label><input id="pu${i}" data-cf="url" data-i="${i}" required value="${esc(p.url)}" autocomplete="off">
+          <label for="pk${i}">API key</label><input id="pk${i}" data-cf="key" data-i="${i}" type="password" autocomplete="off" placeholder="${p.clearKey ? 'No key' : p.hasKey ? 'Leave empty to keep the saved key, or paste a new one' : 'Paste your key'}">
+          <small class="muted">${p.clearKey ? 'The saved key is removed when you save.' : p.hasKey ? `A key ending in ${esc(p.hint)} is ${p.fromEnv ? 'in the .env file' : 'saved'}.${p.fromEnv ? '' : ` <a href="#" data-act="cfgdel" data-i="${i}">Remove it</a>`}` : 'No key. A model on this computer, such as Ollama, does not need one.'} Keys stay on this computer in data/marrow.db and never reach the browser.</small>
+          <p class="row" style="margin:8px 0 0"><button type="button" data-act="cfgfind" data-i="${i}">Find models</button>${c.providers.length > 1 ? `<button type="button" data-act="cfgrmp" data-i="${i}">Remove provider</button>` : ''}</p>
+          <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px">${found[p.id] ? typeof found[p.id] === 'string' ? esc(found[p.id]) : found[p.id].slice(0, 150).map(m => `<button type="button" class="tag" data-act="cfgpick" data-i="${i}" data-id="${esc(m.id)}">${esc(m.id)}${m.free ? ' · free' : ''}</button>`).join('') + (found[p.id].length > 150 ? `<small class="muted">${found[p.id].length - 150} more: type the name below</small>` : '') : ''}</div>
+        </div>`).join('')}
+        <p class="row" style="margin:0"><select id="newp" aria-label="Service to add">${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
+        <datalist id="cfgdl">${[...new Set(Object.values(found).flatMap(v => typeof v === 'string' ? [] : v.map(m => m.id)))].map(id => `<option value="${esc(id)}">`).join('')}</datalist>
+        ${chainHTML('chain', 'Models, tried from the top until one answers')}
+        ${chainHTML('vision', 'Models for explaining figures (they must accept images)')}
+        <label class="row" style="margin-top:14px"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow OpenRouter models that cost money. Without this, only models ending in “:free” are used there. Other providers are always asked, so choose their models with care.</label>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
         <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600"></p>
       </form>`) + `<h2 style="margin-top:1.6em">Transcription</h2><p class="muted lead">Videos use YouTube's own captions when they have them. For anything else, Whisper, OpenAI's open-source speech model, writes the transcript on this computer; nothing is uploaded anywhere. Download the YouTube helper for captions, and the program plus one model for Whisper. Bigger models are more accurate and slower.</p>
@@ -2430,22 +2442,23 @@ const ACT = {
   ssort: el => { S.sort = el.value; render(); },
   pick: el => { picks[el.checked ? 'add' : 'delete'](el.dataset.id); libRows(); },
   unpick: () => { picks.clear(); libRows(); },
-  cfgdel: async () => {
-    if (!await sure('Delete the saved API key?', 'Marrow stops being able to ask the AI until you add a key again (or falls back to the one in the .env file, if there is one).', 'Delete key')) return;
-    try { await api('settings/key', { method: 'DELETE' }); cfg = await api('settings'); toast('The saved key is deleted.'); render(); } catch (e) { toast('Could not delete the key (' + e.message + ').'); }
+  cfgdel: el => { cfg.providers[+el.dataset.i].clearKey = true; render(); }, // takes effect on Save
+  cfgfind: async el => { // lists what this provider offers; clicking one adds it to the models list
+    const p = cfg.providers[+el.dataset.i]; found[p.id] = 'Asking the service…'; render();
+    try { found[p.id] = await api('settings/models?provider=' + encodeURIComponent(p.id)); if (!found[p.id].length) found[p.id] = 'The service listed no models.'; }
+    catch (e) { found[p.id] = e.message + '. Finding models uses what is saved, so save a new provider first.'; }
+    render();
   },
-  cfgfind: async () => { // lists what the saved service offers; clicking one appends it to the models box
-    const box = $('#cfgfound'); box.textContent = 'Asking the service…';
-    try {
-      const ms = await api('settings/models');
-      box.innerHTML = ms.length ? ms.slice(0, 200).map(m => `<button type="button" class="tag" data-act="cfgadd" data-id="${esc(m.id)}">${esc(m.id)}${m.free ? ' · free' : ''}</button>`).join('') + (ms.length > 200 ? `<small class="muted">${ms.length - 200} more not shown</small>` : '') : 'The service listed no models.';
-    } catch (e) { box.textContent = `${e.message}. This asks what is saved, so save any edits first.`; }
-  },
-  cfgadd: el => { const t = $('#cfgmodels'), have = t.value.split(/[,\n]/).map(x => x.trim()).filter(Boolean); if (!have.includes(el.dataset.id)) t.value = [...have, el.dataset.id].join('\n'); },
-  cfgtest: async () => { // asks the saved service for a one-word reply and says, in place, whether it worked
+  cfgpick: el => { const p = cfg.providers[+el.dataset.i]; if (!cfg.chain.some(e => e.p === p.id && e.m === el.dataset.id)) cfg.chain.push({ p: p.id, m: el.dataset.id }); render(); },
+  cfgadd: el => { const k = el.dataset.k, m = $('#add-' + k + '-m').value.trim(), p = $('#add-' + k + '-p').value; if (m && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push({ p, m }); render(); },
+  cfgmv: el => { const l = cfg[el.dataset.k], i = +el.dataset.i, j = i + +el.dataset.d; if (l[j]) [l[i], l[j]] = [l[j], l[i]]; render(); },
+  cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); render(); },
+  cfgaddp: () => { const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
+  cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); for (const k of ['chain', 'vision']) cfg[k] = cfg[k].filter(e => e.p !== p.id); render(); },
+  cfgtest: async () => { // asks the saved models, in order, for a one-word reply and says, in place, whether it worked
     const say = (msg, color) => { const el = $('#cfgstate'); if (el) { el.textContent = msg; el.style.color = color; } }, t = Date.now();
-    say('Checking: asking the model for a one-word reply…', 'var(--muted)');
-    try { const r = await send('POST', 'settings/test', {}); say(`● Working. ${r.model} answered in ${((Date.now() - t) / 1000).toFixed(1)} s.`, 'var(--ok)'); }
+    say('Checking: asking the first model that answers for a one-word reply…', 'var(--muted)');
+    try { const r = await send('POST', 'settings/test', {}); say(`● Working. ${r.provider} / ${r.model} answered in ${((Date.now() - t) / 1000).toFixed(1)} s.`, 'var(--ok)'); }
     catch (e) { say(`● Not working: ${e.message}. This tests what is saved, so save any edits first.`, 'var(--vid)'); }
   },
   delpicks: async () => {
@@ -2606,7 +2619,7 @@ const FORM = {
   },
   disc: f => discover(f.q.value.trim()),
   cfg: async f => {
-    try { await send('PUT', 'settings', { url: f.url.value, key: f.key.value, models: f.models.value, vision: f.vision.value, paid: f.paid.checked }); cfg = await api('settings'); toast('Settings saved. Checking that the service answers…'); render(); ACT.cfgtest(); }
+    try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: cfg.chain, vision: cfg.vision, paid: f.paid.checked }); found = {}; cfg = await api('settings'); toast('Settings saved. Checking that the service answers…'); render(); ACT.cfgtest(); }
     catch (e) { toast('Could not save the settings: ' + e.message + '.'); }
   },
   work: f => { work(f.q.value); f.q.value = ''; },
@@ -2661,6 +2674,8 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target, v = t.value;
+  if (t.name === 'paid' && cfg) cfg.paid = t.checked;
+  if (t.dataset?.cf) { const p = cfg.providers[+t.dataset.i]; p[t.dataset.cf] = v; if (t.dataset.cf === 'key' && v) p.clearKey = false; return; } // Settings: providers are edited in cfg and sent on Save
   if (t.id === 'q') { F.q = v; libRows(); clearTimeout(ftT); ftT = setTimeout(ftSearch, 300); return; }
   if (t.id === 'nbq') return nbSide();
   if (t.dataset?.s) { S[t.dataset.s] = v; clearTimeout(ftT); ftT = setTimeout(() => view === 'matrix' ? mxTable() : drawBig(), 250); return; }  const pv = (t.closest('form') || t).nextElementSibling?.nextElementSibling;

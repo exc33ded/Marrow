@@ -45,13 +45,18 @@ srv.stdout.once('data', async () => {
     assert.equal((await call('fetch?url=' + encodeURIComponent('https://example.com/'))).body.html?.includes('Example Domain'), true, 'public pages are fetched (needs internet)');
     assert.equal((await call('library', 'GET', null, { Origin: 'https://evil.example' })).status, 403, 'other sites cannot call the API');
 
-    assert.equal((await call('settings', 'PUT', { url: 'ftp://x', models: 'm' })).status, 400, 'the API address must be http(s)');
-    assert.equal((await call('settings', 'PUT', { url: 'http://127.0.0.1:9/v1', key: 'test-key-1234', models: 'a\nb', paid: true })).status, 200);
-    const cfg = (await call('settings')).body;
-    assert.deepEqual([cfg.url, cfg.models, cfg.hasKey, cfg.keyFrom, cfg.hint, cfg.paid], ['http://127.0.0.1:9/v1', 'a\nb', true, 'saved', '1234', true]);
+    const prov = (url, key, extra = {}) => ({ id: 'a', name: 'Test', url, key, ...extra });
+    assert.equal((await call('settings', 'PUT', { providers: [prov('ftp://x')], chain: [{ p: 'a', m: 'm' }] })).status, 400, 'the API address must be http(s)');
+    assert.equal((await call('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', 'test-key-1234')], chain: [] })).status, 400, 'at least one model');
+    assert.equal((await call('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', 'test-key-1234')], chain: [{ p: 'a', m: 'x' }, { p: 'a', m: 'y' }, { p: 'gone', m: 'z' }], paid: true })).status, 200);
+    let cfg = (await call('settings')).body, p0 = cfg.providers[0];
+    assert.deepEqual([p0.url, p0.hasKey, p0.hint, cfg.paid, cfg.chain.map(e => e.m)], ['http://127.0.0.1:9/v1', true, '1234', true, ['x', 'y']], 'models of unknown providers are dropped');
     assert.ok(!JSON.stringify(cfg).includes('test-key'), 'the key is never sent back');
-    await call('settings/key', 'DELETE');
-    assert.equal((await call('settings')).body.keyFrom, process.env.OPENROUTER_API_KEY ? 'env' : '', 'a saved key can be deleted');
+    await call('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', '')], chain: [{ p: 'a', m: 'y' }, { p: 'a', m: 'x' }] });
+    cfg = (await call('settings')).body;
+    assert.deepEqual([cfg.providers[0].hasKey, cfg.chain.map(e => e.m)], [true, ['y', 'x']], 'an empty key keeps the saved one; order is kept');
+    await call('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', '', { clearKey: true })], chain: cfg.chain });
+    assert.equal((await call('settings')).body.providers[0].hasKey, false, 'a saved key can be deleted');
 
     const wh = (await call('whisper')).body;
     assert.equal(wh.models.length, 5); assert.equal(wh.use, '', 'no Whisper model until one is downloaded');

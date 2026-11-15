@@ -48,10 +48,18 @@ CREATE TRIGGER IF NOT EXISTS parts_ad AFTER DELETE ON parts BEGIN INSERT INTO ft
 // AI settings: what was saved in the app wins over .env, which wins over the defaults. The key is only ever read here, on the server.
 const saved = k => db.prepare('SELECT v FROM settings WHERE k=?').get(k)?.v;
 const list = v => String(v).split(/[,\n]/).map(x => x.trim()).filter(Boolean);
-const conf = () => ({
-  url: (saved('url') || process.env.AI_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''), key: saved('key') || KEY || '',
-  models: list(saved('models') || MODELS), vision: list(saved('vision') || VISION), paid: saved('paid') === '1',
-});
+// Providers each have their own address and key; "chain" and "vision" are ordered lists of { p: provider id, m: model } tried top to bottom.
+// Before providers existed there was one url, key and model list; those become a provider called "main" until the reader saves.
+const jsonOf = k => { try { return JSON.parse(saved(k)); } catch {} };
+const isOR = url => /(^|\.)openrouter\.ai$/.test(new URL(url).hostname);
+const conf = () => {
+  const old = (saved('url') || process.env.AI_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
+  const providers = (jsonOf('providers') || [{ id: 'main', name: isOR(old) ? 'OpenRouter' : new URL(old).hostname, url: old, key: saved('key') || '' }])
+    .map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), fromEnv: !p.key && !!KEY && isOR(p.url), key: p.key || (isOR(p.url) && KEY) || '' }));
+  const first = providers[0].id, chainOf = (k, def) => jsonOf(k) || list(saved(k === 'chain' ? 'models' : 'vision') || def).map(m => ({ p: first, m }));
+  return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: saved('paid') === '1' };
+};
+const anyKey = c => c.providers.some(p => p.key || !isOR(p.url));
 // node:sqlite binds neither undefined, booleans nor objects.
 const bind = v => v === undefined ? null : typeof v === 'boolean' ? +v : v !== null && typeof v === 'object' ? JSON.stringify(v) : v;
 const inserter = (table, cols) => {
@@ -134,42 +142,40 @@ async function fetchPublic(link) {
 
 // A model that just failed is skipped for 10 minutes, so one flaky provider doesn't slow every request.
 const cooling = new Map();
+const headers = p => ({ 'Content-Type': 'application/json', 'X-Title': 'Marrow', ...(p.key && { Authorization: `Bearer ${p.key}`, ...(/anthropic\.com$/.test(new URL(p.url).hostname) && { 'x-api-key': p.key, 'anthropic-version': '2023-06-01' }) }) });
 async function ai(messages) {
-  const c = conf(), openrouter = /(^|\.)openrouter\.ai$/.test(new URL(c.url).hostname);
-  if (!c.key && openrouter) throw fail(400, 'no API key yet. Add one in Settings');
-  const errs = [];
-  const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.models;
-  const ready = all.filter(m => !(cooling.get(m) > Date.now()));
-  for (const model of ready.length ? ready : all) {
-    if (openrouter && !c.paid && !model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money unless told to
+  const c = conf(), errs = [], badKey = new Set();
+  const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.chain;
+  const open = all.filter(e => !(cooling.get(e.p + '|' + e.m) > Date.now()));
+  for (const { p: pid, m: model } of open.length ? open : all) {
+    const p = c.providers.find(x => x.id === pid);
+    if (!p || badKey.has(pid)) continue;
+    if (isOR(p.url) && !c.paid && !model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money unless told to
+    if (!p.key && isOR(p.url)) { badKey.add(pid); errs.push(`${p.name}: no API key yet. Add one in Settings`); continue; }
     let err;
     try {
-      const r = await fetch(c.url + '/chat/completions', {
-        method: 'POST',
-        headers: { ...(c.key && { Authorization: `Bearer ${c.key}` }), 'Content-Type': 'application/json', 'X-Title': 'Marrow' },
-        body: JSON.stringify({ model, messages, temperature: 0.3 }),
-        signal: AbortSignal.timeout(90000),
-      });
+      const r = await fetch(p.url + '/chat/completions', { method: 'POST', headers: headers(p), body: JSON.stringify({ model, messages, temperature: 0.3 }), signal: AbortSignal.timeout(90000) });
       const j = await r.json().catch(() => ({})); // an error page is not JSON
       const text = j.choices?.[0]?.message?.content;
-      if (text) return { text, model };
-      // A rejected key fails every model the same way, so say so at once instead of walking the whole list.
-      if (r.status === 401 || r.status === 403) throw fail(401, 'the service rejected the API key. Check it in Settings');
+      if (text) return { text, model, provider: p.name };
+      // A rejected key fails every model of that provider the same way, so skip the rest of its models.
+      if (r.status === 401 || r.status === 403) { badKey.add(pid); errs.push(`${p.name}: the service rejected the API key`); continue; }
       err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' : j.error?.message || `answered ${r.status} with no text`;
-    } catch (e) { if (e.code === 401) throw e; err = e.name === 'TimeoutError' ? 'no answer within 90 s' : e.cause?.code === 'ECONNREFUSED' || e.message === 'fetch failed' ? `could not reach ${c.url}` : e.message; }
-    errs.push(`${model}: ${err}`);
-    cooling.set(model, Date.now() + 10 * 60e3);
+    } catch (e) { err = e.name === 'TimeoutError' ? 'no answer within 90 s' : e.message === 'fetch failed' ? `could not reach ${p.url}` : e.message; }
+    errs.push(`${p.name} / ${model}: ${err}`);
+    cooling.set(pid + '|' + model, Date.now() + 10 * 60e3);
     console.warn('model failed ->', errs.at(-1));
   }
-  throw fail(502, errs.length ? errs.join('; ') : 'no model is allowed to answer. On OpenRouter only free models are used unless you allow paid ones in Settings');
+  throw fail(502, errs.length ? errs.join('; ') : 'no model is allowed to answer. Add one in Settings (on OpenRouter only free models are used unless you allow paid ones)');
 }
 
-// The models a service offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
-async function offered() {
-  const c = conf(), r = await fetch(c.url + '/models', { headers: c.key ? { Authorization: `Bearer ${c.key}` } : {}, signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${c.url}`); });
-  if (r.status === 401 || r.status === 403) throw fail(401, 'the service rejected the API key. Check it in Settings');
+// The models a provider offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
+async function offered(id) {
+  const p = conf().providers.find(x => x.id === id); if (!p) throw fail(404, 'unknown provider');
+  const r = await fetch(p.url + '/models', { headers: headers(p), signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${p.url}`); });
+  if (r.status === 401 || r.status === 403) throw fail(401, `${p.name} rejected the API key`);
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || !Array.isArray(j.data)) throw fail(502, `${c.url}/models did not return a model list (${r.status})`);
+  if (!r.ok || !Array.isArray(j.data)) throw fail(502, `${p.name} did not return a model list (${r.status}). Type the model name instead`);
   return j.data.map(m => m.id).filter(Boolean).sort().map(id => ({ id, free: id.endsWith(':free') }));
 }
 
@@ -365,21 +371,28 @@ http.createServer(async (req, res) => {
       if (!Array.isArray(messages)) throw fail(400, 'messages required');
       return send(res, 200, await ai(messages));
     }
-    if (p === '/api/settings' && M === 'GET') { // the key itself never leaves the server: only whether there is one, and its last four characters
+    if (p === '/api/settings' && M === 'GET') { // keys never leave the server: only whether there is one, and its last four characters
       const c = conf();
-      return send(res, 200, { url: c.url, models: c.models.join('\n'), vision: c.vision.join('\n'), paid: c.paid, hasKey: !!c.key, keyFrom: saved('key') ? 'saved' : KEY ? 'env' : '', hint: c.key ? c.key.slice(-4) : '' });
+      return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, providers: c.providers.map(({ id, name, url, key, fromEnv }) => ({ id, name, url, hasKey: !!key, fromEnv, hint: key.slice(-4) })) });
     }
     if (p === '/api/settings' && M === 'PUT') {
-      const b = await json(req, 1e5), put = (k, v) => db.prepare('INSERT OR REPLACE INTO settings VALUES(?,?)').run(k, String(v));
-      try { if (!/^https?:$/.test(new URL(b.url).protocol)) throw 0; } catch { throw fail(400, 'the API address must start with http:// or https://'); }
-      if (!list(b.models || '').length) throw fail(400, 'name at least one model');
-      put('url', b.url.trim()); put('models', list(b.models).join(',')); put('vision', list(b.vision || b.models).join(',')); put('paid', b.paid ? 1 : 0);
-      if (typeof b.key === 'string' && b.key.trim()) put('key', b.key.trim());
+      const b = await json(req, 1e5), put = (k, v) => db.prepare('INSERT OR REPLACE INTO settings VALUES(?,?)').run(k, String(v)), have = jsonOf('providers') || [];
+      if (!Array.isArray(b.providers) || !b.providers.length) throw fail(400, 'add at least one provider');
+      const ids = new Set(), providers = b.providers.map(x => {
+        const id = String(x.id || ''), url = String(x.url || '').trim(), name = String(x.name || '').trim() || url;
+        try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw fail(400, `${name}: the API address must start with http:// or https://`); }
+        if (!id || ids.has(id)) throw fail(400, 'duplicate provider'); ids.add(id);
+        const prev = have.find(h => h.id === id) || (id === 'main' && { key: saved('key') });
+        return { id, name, url, key: typeof x.key === 'string' && x.key.trim() ? x.key.trim() : x.clearKey ? '' : prev?.key || '' };
+      });
+      const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
+      const chain = clean(b.chain); if (!chain.length) throw fail(400, 'pick at least one model');
+      const vision = clean(b.vision);
+      put('providers', JSON.stringify(providers)); put('chain', JSON.stringify(chain)); put('vchain', JSON.stringify(vision.length ? vision : chain)); put('paid', b.paid ? 1 : 0);
       cooling.clear(); return send(res, 200, {});
     }
-    if (p === '/api/settings/key' && M === 'DELETE') { db.prepare("DELETE FROM settings WHERE k='key'").run(); return send(res, 200, {}); }
-    if (p === '/api/settings/models' && M === 'GET') return send(res, 200, await offered());
-    if (p === '/api/settings/test' && M === 'POST') { const r = await ai([{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model }); }
+    if (p === '/api/settings/models' && M === 'GET') return send(res, 200, await offered(q('provider')));
+    if (p === '/api/settings/test' && M === 'POST') { const r = await ai([{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
     if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState());
     if (p === '/api/whisper' && (M === 'POST' || M === 'DELETE')) { // what = model:<id> | program | ytdlp
       const what = q('what'), id = what.startsWith('model:') && what.slice(6);
@@ -452,4 +465,4 @@ http.createServer(async (req, res) => {
     }
     send(res, 404, { error: 'not found' });
   } catch (e) { send(res, Number.isInteger(e.code) && e.code >= 400 && e.code < 600 ? e.code : 500, { error: e.message }); }
-}).listen(PORT, HOST, () => console.log(`Marrow -> http://localhost:${PORT}` + (conf().key ? '' : '  (no API key yet: add one in Settings)')));
+}).listen(PORT, HOST, () => console.log(`Marrow -> http://localhost:${PORT}` + (anyKey(conf()) ? '' : '  (no API key yet: add one in Settings)')));
