@@ -2,6 +2,16 @@
 
 A research desk for one. Marrow keeps everything you read, watch and think about for your research in one place, and it makes you understand the material instead of handing you a summary.
 
+![Home: add a link or PDF, your study activity and your projects](docs/screenshots/home.png)
+
+![A source open on its Brief: the text on the left, the skeleton (problem, idea, method, results) on the right](docs/screenshots/brief.png)
+
+![Matrix: one row per source, one column per question, ready to export](docs/screenshots/matrix.png)
+
+![Map: sources (squares) and the concepts they share (circles)](docs/screenshots/map.png)
+
+![Notebook: a page that carries its sources, with a box to ask across them](docs/screenshots/notebook.png)
+
 ## What goes in
 
 Paste a link into one box, or drop a PDF anywhere:
