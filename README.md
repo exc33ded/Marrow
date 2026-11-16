@@ -1,41 +1,41 @@
 # Marrow
 
-A research desk for one. Everything you read, watch and think about for your research lives in one place, and Marrow makes you actually understand it instead of handing you a summary.
+A research desk for one. Marrow keeps everything you read, watch and think about for your research in one place, and it makes you understand the material instead of handing you a summary.
 
 ## What goes in
 
 Paste a link into one box, or drop a PDF anywhere:
 
-- **Papers** – a PDF, an arXiv ID or link, a DOI, or any PDF URL.
-- **Articles and blog posts** – any web page, cleaned into a reader view (ads and navigation removed).
-- **Videos** – a YouTube link. The video plays next to its transcript; Marrow fetches YouTube's own captions when the video has them, or writes the transcript with Whisper on this computer, and every note, card and AI answer links to its moment in the video. Pasting a transcript (YouTube's "Show transcript" panel, SRT or VTT) still works too.
-- **Discover** – search 250M scholarly works (OpenAlex) and add open-access papers with one click. Follow blogs, journals and arXiv categories by their address (RSS/Atom, found automatically from a blog's home page); new posts are listed there, one click from your library.
+- Papers: a PDF, an arXiv ID or link, a DOI, or any PDF URL.
+- Articles and blog posts: any web page, cleaned into a reader view without ads or navigation.
+- Videos: a YouTube link. The video plays next to its transcript; Marrow fetches YouTube's own captions when the video has them, or writes the transcript with Whisper on this computer, and every note, card and AI answer links to its moment in the video. Pasting a transcript (YouTube's "Show transcript" panel, SRT or VTT) still works too.
+- Discover: search 250M scholarly works (OpenAlex) and add open-access papers with one click. Follow blogs, journals and arXiv categories by their address (RSS/Atom, found automatically from a blog's home page); new posts are listed there, one click from your library.
 
 ## What you do with it
 
 Every source, whatever its kind, gets the same four steps:
 
-1. **Brief** – the skeleton first: problem, core idea, method, results, weaknesses, prerequisites.
-2. **Read / Watch** – section by section; each has a checkpoint question you answer from memory, graded against the source.
-3. **Teach** – explain it in your own words; the AI finds gaps and misconceptions.
-4. **Keep** – spaced-repetition flashcards and a concept map.
+1. Brief: the skeleton first, covering problem, core idea, method, results, weaknesses, prerequisites.
+2. Read / Watch: section by section; each has a checkpoint question you answer from memory, graded against the source.
+3. Teach: explain it in your own words; the AI finds gaps and misconceptions.
+4. Keep: spaced-repetition flashcards and a concept map.
 
 Around that:
 
-- **Projects** – a project (say "Watermarking" and "Hydrology") keeps its own sources, matrix, map, review queue and notebook pages. Create one on Home, switch with the selector at the top of every page, and move sources in by ticking them in the Library. Home lists every source under the project it belongs to. Rename or delete a project from "Project settings" at the foot of its Home page; deleting keeps its sources and pages, unfiled.
-- **Library** – tags, filters, and full-text search across every word of every source.
-- **Review** – due cards from the whole library, with a streak and a 12-week activity view.
-- **Matrix** – a literature-review table, one row per source. Filter by text, kind, project and year; show only the columns you need (click a heading to see one column alone); click a cell to pop it out for reading (arrow keys move between cells); add your own columns and have the AI fill them from each source's text, with a link to the passage it used. A fill covers only the rows on screen, asks first when there are many, can be stopped, and can be run for one cell. Exports what is on screen as CSV or Markdown, and drafts a synthesis.
-- **Notebook** – pages of blocks (headings, lists, checklists, toggles, callouts, tables, quotes, code, math; press `/`, type `# ` for a heading, `- ` for a list, or `---` for a divider, drag a block by its handle, `@` cites a source), each with an icon, an outline of its headings and its project. A page carries the sources you are working with: tick sources in the Library and choose "Work with these in the Notebook", then ask across them. The answer is written into the page with citations that open the cited passage. Your highlights and a comparison table can be inserted the same way.
-- **Map** – one concept map linking everything you've studied. The same filters as the Matrix, a "shared concepts only" view for large libraries, a layout by year, and a panel that says what each concept means and which sources use it.
-- **Search** – `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a pasted link. In Review, `Space` shows the answer and `1` `2` `3` grade it.
+- Projects: a project (say "Watermarking" and "Hydrology") keeps its own sources, matrix, map, review queue and notebook pages. Create one on Home, switch with the selector at the top of every page, and move sources in by ticking them in the Library. Home lists every source under the project it belongs to. Rename or delete a project from "Project settings" at the foot of its Home page; deleting keeps its sources and pages, unfiled.
+- Library: tags, filters, and full-text search across every word of every source.
+- Review: due cards from the whole library, with a streak and a 12-week activity view.
+- Matrix: a literature-review table, one row per source. Filter by text, kind, project and year; show only the columns you need (click a heading to see one column alone); click a cell to pop it out for reading (arrow keys move between cells); add your own columns and have the AI fill them from each source's text, with a link to the passage it used. A fill covers only the rows on screen, asks first when there are many, can be stopped, and can be run for one cell. Exports what is on screen as CSV or Markdown, and drafts a synthesis.
+- Notebook: pages of blocks (headings, lists, checklists, toggles, callouts, tables, quotes, code, math; press `/`, type `# ` for a heading, `- ` for a list, or `---` for a divider, drag a block by its handle, `@` cites a source), each with an icon, an outline of its headings and its project. A page carries the sources you are working with: tick sources in the Library and choose "Work with these in the Notebook", then ask across them. The answer is written into the page with citations that open the cited passage. Your highlights and a comparison table can be inserted the same way.
+- Map: one concept map linking everything you've studied. The same filters as the Matrix, a "shared concepts only" view for large libraries, a layout by year, and a panel that says what each concept means and which sources use it.
+- Search: `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a pasted link. In Review, `Space` shows the answer and `1` `2` `3` grade it.
 - Highlights and notes on PDFs, articles and transcripts; snip a figure or equation to have it explained; chat with citations; BibTeX; Markdown export with `[[wikilinks]]`; light and dark themes.
 
 AI-generated flashcards and feedback must quote the source; quotes are checked against its text and anything unverified is flagged.
 
 ## Run
 
-Requires Node 22.13+ and a [Supabase](https://supabase.com) project (accounts, the library and PDFs live there). No dependencies to install.
+Requires Node 22.13+ and a [Supabase](https://supabase.com) project (accounts, the library and PDFs live there). Marrow has no dependencies to install.
 
 1. In Supabase, open the SQL Editor, paste `schema.sql` and run it. It creates the tables, the row-level security that keeps each reader's data private, and the `files` bucket for PDFs. It is safe to run again.
 2. Create accounts under Authentication > Users. There is no sign-up page; whoever runs the server hands out logins.
@@ -57,10 +57,10 @@ Open http://localhost:5173, log in, then open **Settings** (the gear, bottom lef
 
 ## How it works
 
-- `server.js` – serves the app, logs readers in (Supabase Auth; the session lives in HttpOnly cookies), reads and writes their library in Supabase as that reader, proxies AI calls with the reader's own keys (which never reach the browser), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only; set `HOST=0.0.0.0` in `.env` to reach it from other devices, and `ALLOWED_HOSTS` for a domain name.
-- `index.html` – the whole app.
-- `schema.sql` – the Supabase database: `items` (sources), `parts` (their text, with Postgres full-text search), `cards`, `notes` (highlights, and notebook pages), `activity`, `feeds`, `settings`. Row-level security means each reader only ever sees their own rows. PDFs are in the private `files` storage bucket, one folder per reader. Use Backup in the Library for a single portable file of everything.
-- `data/` – only Whisper's and the YouTube helper's downloads.
+- `server.js`: serves the app, logs readers in (Supabase Auth; the session lives in HttpOnly cookies), reads and writes their library in Supabase as that reader, proxies AI calls with the reader's own keys (which never reach the browser), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only; set `HOST=0.0.0.0` in `.env` to reach it from other devices, and `ALLOWED_HOSTS` for a domain name.
+- `index.html`: the whole app.
+- `schema.sql`: the Supabase database: `items` (sources), `parts` (their text, with Postgres full-text search), `cards`, `notes` (highlights, and notebook pages), `activity`, `feeds`, `settings`. Row-level security means each reader only ever sees their own rows. PDFs are in the private `files` storage bucket, one folder per reader. Use Backup in the Library for a single portable file of everything.
+- `data/`: only Whisper's and the YouTube helper's downloads.
 
 More detail is in [`docs/`](docs/): how to use each part, and how the code fits together.
 
