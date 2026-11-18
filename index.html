@@ -2142,7 +2142,8 @@ function drawMap(ps, all) {
     for (let i = 0; i < cNodes.length; i++) {
       const near = cNodes.map((_, j) => j).filter(j => j !== i).sort((a, b) => vecCos(vs[i], vs[b]) - vecCos(vs[i], vs[a])).slice(0, 3);
       for (const j of near) {
-        const sim = vecCos(vs[i], vs[j]); if (sim < 0.1) continue;
+        if (!cNodes[i].in.some(id => cNodes[j].in.includes(id))) continue;
+        const sim = vecCos(vs[i], vs[j]); if (sim < 0.08) continue;
         const a = cNodes[i].id, b = cNodes[j].id;
         if (a < b) edges.push({ source: a, target: b, sem: +sim.toFixed(3) });
       }
