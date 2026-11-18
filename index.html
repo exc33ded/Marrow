@@ -2038,7 +2038,7 @@ const PAGE = {
   },
   map() {
     const on = lib.filter(p => p.concepts.length).length, shared = M.shared ?? on > 6;
-    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Squares are sources, circles are concepts, diamonds are your own notebook pages. Read along a line: every link is a sentence. Click anything to see everything you know about it; double-click the background to bring the whole map back.</p>` +
+    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Squares are sources, circles are concepts, diamonds are your own notebook pages. Read along a line: every solid link is a sentence; dotted lines join concepts that mean similar things. Click anything to see everything you know about it; double-click the background to bring the whole map back.</p>` +
       (on ? `${filterBar(false)}<div class="cols"><span class="muted">Show</span><button class="chip ${shared ? 'on' : ''}" data-act="mapshared" data-v="1">Shared concepts only</button><button class="chip ${shared ? '' : 'on'}" data-act="mapshared" data-v="">Every concept</button>
         <span class="muted" style="margin-left:10px">Arrange</span><button class="chip ${M.by === 'cluster' ? 'on' : ''}" data-act="mapby" data-v="cluster">By topic</button><button class="chip ${M.by === 'year' ? 'on' : ''}" data-act="mapby" data-v="year">By year</button>
         <button class="chip" data-act="mapfit">Fit to screen</button><span class="sp"></span><span id="mapn" class="muted"></span></div>
