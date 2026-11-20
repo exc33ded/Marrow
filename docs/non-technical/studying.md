@@ -45,3 +45,7 @@ Your streak and a year-long activity grid sit underneath.
 ## While the AI works
 
 A box at the bottom right shows what the AI is doing, how many seconds it has taken, how long that job usually takes on your computer, and which model is answering ("model 2 of 8"). If a model fails (rate limited, too slow, no answer), the box says so and Marrow moves on to the next one in your list. When a later model answers, a message lists the ones that failed and why. If none answers, the message lists every model's reason. A model that keeps failing can be moved down or removed in Settings.
+
+## Citations
+
+Wherever Marrow shows a quote with its page (a flashcard's answer, a checkpoint's evidence, your notes, a Matrix cell, the map's explanations), click the page link: the source opens at that page and the quoted sentence lights up for a few seconds, even across line breaks in a PDF. If the AI's quote is slightly off, the closest matching passage lights up; if it is not in the source at all, the page opens with nothing lit.

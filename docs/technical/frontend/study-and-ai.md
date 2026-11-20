@@ -29,6 +29,8 @@ Concept names already in the library are passed in (up to 150), so the same conc
 
 The AI must quote the source. `findQuote(p, quote)` finds the part that contains a quote, ignoring spacing, punctuation, hyphenation and ligatures (`norm()`). A quote can run on into the next part. Quotes that aren't found are flagged in the UI, not hidden.
 
+A citation that shows a quote carries it: `cite(p, n, q)` adds `data-q`. Clicking it opens the source (or scrolls to the part) and `flashQuote(n, q)` lights the sentence with the `cite` CSS highlight for 4.5 s. `quoteRange()` builds the text of part `n` and the next (a PDF's `.textLayer`, or the block) as letters and digits only, mapped back to each text node, so a sentence split over spans, lines and hyphens still matches. If the exact quote is not there, it matches the first and last 40 characters, then either end alone; if nothing matches, the page opens with nothing lit. A PDF page draws its text only when scrolled to, so it retries for up to 5 s. Quotes are passed by flashcards, card lists, checkpoint evidence, notes, the map's highlights and explanations, and Matrix cells (which now store `{ n, q }`; older cells hold only the page number).
+
 `ckey()` normalises concept names, so "Self-Attention", "self attention (SA)" and "Self-attentions" merge on the map. `related(p)` links sources that cite each other, share concepts or share tags.
 
 ## Progress

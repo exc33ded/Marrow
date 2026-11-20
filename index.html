@@ -314,7 +314,7 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 progress{width:100%;height:6px;accent-color:var(--ok)}
 .warn{color:#b58900;font-size:12.5px}
 .textLayer span.hl{background:#ffd60070;cursor:pointer}
-::highlight(find){background:#ffb14e99} ::highlight(findcur){background:#ff6a00}
+::highlight(find){background:#ffb14e99} ::highlight(findcur){background:#ff6a00} ::highlight(cite){background:#ffcf3399;text-decoration:underline;text-decoration-color:#e0531a;text-decoration-thickness:2px}
 .textLayer span.c2{background:#6fdc8c80} .textLayer span.c3{background:#ff8fb180}
 .textLayer span.ul{background:none;box-shadow:inset 0 -2.5px 0 #e0531a;cursor:pointer}
 .dot{width:22px;height:22px;min-height:0!important;padding:0;border-radius:50%!important;margin:6px 4px;border:2px solid #fff8!important}
@@ -1156,7 +1156,7 @@ const KIND = { pdf: ['Paper', 'file'], web: ['Article', 'globe'], video: ['Video
 const clock = t => t == null ? '' : (t >= 3600 ? Math.floor(t / 3600) + ':' + String(Math.floor(t / 60) % 60).padStart(2, '0') : Math.floor(t / 60)) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 // The AI always sees and cites [p.N] markers. What N means to the reader depends on the source: a page, a paragraph, or a moment in a video.
 const loc = (p, n) => !p || p.kind === 'pdf' ? 'p.' + n : p.kind === 'web' ? '¶' + n : clock(p.times?.[n - 1]) || '#' + n;
-const cite = (p, n) => `<a href="#" data-page="${+n}" data-pid="${esc(p.id)}">${esc(loc(p, +n))}</a>`;
+const cite = (p, n, q) => `<a href="#" data-page="${+n}" data-pid="${esc(p.id)}"${q ? ` data-q="${esc(q)}" title="Open the page and light up this sentence"` : ''}>${esc(loc(p, +n))}</a>`; // q: the quoted sentence, lit up when the page opens
 // ponytail: tiny markdown (headings, bold, code, bullets, source links). Swap in a real renderer if notes need tables or nested lists.
 const inline = (s, p) => s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\bp\.\s?(\d+)/g, (m, n) => p ? cite(p, n) : m);
 function md(s, p = P) {
@@ -1854,6 +1854,35 @@ async function rezoom(k) {
   await renderPdf(await api('files/' + P.id));
   $(`.page[data-n="${n}"]`)?.scrollIntoView();
 }
+// A citation opens its page and lights up the quoted sentence for a few seconds. A PDF's text layer splits a sentence over many
+// spans and line breaks, so the quote is matched on letters and digits only (norm), as findQuote does, over the page and the next.
+let citeT;
+async function flashQuote(n, quote) {
+  const q = norm(quote); if (!window.Highlight || q.length < 12) return;
+  for (let t = 0; t < 50; t++, await new Promise(ok => setTimeout(ok, 100))) { // a PDF page draws its text only once it is scrolled into view
+    const r = quoteRange(n, q); if (!r) continue;
+    CSS.highlights.set('cite', new Highlight(r)); r.startContainer.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    clearTimeout(citeT); citeT = setTimeout(() => CSS.highlights.delete('cite'), 4500); return;
+  }
+}
+function quoteRange(n, q) {
+  let s = ''; const at = []; // the page's text as letters and digits, and where each one sits
+  for (const k of [n, n + 1]) {
+    const pg = $(`#doc [data-n="${k}"]`); if (!pg) continue;
+    const w = document.createTreeWalker(pg.querySelector('.textLayer') || pg, NodeFilter.SHOW_TEXT);
+    for (let t; (t = w.nextNode());) for (let i = 0; i < t.data.length; i++) for (const ch of norm(t.data[i])) { s += ch; at.push([t, i]); }
+  }
+  let i = s.indexOf(q), len = q.length;
+  if (i < 0) { // the AI changed a word or two: match the quote's first and last 40 characters, or failing that either end alone
+    const h = s.indexOf(q.slice(0, 40)), j = h < 0 ? s.indexOf(q.slice(-40)) : s.indexOf(q.slice(-40), h);
+    if (h >= 0 && j >= 0 && j - h < q.length * 2) i = h, len = j + 40 - h;
+    else if (h >= 0) i = h;
+    else if (j >= 0) i = Math.max(0, j + 40 - q.length);
+    else return null;
+    len = Math.min(len, s.length - i);
+  }
+  const [a, ai] = at[i], [b, bi] = at[i + len - 1], r = new Range(); r.setStart(a, ai); r.setEnd(b, bi + 1); return r;
+}
 function gotoPage(n) {
   document.body.classList.remove('study');
   const el = $(`#doc [data-n="${n}"]`), t = P.parts?.[n - 1]?.t;
@@ -1902,7 +1931,7 @@ const vroot = () => view === 'read' ? $('#body') : $('#page'), sroot = () => vro
 const pose = (x, i, n) => { const st = Math.min(5, 28 / Math.max(1, n - 1)); return `z-index:${500 - i};transform:translate(${i * st * .25}px,${i * st}px) rotate(${i ? (x.k * 37 % 7 - 3) * .7 : 0}deg)`; };
 const scard = (x, i, n, all) => `<div class="scard${i === 0 && sess.flip ? ' flip' : ''}" data-k="${x.k}" ${i === 0 ? 'data-act="show"' : ''} style="${pose(x, i, n)}"><div class="sin">
   <div class="sface">${all ? `<small class="sfrom">${esc(x.p.title)}</small>` : ''}<p class="q">${esc(x.c.q)}</p></div>
-  <div class="sface sback"><div>${md(x.c.a, x.p)}${x.c.src ? `<blockquote>“${esc(x.c.quote)}” ${cite(x.p, x.c.src)}</blockquote>`
+  <div class="sface sback"><div>${md(x.c.a, x.p)}${x.c.src ? `<blockquote>“${esc(x.c.quote)}” ${cite(x.p, x.c.src, x.c.quote)}</blockquote>`
     : x.c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : ''}</div></div></div></div>`;
 const scount = () => { const l = live(); return `<b class="n" title="New">${l.filter(x => !x.c.ivl && !x.s.learn).length}</b><b class="l" title="Learning">${l.filter(x => x.s.learn).length}</b><b class="r" title="To review">${l.filter(x => x.c.ivl && !x.s.learn).length}</b>`; };
 const sbar = () => sess.flip
@@ -1956,7 +1985,7 @@ function deckHTML(p, inReview) {
   const id = esc(p.id);
   return `<div class="row" style="margin:10px 0">${inReview ? `<button class="pri" data-act="rdeck" data-v="${id}">Study this deck</button>` : ''}<button data-act="newcard" data-pid="${id}">+ New card</button><button data-act="morecards" data-pid="${id}" ${working || !p.brief ? 'disabled' : ''}>✦ More cards with AI</button></div>` +
     (adding === p.id ? `<form data-f="newcard" data-pid="${id}" class="box cardform"><textarea name="q" required placeholder="Question: ask why or how, not who or when" aria-label="Question"></textarea><textarea name="a" required placeholder="Answer: one or two short sentences" aria-label="Answer"></textarea><div class="row"><button class="pri">Save card</button><button type="button" data-act="newcard" data-pid="">Cancel</button></div></form>` : '') +
-    (p.cards.map((c, i) => `<div class="box crow"><div class="grow"><b>${esc(c.q)}</b><div class="muted">${md(c.a, p)}</div>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src)}</blockquote>` : ''}</div><button data-act="delcard" data-pid="${id}" data-i="${i}">Delete</button></div>`).join('') || '<p class="muted">No cards in this deck.</p>');
+    (p.cards.map((c, i) => `<div class="box crow"><div class="grow"><b>${esc(c.q)}</b><div class="muted">${md(c.a, p)}</div>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src, c.quote)}</blockquote>` : ''}</div><button data-act="delcard" data-pid="${id}" data-i="${i}">Delete</button></div>`).join('') || '<p class="muted">No cards in this deck.</p>');
 }
 const SKEL = `<div class="tldr"><i class="sk"></i><i class="sk"></i><i class="sk" style="width:55%"></i></div>` +
   ['The problem', 'The core idea', 'How they did it'].map(k => `<div class="fact"><div class="k">${k}</div><i class="sk"></i><i class="sk" style="width:80%"></i></div>`).join('');
@@ -1991,7 +2020,7 @@ const VIEW = {
         <details ${i === next ? 'open' : ''}><summary>Checkpoint</summary><p><b>${md(x.question)}</b></p>
         <textarea data-k="sec" data-i="${i}" placeholder="Answer in your own words, without looking back…">${esc(x.answer)}</textarea>${mathBar}
         <p><button class="pri" data-act="check" data-i="${i}" ${working ? 'disabled' : ''}>Check my understanding</button></p>
-        ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” ${cite(P, x.evPage)}</blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the source. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
+        ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” ${cite(P, x.evPage, x.evidence)}</blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the source. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
       (next < 0 ? `<p><button class="pri" data-act="tab" data-t="teach">All sections done. Now teach it →</button></p>` : '');
   },
   teach() {
@@ -2016,7 +2045,7 @@ const VIEW = {
       (pages.length ? `<p class="muted">Notebook pages working with this source: ${pages.map(n => `<a href="#" data-act="nbgo" data-id="${esc(n.id)}">${esc(n.title || 'Untitled page')}</a>`).join(' · ')}</p>` : '<p></p>') +
       (P.notes.length ? '' : '<p class="muted">Select text in the source and tap “Note” or a highlight colour to capture it here.</p>') +
       P.notes.map((n, i) => `<div class="box note ${n.ul ? 'ul' : n.quote ? 'c' + (n.c || 1) : ''}"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">${ic('x', 14)}</button>
-        ${n.quote || n.page ? `<blockquote>${esc(n.quote)} ${cite(P, n.page)}</blockquote>` : ''}
+        ${n.quote || n.page ? `<blockquote>${esc(n.quote)} ${cite(P, n.page, n.quote)}</blockquote>` : ''}
         <textarea data-k="note" data-i="${i}" style="min-height:60px" placeholder="Your thought…">${esc(n.note)}</textarea></div>`).join('');
   },
   ask() {
@@ -2279,7 +2308,7 @@ function mxTable() {
   const bar = mxSel.size ? `<div class="row pickbar"><b>${mxSel.size} selected</b><span class="muted">Export, synthesis, the Notebook and AI fill now use only these.</span><span class="sp"></span><button data-act="mxonly">${mxOnly ? 'Show all rows' : 'Show only these'}</button><button data-act="mxclear">Clear selection</button></div>` : '';
   box.innerHTML = ps.length ? `${bar}<div class="mxwrap"><table class="mx"><tr><th><input type="checkbox" data-act="mxall" ${ps.every(p => mxSel.has(p.id)) ? 'checked' : ''} aria-label="Select every row shown"> Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">${ic('x', 14)}</button>` : ''}</th>`).join('')}</tr>` +
     ps.map(p => `<tr><td><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:10px"><input type="checkbox" data-act="mxsel" data-id="${esc(p.id)}" ${mxSel.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><div><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></div></div></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
-      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p[CQ()]?.[c.custom] ? `<small>${cite(p, p[CQ()][c.custom])}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
+      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p[CQ()]?.[c.custom] ? `<small>${cite(p, p[CQ()][c.custom].n ?? p[CQ()][c.custom], p[CQ()][c.custom].q)}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
       : `<div class="cell" data-act="mxrow">${md(mxVal(p, c), p)}</div>`) + `</td>`).join('') + `</tr>`).join('') + `</table></div>` +
       (all.length > ps.length ? `<p class="muted">${all.length - ps.length} more ${all.length - ps.length === 1 ? 'source is' : 'sources are'} not analyzed yet and not shown.</p>` : '')
     : `<p class="box">${all.length ? 'These sources are not analyzed yet. Open one and its row appears here once the briefing is ready.' : lib.length ? 'No sources match these filters. Clear a filter to see more.' : 'Nothing here yet. Add a source and its row appears once its briefing is ready.'}</p>`;
@@ -2489,7 +2518,7 @@ function conceptPanel(node, all) {
     (rels.length ? `<div class="k">How it connects</div>` + (explained[d.id] || `<p class="row"><button data-act="mapexplain" data-v="${esc(d.id)}" ${working ? 'disabled' : ''}>${ic('bulb', 16)}Explain these connections</button><small class="muted">The AI says why each link holds, quoting the source.</small></p>`) + rels.join('') : '') +
     `<div class="k">Similar ideas</div>${simHTML}` +
     (all && d.in.length ? `<div class="k">In ${d.in.length} source${d.in.length === 1 ? '' : 's'}</div>` + d.in.map(id => `<p><a href="#" data-open="${esc(id)}">${esc(byId(id)?.title)}</a></p>`).join('') : '') +
-    `<div class="k">Your highlights</div>` + (hls.length ? hls.map(([p, n]) => `<blockquote>${n.quote ? `“${esc(n.quote)}”` : ''}${n.note ? `<br><b>${esc(n.note)}</b>` : ''} <small>${n.page ? cite(p, n.page) : ''}</small></blockquote>`).join('') : '<p class="muted">None mention it yet.</p>') +
+    `<div class="k">Your highlights</div>` + (hls.length ? hls.map(([p, n]) => `<blockquote>${n.quote ? `“${esc(n.quote)}”` : ''}${n.note ? `<br><b>${esc(n.note)}</b>` : ''} <small>${n.page ? cite(p, n.page, n.quote) : ''}</small></blockquote>`).join('') : '<p class="muted">None mention it yet.</p>') +
     `<div class="k">Your cards</div>` + (cards.length ? cards.map(([, c]) => `<p>${esc(c.q)}</p>`).join('') : '<p class="muted">None yet.</p>') +
     `<div class="k">Your pages</div>` + (pages.length ? pages.map(pg => `<p><a href="#" data-act="nbgo" data-id="${esc(pg.id)}">${esc(pg.title || 'Untitled page')}</a></p>`).join('') : '<p class="muted">No page mentions it yet.</p>');
 }
@@ -2785,7 +2814,7 @@ const curNote = () => notes.find(x => x.id === N);
 async function fillCell(p, c) { // one matrix cell, answered from the source's own text and tied to a sentence in it
   await text(p);
   const j = await aiJSON(`You fill one cell of a literature-review table. The column is "${c}". From the source below, give what belongs in that column for this source. JSON: {"answer":"at most 40 words, or 'Not stated' if the source does not say","quote":"one sentence copied VERBATIM from the source that supports the answer, or ''"}. Plain text. Never guess.`, fullText(p));
-  (p[CS()] ||= {})[c] = String(j.answer || 'Not stated'); (p[CQ()] ||= {})[c] = findQuote(p, j.quote); save(p);
+  (p[CS()] ||= {})[c] = String(j.answer || 'Not stated'); const at = findQuote(p, j.quote); (p[CQ()] ||= {})[c] = at ? { n: at, q: String(j.quote) } : 0; save(p);
 }
 async function discover(q) {
   disc.q = q; disc.busy = true; render();
@@ -2978,7 +3007,7 @@ const ACT = {
       const j = await aiJSON(`You explain one concept on a researcher's concept map, using only the sources below ("=== S1 ===" starts a source; markers like [p.N] number its parts). Concept: "${d.label}"${d.def ? ` (${d.def})` : ''}. Its links on the map:\n${links.map(l => '- ' + l).join('\n')}\nJSON: {"summary":"2 plain sentences: what this concept does in the source and why it matters","links":[{"link":"the link exactly as listed","why":"1-2 short plain sentences: why the link holds and what it tells the reader","src":"S1","quote":"one sentence copied VERBATIM from that source that supports it"}]}. Leave out any link the sources do not support. Plain text, no LaTeX.`, ctx);
       // Quotes are checked against the source text; one that is not found is flagged, not hidden.
       explained[id] = `<div class="explain"><p>${esc(j.summary || '')}</p>` + (j.links || []).map(l => { const p = ps[(+String(l.src || '').replace(/\D/g, '') || 1) - 1] || ps[0], at = p && l.quote ? findQuote(p, l.quote) : 0;
-        return `<div class="rel"><p><b>${esc(l.link)}</b></p><p>${esc(l.why)}</p>${l.quote ? `<blockquote>“${esc(l.quote)}” <small>${at ? cite(p, at) : '<span class="bad">Not found in the source</span>'}</small></blockquote>` : ''}</div>`; }).join('') + '</div>';
+        return `<div class="rel"><p><b>${esc(l.link)}</b></p><p>${esc(l.why)}</p>${l.quote ? `<blockquote>“${esc(l.quote)}” <small>${at ? cite(p, at, l.quote) : '<span class="bad">Not found in the source</span>'}</small></blockquote>` : ''}</div>`; }).join('') + '</div>';
     } catch (e) { toast(e.message); }
     if (!--jobs) working = ''; renderRail();
     if (cy?.$id(id).length) cy.$id(id).emit('tap'); // redraw the panel with the explanation
@@ -3182,8 +3211,9 @@ function onClick(e) {
   e.preventDefault();
   if (d.view) return go(d.view);
   if (d.open) return openItem(d.open, +d.n || 0);
-  if (view !== 'read' || (d.pid && d.pid !== P.id)) return openItem(d.pid || P.id, +d.page);
-  gotoPage(+d.page);
+  const q = d.q, n = +d.page;
+  if (view !== 'read' || (d.pid && d.pid !== P.id)) return openItem(d.pid || P.id, n).then(() => q && flashQuote(n, q));
+  gotoPage(n); if (q) flashQuote(n, q);
 }
 // Drag a page in the sidebar onto a folder (files it there), or onto a project's name (moves it there, out of any folder).
 let dragPg = null;
