@@ -41,7 +41,7 @@ Around that:
 - Search: `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a pasted link. In Review, `Space` shows the answer, `1` to `4` grade it (Again, Hard, Good, Easy), and `?` lists the shortcuts.
 - Highlights and notes on PDFs, articles and transcripts; snip a figure or equation to have it explained; chat with citations; BibTeX; Markdown export with `[[wikilinks]]`; light and dark themes.
 
-AI-generated flashcards and feedback must quote the source; quotes are checked against its text and anything unverified is flagged.
+AI-generated flashcards and feedback must quote the source; quotes are checked against its text and anything unverified is flagged. Click a quote's page link and the source opens there with the sentence lit up for a few seconds.
 
 ## Run
 
