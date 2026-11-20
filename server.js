@@ -95,6 +95,9 @@ async function tryModels(c, messages, rid) {
   const errs = [], badKey = new Set(), ck = (p, m) => p + '|' + m;
   const all = messages.some(m => Array.isArray(m.content)) && c.vision.length ? c.vision : c.chain; // no model marked for images: the text models are asked
   const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now())), list = freeFirst(c, open.length ? open : all);
+  // A whole paper takes a big model about a minute to answer (Nemotron: 54 s for 21k tokens); a question, seconds. So each model gets
+  // 90 s plus 1 s per 1000 characters sent, at most 4 minutes: long analyses stop timing out, and a stuck model on a short job is still dropped fast.
+  const secs = Math.min(240, 90 + Math.round(JSON.stringify(messages).length / 1000));
   for (const [i, { p: pid, m: model }] of list.entries()) {
     const p = c.providers.find(x => x.id === pid);
     if (!p || badKey.has(pid)) continue;
@@ -102,7 +105,7 @@ async function tryModels(c, messages, rid) {
     if (rid) progress.set(rid, { n: i + 1, of: list.length, model, provider: p.name, failed: [...errs] });
     let err;
     try {
-      const r = await fetch(p.url + '/chat/completions', { method: 'POST', headers: headers(p), body: JSON.stringify({ model, messages, temperature: 0.3 }), signal: AbortSignal.timeout(90000) });
+      const r = await fetch(p.url + '/chat/completions', { method: 'POST', headers: headers(p), body: JSON.stringify({ model, messages, temperature: 0.3 }), signal: AbortSignal.timeout(secs * 1000) });
       const j = await r.json().catch(() => ({})); // an error page is not JSON
       const text = j.choices?.[0]?.message?.content;
       if (text) return { text, model, provider: p.name, failed: errs };
@@ -112,7 +115,7 @@ async function tryModels(c, messages, rid) {
       const c0 = j.choices?.[0], why = String(j.error?.message || c0?.error?.message || '').slice(0, 200);
       err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' + (why ? ` (${why})` : '') : why ||
         (c0?.finish_reason === 'length' ? 'ran out of room before writing an answer' : c0?.message?.reasoning ? 'only thought, wrote no answer' : `answered ${r.status} with no text${c0?.finish_reason ? ` (stopped: ${c0.finish_reason})` : ''}`);
-    } catch (e) { err = e.name === 'TimeoutError' ? 'no answer within 90 s' : e.message === 'fetch failed' ? `could not reach ${p.url}` : e.message; }
+    } catch (e) { err = e.name === 'TimeoutError' ? `no answer within ${secs} s` : e.message === 'fetch failed' ? `could not reach ${p.url}` : e.message; }
     errs.push(`${p.name} / ${model}: ${err}`);
     cooling.set(ck(pid, model), Date.now() + 10 * 60e3);
     console.warn('model failed ->', errs.at(-1));
