@@ -33,6 +33,7 @@ There is no session check: this is a single-user local server. Anyone who can re
 | `GET /api/fetch?url=` | fetch a pasted link (below) |
 | `POST /api/ai` | AI proxy |
 | `POST /api/retrieve`, `POST /api/embed` | meaning-based search of a source or the library; embed what has no vector yet (see [keys-and-ai](auth-and-ai.md)) |
+| `POST /api/concept-near` | the concept map's similar-meaning links: `{ texts }` (3 to 3000 concepts) returns each one's 10 nearest neighbours and the `same` / `cross` cut-offs, or `{}` with no embedding model |
 | `GET` / `PUT /api/settings`, `POST /api/settings/models`, `POST /api/settings/test` | AI settings |
 | `/api/whisper`, `/api/whisper/use`, `/api/transcribe`, `/api/ytaudio`, `/api/ytsubs` | see [transcription](transcription.md) |
 

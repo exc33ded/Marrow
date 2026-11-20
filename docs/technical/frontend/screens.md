@@ -43,6 +43,10 @@ From `// ---------- notebook` onward.
 - "Shared concepts only" (`M.shared`) is on by default once more than 6 sources have concepts.
 - The topic layout runs Cose once, then cola (`cytoscape-cola`, from jsdelivr, `infinite: true`, up to 400 nodes) keeps simulating so dragging tugs neighbours. Wheel zoom is replaced by `smoothZoom()`, which eases to the target. Link labels show only on `.hl` edges (hover or pick).
 - It can be arranged by topic or by year (`M.by`). `conceptPanel()` explains a clicked concept.
+- **Similar-meaning links** (dotted, `edge[sem]`) are added only in the many-source topic layout, not in By year, the one-source tree or a source's own map. Each concept keeps its top 3 neighbours, and a pair is drawn once. cola gives them a shorter length (`200 − 140 × similarity`) so similar concepts sit closer.
+  - With an embedding model in Settings, `conceptNear()` sends every library concept ("name: definition") to `POST /api/concept-near` once per library state and keeps the answer in `CN`. A link needs the server's `same` cut-off within a source and the higher `cross` cut-off across sources. The map draws with local links first and redraws once the answer arrives; saving Settings clears `CN`.
+  - With no model, `conceptVecs()`/`vecCos()` build local word + character 3-gram TF-IDF vectors, and links are kept within a source only (cosine ≥ 0.08), because local vectors cannot tell meanings apart across sources.
+- **Dashed ring** (`node[gap]`): a concept that none of your highlights, cards or notebook pages (in the current project) mention. Rings appear only once at least one concept is covered.
 
 ## Command palette
 

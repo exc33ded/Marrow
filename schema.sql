@@ -53,6 +53,11 @@ create table if not exists activity(
 create table if not exists feeds(
   url text primary key, title text not null, added integer not null
 );
+-- Vectors for the concept map's "similar meaning" links, one per concept text ("name: definition") and model.
+create table if not exists concept_emb(
+  text text not null, model text not null, emb blob not null,
+  primary key(text, model)
+);
 create table if not exists settings(
   k text primary key, v text not null
 );

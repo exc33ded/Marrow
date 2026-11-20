@@ -21,7 +21,7 @@ Starts the server on port 5981 with a temporary `DATA_DIR`, so it never touches 
 - the link-fetching rules hold, and other sites cannot call the API;
 - AI settings never return a key.
 
-It also checks meaning-based search against a fake embedding service on port 5982: no model chosen gives 400, the model is saved, `/api/embed` indexes a source, and `/api/retrieve` returns the dictionary-learning passage first.
+It also checks meaning-based search against a fake embedding service on port 5982: no model chosen gives 400, the model is saved, `/api/embed` indexes a source, and `/api/retrieve` returns the dictionary-learning passage first. `/api/concept-near` pairs each concept with the one about the same thing, reuses cached vectors without calling the service again, and answers `{}` once the model is removed.
 
 Run with `npm test` (which supplies `.env` for `APP_SECRET`) or `node test.js` (a test-only `APP_SECRET` is used if none is set). No accounts or external service are needed.
 

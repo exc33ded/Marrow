@@ -142,6 +142,27 @@ async function embedItem(c, id) {
   }
 }
 
+// The concept map's "similar meaning" links: each concept's nearest neighbours by embedding, plus two cut-offs
+// taken as percentiles of all pair similarities (88th within a source, 98th across sources), so they suit any model.
+// Measured on three models in auto-research/logs.md (exp-17). Vectors are cached per text and model, so only new concepts cost a call.
+// ponytail: all pairs in memory, O(n² · 1024); about a second at 1000 concepts. Precompute on save if libraries grow far past that.
+async function conceptNear(c, texts) {
+  const V = local.conceptEmbs(texts, c.embed.m), miss = texts.map((_, i) => i).filter(i => !V[i]);
+  for (let i = 0; i < miss.length; i += 64) {
+    const b = miss.slice(i, i + 64), v = await embed(c, b.map(k => texts[k]));
+    local.saveConceptEmbs(b.map((k, x) => ({ t: texts[k], v: v[x] })), c.embed.m); b.forEach((k, x) => V[k] = v[x]);
+  }
+  const U = V.map(v => { const n = Math.hypot(...v) || 1; return Float64Array.from(v, x => x / n); }), n = U.length;
+  const all = new Float32Array(n * (n - 1) / 2), near = []; let at = 0;
+  for (let i = 0; i < n; i++) {
+    const row = [];
+    for (let j = 0; j < n; j++) if (j !== i) { let s = 0; for (let d = 0; d < DIM; d++) s += U[i][d] * U[j][d]; row.push([j, s]); if (j > i) all[at++] = s; }
+    near.push(row.sort((a, b) => b[1] - a[1]).slice(0, 10).map(([j, s]) => [j, +s.toFixed(4)]));
+  }
+  all.sort(); const pct = p => +all[Math.min(all.length - 1, Math.floor(p * all.length))].toFixed(4);
+  return { near, same: pct(.88), cross: pct(.98) };
+}
+
 async function discover(q) {
   const r = await fetch('https://api.openalex.org/works?per-page=20&select=title,publication_year,authorships,cited_by_count,open_access,best_oa_location,primary_location,doi,abstract_inverted_index&search=' + encodeURIComponent(q), { signal: AbortSignal.timeout(20000) });
   if (!r.ok) throw fail(502, `paper search returned ${r.status}`);
@@ -343,6 +364,11 @@ http.createServer(async (req, res) => {
       const ids = b.all ? local.allItemIds() : [String(b.item || '')];
       for (const id of ids) if (/^[\w-]{1,64}$/.test(id)) await embedItem(c, id);
       return send(res, 200, { items: ids.length });
+    }
+    if (M === 'POST' && p === '/api/concept-near') { // texts: every concept in the library as "name: definition"
+      const b = await json(req, 4e6), texts = Array.isArray(b.texts) ? b.texts.map(t => String(t).slice(0, 600)) : [];
+      if (texts.length < 3 || texts.length > 3000) throw fail(400, 'between 3 and 3000 concepts');
+      const c = conf(S()); return send(res, 200, c.embed ? await conceptNear(c, texts) : {}); // no model chosen: the map keeps its local links
     }
     if (M === 'GET' && p === '/api/discover') return send(res, 200, await discover(q('q')));
     if (M === 'POST' && p === '/api/ai') {

@@ -42,4 +42,6 @@ Settings are rows in the `settings` table:
 
 **Embeddings.** The `embed` setting (`{ p, m }`) names a provider and model. `embed(c, texts)` posts to `{url}/embeddings` with `dimensions: 1024` (`DIM`; parts are cut at 6000 characters) and rejects any other vector size. `embedItem()` embeds a source's parts that have no vector, 64 at a time, through `local.setEmb()`; `PUT /api/items/:id` runs it in the background when parts were saved, so a failure never blocks the save. `POST /api/embed` does one source (`item`) or all (`all`). `POST /api/retrieve` embeds the question and calls `local.matchParts()` for the 12 best parts.
 
+`conceptNear(c, texts)` serves the concept map. It embeds texts with no cached vector (64 per call) and stores them with `local.saveConceptEmbs()`. Then it compares every pair, which takes about a second at 1000 concepts, and returns each concept's top 10 neighbours. It also returns two cut-offs taken as percentiles of all pair similarities: the 88th (`same`, for concepts sharing a source) and the 98th (`cross`). Percentiles are used instead of fixed numbers because cosine ranges differ between models; the tiers were measured on three models (see `auto-research/logs.md`, exp-17).
+
 `POST /api/settings/test` asks for a one-word reply. With `{ p, m }` in the body it tests only that model; without a body it tests the saved list in order.

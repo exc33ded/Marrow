@@ -32,6 +32,8 @@ A page carries the sources you are working with. Tick sources in the Library and
 
 One concept map across everything you have studied. Squares are sources, circles are concepts, and diamonds are notebook pages. It has the same filters as the Matrix, a "shared concepts only" view for large libraries, and a layout by topic or by year. The topic layout is live: drag a concept and its neighbours follow, and the map settles when you let go. Link wording appears only when you hover or pick a concept. Clicking a concept shows what it means and which sources use it.
 
+Solid lines are links the AI found in a source; dotted lines join concepts that mean similar things, so related ideas gather together. With an embedding model chosen in Settings, dotted lines can also join similar concepts from different sources, the connections you may not have made yet. A dashed ring marks a concept none of your highlights, cards or pages mention yet: what is left to work on.
+
 ## Search everything
 
 `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a link you paste.

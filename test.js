@@ -72,8 +72,9 @@ srv.stdout.once('data', async () => {
     assert.equal((await raw('ytsubs?vid=../etc')).status, 400, 'only YouTube video ids');
 
     // ---- meaning-based search: a fake embedding service (word counts hashed into 1024 numbers) stands in for a real model
+    let embCalls = 0;
     const emb = require('http').createServer((rq, rs) => { let b = ''; rq.on('data', d => b += d).on('end', () => {
-      rs.setHeader('content-type', 'application/json');
+      rs.setHeader('content-type', 'application/json'); embCalls++;
       rs.end(JSON.stringify({ data: JSON.parse(b).input.map((t, index) => { const v = new Array(1024).fill(0); for (const w of t.toLowerCase().match(/[a-z]+/g) || []) v[[...w].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 1024, 7)]++; return { index, embedding: v }; }) }));
     }); });
     await new Promise(r => emb.listen(5982, '127.0.0.1', r));
@@ -84,7 +85,15 @@ srv.stdout.once('data', async () => {
     { const r = await raw('embed', 'POST', { item: 'abc' }); assert.equal(r.status, 200, JSON.stringify(r.body)); }
     const near = (await raw('retrieve', 'POST', { q: 'dictionary learning', item: 'abc' })).body;
     assert.equal(near[0].n, 2, 'the passage about dictionary learning comes first');
+    // ---- concept map: nearest concepts by meaning, with cut-offs; vectors are cached so a redraw costs no provider call
+    const texts = ['Ice sheet: glacial ice melting into the sea', 'Sea level: the sea rises as glacial ice melts', 'Query planner: picks how a database query runs', 'Index: speeds up a database query'];
+    const cn = (await raw('concept-near', 'POST', { texts })).body, calls = embCalls;
+    assert.deepEqual(cn.near.map(r => r[0][0]), [1, 0, 3, 2], 'each concept is nearest the one about the same thing');
+    assert.ok(cn.cross >= cn.same, 'the cross-source bar is the higher one');
+    assert.deepEqual((await raw('concept-near', 'POST', { texts })).body, cn); assert.equal(embCalls, calls, 'cached vectors are reused');
+    assert.equal((await raw('concept-near', 'POST', { texts: ['a'] })).status, 400);
     await raw('settings', 'PUT', { ...withEmb, embed: null });
+    assert.deepEqual((await raw('concept-near', 'POST', { texts })).body, {}, 'no model: an empty answer, not an error');
     emb.close();
 
     // ---- clean up

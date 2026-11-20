@@ -95,6 +95,18 @@ function setEmb(pairs, model) {
   try { for (const p of pairs) q.run(blob(p.v), model, p.id); db.exec('commit'); }
   catch (e) { db.exec('rollback'); throw e; }
 }
+function conceptEmbs(texts, model) { // cached vectors, null where a text has none yet
+  open();
+  const q = db.prepare('select emb from concept_emb where text=? and model=?');
+  return texts.map(t => { const r = q.get(t, model); return r ? Array.from(numbers(r.emb)) : null; });
+}
+function saveConceptEmbs(pairs, model) {
+  open();
+  const q = db.prepare('insert or replace into concept_emb(text,model,emb) values(?,?,?)');
+  db.exec('begin');
+  try { for (const p of pairs) q.run(p.t, model, blob(p.v)); db.exec('commit'); }
+  catch (e) { db.exec('rollback'); throw e; }
+}
 function saveNote(id, n) {
   open();
   if (!safeId(id)) throw fail(400, 'invalid note id');
@@ -185,6 +197,6 @@ function raw(sql, ...args) {
   return db.prepare(sql).all(...args);
 }
 
-module.exports = { open, fail, settingsOf, saveSettings, putItem, getParts, partsWithoutEmb, allItemIds, deleteItem, setEmb,
+module.exports = { open, fail, settingsOf, saveSettings, putItem, getParts, partsWithoutEmb, allItemIds, deleteItem, setEmb, conceptEmbs, saveConceptEmbs,
   saveNote, deleteNote, addActivity, saveFeed, deleteFeed, library, searchParts, matchParts,
   putFile, getFile, deleteFile, fileList, raw, DATA, FILES };

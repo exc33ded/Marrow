@@ -18,6 +18,7 @@ There is one reader, so no table has a `user_id` and no row-level security is ne
 | `notes` | highlights when `item_id` is set, notebook pages when it is null |
 | `activity` | study events by timestamp |
 | `feeds` | followed RSS/Atom addresses |
+| `concept_emb` | the concept map's vectors, one per concept text ("name: definition") and model |
 | `settings` | AI providers, model lists, project names, Whisper choice |
 
 Parts, cards and item-level notes cascade when their source is deleted.
@@ -29,6 +30,8 @@ Parts, cards and item-level notes cascade when their source is deleted.
 ## Vectors
 
 Embeddings are 1024-dimension Float64 blobs on `parts.emb`, with the model name in `emb_model`. `local.js` registers a `cosine()` SQL function so ranking can happen in the database. `matchParts()` merges the vector ranking with the FTS ranking by reciprocal rank fusion, the same shape as the old `match_parts` database function. Rewriting a source's text deletes its parts and therefore its vectors; the server embeds them again in the background.
+
+Concept vectors live in `concept_emb`, keyed by text and model, so a concept is embedded once per model and a renamed or redefined concept gets a new row. `conceptEmbs()` reads the cached vectors (null where none) and `saveConceptEmbs()` writes new ones. Rows are not removed when a source is deleted; they are small and are reused if the concept comes back.
 
 ## PDFs
 
