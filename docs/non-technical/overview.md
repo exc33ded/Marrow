@@ -28,8 +28,8 @@ A source's progress ring blends these: checkpoints count 40%, the teach-back 35%
 - **One place.** Everything you make (notes, cards, pages, maps) lives with the sources.
 - **Comfort over long sessions.** Light and dark modes in every look, readable contrast, visible keyboard focus.
 
-## Accounts
+## Your data
 
-Marrow runs on a server that someone sets up, and you log in with an email and password they give you. There is no sign-up page. Each person sees only their own library.
+Marrow runs on your own computer as a single-user app. There is no sign-in and no account in the cloud: your sources, notes and PDFs live in one folder on that machine.
 
 See also: [Adding sources](adding-sources.md), [Studying](studying.md), [Organising your work](workspace.md), [Settings](settings.md).

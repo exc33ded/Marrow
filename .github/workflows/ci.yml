@@ -1,28 +1,21 @@
 # Runs on every push and every pull request. To make it required, protect the main branch in
 # GitHub (Settings > Branches > Add rule) and require the check named "CI passed".
 #
-# The server and browser checks run against a real Supabase project, so the repository needs these secrets
-# (Settings > Secrets and variables > Actions): SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, APP_SECRET,
-# TEST_EMAIL_A, TEST_EMAIL_B, TEST_PASSWORD (two throwaway users, see the top of test.js).
+# Everything runs locally; the only secret is APP_SECRET (any 64 hex characters), set under
+# Settings > Secrets and variables > Actions.
 name: CI
 on:
   push:
   pull_request:
 
 env:
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
   APP_SECRET: ${{ secrets.APP_SECRET }}
-  TEST_EMAIL_A: ${{ secrets.TEST_EMAIL_A }}
-  TEST_EMAIL_B: ${{ secrets.TEST_EMAIL_B }}
-  TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
 
 jobs:
   backend:
     name: Backend (server and storage)
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1        # both Node versions use the same two test accounts, so one at a time
       matrix:
         node: ['22', '24']   # server.js needs Node 22.13+
     steps:
@@ -42,7 +35,7 @@ jobs:
 
   ui:
     name: In a real browser (every look, light and dark, every screen)
-    needs: backend           # it logs in as test user A too; running after the backend check keeps them apart
+    needs: backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

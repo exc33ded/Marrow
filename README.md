@@ -45,36 +45,37 @@ AI-generated flashcards and feedback must quote the source; quotes are checked a
 
 ## Run
 
-Requires Node 22.13+ and a [Supabase](https://supabase.com) project (accounts, the library and PDFs live there). Marrow has no dependencies to install.
+Requires Node 22.13+. Marrow has no dependencies to install and needs no external service: your library, notes and PDFs live in one folder on this computer.
 
-1. In Supabase, open the SQL Editor, paste `schema.sql` and run it. It creates the tables, the row-level security that keeps each reader's data private, and the `files` bucket for PDFs. It is safe to run again.
-2. Create accounts under Authentication > Users. There is no sign-up page; whoever runs the server hands out logins.
-3. Copy `.env.example` to `.env` and fill in `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (never the secret/service-role key) and `APP_SECRET` (64 hex characters; the command to make one is in the file). Keep a copy of `APP_SECRET`: it encrypts every reader's AI keys, and if it is lost they have to enter them again.
+1. Copy `.env.example` to `.env` and fill in `APP_SECRET` (64 hex characters; the command to make one is in the file). Keep a copy: it encrypts your AI keys, and if it is lost you have to enter them again.
+2. Optionally set `DATA_DIR` in `.env` to keep everything somewhere other than `./data`. The folder holds `marrow.db` (the SQLite database), `files/` (PDFs) and `whisper/` (transcription downloads). `schema.sql` is the schema of record; the server creates it on first run.
+3. Start the app. There is no sign-in screen: this is a single-user, local-only server.
 
 ```bash
 npm start        # node --env-file=.env server.js
 ```
 
-Open http://localhost:5173, log in, then open **Settings** (the gear, bottom left) and add the AI services you have a key for: [OpenRouter](https://openrouter.ai), OpenAI, Claude, Gemini, a local Ollama, or anything else that speaks the OpenAI chat format. Each provider has its own address and key. "Find models" asks a provider what it offers, and you pick models from that list or type a name. Put the chosen models in the order Marrow should try them (↑ ↓): when one fails or is rate limited, the next one answers, and a model can come from any provider. Figures use their own list, since the model must accept images. "Test the connection" tells you which model answered. Each reader brings their own keys; the server has none. Keys are encrypted with `APP_SECRET` before they are stored in the database, are never sent to the browser (Settings shows only the last four characters), and can be replaced or removed from the same screen. On OpenRouter only free models are used unless you allow paid ones; other providers are always asked, so choose their models with care.
+Open http://localhost:5173, then open **Settings** (the gear, bottom left) and add the AI services you have a key for: [OpenRouter](https://openrouter.ai), OpenAI, Claude, Gemini, a local Ollama, or anything else that speaks the OpenAI chat format. Each provider has its own address and key. "Find models" asks a provider what it offers, and you pick models from that list or type a name. Put the chosen models in the order Marrow should try them (↑ ↓): when one fails or is rate limited, the next one answers, and a model can come from any provider. Figures use their own list, since the model must accept images. "Test the connection" tells you which model answered. The keys are yours; the server has none of its own. Keys are encrypted with `APP_SECRET` before they are stored in the database, are never sent to the browser (Settings shows only the last four characters), and can be replaced or removed from the same screen. On OpenRouter only free models are used unless you allow paid ones; other providers are always asked, so choose their models with care.
 
-**Transcription.** In Settings, download the *YouTube helper* (yt-dlp) to fetch a video's existing captions with one click, or Whisper to transcribe anything: the Whisper program is fetched from whisper.cpp's GitHub releases on Windows (on a Mac run `brew install whisper-cpp` first), then pick a model and download it from Hugging Face. Videos use YouTube's captions when available and fall back to Whisper; you can also transcribe any audio or video file from a video's page. Audio is decoded in the browser, so no ffmpeg is needed, and Whisper runs on the server's computer: nothing but the video's captions or sound is fetched, and the audio goes no further than your own server. Everything is stored under `data/whisper/` and can be removed again from Settings. Whisper and the YouTube helper are shared by every reader of the server.
+**Transcription.** In Settings, download the *YouTube helper* (yt-dlp) to fetch a video's existing captions with one click, or Whisper to transcribe anything: the Whisper program is fetched from whisper.cpp's GitHub releases on Windows (on a Mac run `brew install whisper-cpp` first), then pick a model and download it from Hugging Face. Videos use YouTube's captions when available and fall back to Whisper; you can also transcribe any audio or video file from a video's page. Audio is decoded in the browser, so no ffmpeg is needed, and Whisper runs on the server's computer: nothing but the video's captions or sound is fetched, and the audio goes no further than your own server. Everything is stored under `data/whisper/` and can be removed again from Settings. Whisper and the YouTube helper are shared by everything you transcribe.
 
-**Tests.** The server and browser checks log in to your Supabase project as two throwaway users. Create them under Authentication > Users (auto-confirm on) and put `TEST_EMAIL_A`, `TEST_EMAIL_B` and `TEST_PASSWORD` in `.env.test`. The checks only touch those two accounts.
+**Tests.** The checks use a throwaway `DATA_DIR`, so they never touch your library.
 
-- `npm test` runs the server check (`test.js`: logins, storage, search, one reader never seeing another's data, link-fetching rules) and the frontend check (`test-frontend.js`: the script parses, every look is complete and readable).
-- `npm run test:ui` opens the running app in a real browser, logged in as test user A, and visits every screen in every look, light and dark. It needs `npm i --no-save playwright` first; `PW_CHANNEL=chrome` uses the Chrome you already have.
+- `npm test` runs the server check (`test.js`: saving, storage, full-text and vector search, link-fetching rules) and the frontend check (`test-frontend.js`: the script parses, every look is complete and readable).
+- `npm run test:ui` opens the running app in a real browser and visits every screen in every look, light and dark. It needs `npm i --no-save playwright` first; `PW_CHANNEL=chrome` uses the Chrome you already have.
 - Add `#test` to the URL to run the browser self-check (see the console).
 
 ## How it works
 
-- `server.js`: serves the app, logs readers in (Supabase Auth; the session lives in HttpOnly cookies), reads and writes their library in Supabase as that reader, proxies AI calls with the reader's own keys (which never reach the browser), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only; set `HOST=0.0.0.0` in `.env` to reach it from other devices, and `ALLOWED_HOSTS` for a domain name.
+- `server.js`: serves the app, proxies AI calls with your keys (which never reach the browser), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only. There is no login: anyone who can reach the server can read and change everything, so do not set `HOST=0.0.0.0` on an untrusted network. If you must, put it behind your own access control and set `ALLOWED_HOSTS` for a domain name.
+- `local.js`: the local store — one library in `marrow.db`, with SQLite full-text search and vectors, and PDFs in `files/`.
 - `index.html`: the whole app.
-- `schema.sql`: the Supabase database: `items` (sources), `parts` (their text, with Postgres full-text search), `cards`, `notes` (highlights, and notebook pages), `activity`, `feeds`, `settings`. Row-level security means each reader only ever sees their own rows. PDFs are in the private `files` storage bucket, one folder per reader. Use Backup in the Library for a single portable file of everything.
-- `data/`: only Whisper's and the YouTube helper's downloads.
+- `schema.sql`: the SQLite tables: `items` (sources), `parts` (their text, full-text index and vectors), `cards`, `notes` (highlights, and notebook pages), `activity`, `feeds`, `settings`.
+- `data/`: the database, PDFs, and Whisper's and the YouTube helper's downloads. Use Backup in the Library for a single portable file of everything.
 
 More detail is in [`docs/`](docs/): how to use each part, and how the code fits together.
 
-Upgrading from the first version: your papers were stored in the browser. Open Marrow in that same browser once, logged in, and they are moved into your account automatically (the browser copy is left alone). Old backup files still restore.
+**Moving from Supabase.** Put `SUPABASE_URL` and a `SUPABASE_SERVICE_ROLE_KEY` in a `.env.migrate` file, then run `npm run migrate -- you@example.com`. It copies one account's sources, text, cards, notes, activity, feeds, settings (including encrypted AI keys) and PDFs into the local store. Use the same `APP_SECRET` as before or re-enter your keys. Keep the service-role key out of `.env`; it is only for this one-time move. Old backup files still restore from the Library screen.
 
 ## Looks
 
@@ -101,4 +102,4 @@ You do not touch the tests: both checks find looks on their own. `node test-fron
 
 ## Checks on every push
 
-`.github/workflows/ci.yml` runs the server check on Node 22 and 24, the frontend check, and the browser test, on every push and pull request. The server and browser checks need your Supabase project and the two test users, so add `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `APP_SECRET`, `TEST_EMAIL_A`, `TEST_EMAIL_B` and `TEST_PASSWORD` as repository secrets (GitHub > Settings > Secrets and variables > Actions). A final job called **CI passed** is green only when all three are. To make it required: GitHub > Settings > Branches > add a rule for `main` > *Require status checks to pass before merging* > select **CI passed**.
+`.github/workflows/ci.yml` runs the server check on Node 22 and 24, the frontend check, and the browser test, on every push and pull request. No external service is needed; the only secret is `APP_SECRET` (any 64 hex characters), set under GitHub > Settings > Secrets and variables > Actions. A final job called **CI passed** is green only when all three are. To make it required: GitHub > Settings > Branches > add a rule for `main` > *Require status checks to pass before merging* > select **CI passed**.

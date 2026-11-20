@@ -321,7 +321,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 @media (max-width:900px){
   body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
   #rail{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px;justify-content:space-between} .logo,#rail .sp{display:none}
-  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn,#rail #setBtn,#rail #outBtn{display:none}
+  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn,#rail #setBtn{display:none}
   .wrap{padding:22px 16px 60px} .hero{font-size:32px}
   .addbar{flex-wrap:wrap} .addbar input{flex:1 1 100%}
   .nb{grid-template-columns:1fr;height:auto} .nbside{border-right:0;border-bottom:1px solid var(--line);max-height:32vh} .nbpage{padding:24px 18px} .bench{padding:10px 18px}
@@ -1005,22 +1005,9 @@ html[data-theme] #rail .n{position:static;margin-left:auto;min-width:20px;text-a
 html[data-theme] #rail .sp{border-bottom:1px solid var(--line);margin:0 4px 8px}
 html[data-theme] #palBtn::after{content:"Ctrl K";margin-left:auto;font:500 11px/1 var(--f-body);color:inherit;opacity:.75;border:1px solid currentColor;border-radius:5px;padding:3px 5px}
 }
-#signin{position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;padding:16px}
-#signin form{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:28px;width:min(380px,100%);display:grid;gap:4px}
-#signin h2{margin:0 0 2px} #signin label{font-weight:600;margin-top:12px} #signin button{margin-top:18px;border-color:var(--acc);color:var(--acc);font-weight:600} #signin .err{color:var(--vid);min-height:1.4em;margin:8px 0 0}
 </style>
 </head>
 <body>
-<div id="signin" hidden>
-  <form id="signinForm" autocomplete="on">
-    <h2>Log in to Marrow</h2>
-    <small class="muted">Accounts are created by the person who runs this server. Ask them for one.</small>
-    <label for="siEmail">Email</label><input id="siEmail" name="email" type="email" autocomplete="username" required>
-    <label for="siPw">Password</label><input id="siPw" name="password" type="password" autocomplete="current-password" required>
-    <p id="signinErr" class="err" role="alert"></p>
-    <button type="submit">Log in</button>
-  </form>
-</div>
 <nav id="rail" aria-label="Sections">
   <div class="logo" title="Marrow">M</div>
   <div id="nav"></div>
@@ -1028,7 +1015,6 @@ html[data-theme] #palBtn::after{content:"Ctrl K";margin-left:auto;font:500 11px/
   <button id="palBtn" data-act="palette" title="Search everything, or paste a link to add it (Ctrl K)"></button>
   <button id="setBtn" data-view="settings"></button>
   <button id="themeBtn" data-act="theme"></button>
-  <button id="outBtn" data-act="logout" title="Log out"></button>
 </nav>
 <div id="page"></div>
 <div id="reader" hidden>
@@ -1154,23 +1140,8 @@ const fname = s => String(s).replace(/[^\w ]+/g, '').trim().slice(0, 60) || 'mar
 
 // ---------- storage: everything lives in the server's SQLite database ----------
 const JH = { 'Content-Type': 'application/json' };
-// Accounts are made by the admin (no sign-up). A 401 anywhere shows the login form, then the request is repeated, so nothing in progress is lost.
-let signing;
-const signIn = () => signing ||= new Promise(ok => {
-  const box = $('#signin'), f = $('#signinForm'), err = $('#signinErr'), btn = f.querySelector('button');
-  box.hidden = false; $('#siEmail').focus();
-  f.onsubmit = async e => {
-    e.preventDefault(); err.textContent = ''; btn.disabled = true;
-    try {
-      const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email.value, password: f.password.value }) });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'could not log in');
-      f.password.value = ''; box.hidden = true; signing = null; ok();
-    } catch (x) { err.textContent = x.message; } finally { btn.disabled = false; }
-  };
-});
-async function api(path, opts, again) {
+async function api(path, opts) {
   const r = await fetch('/api/' + path, opts), isJ = r.headers.get('content-type')?.includes('json');
-  if (r.status === 401 && !again) { await signIn(); return api(path, opts, true); }
   if (!r.ok) throw new Error(isJ ? (await r.json()).error : r.statusText);
   return isJ ? r.json() : r.arrayBuffer();
 }
@@ -2079,7 +2050,7 @@ const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', disp
 function renderRail() {
   const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}${v === 'discover' && news ? ((c) => c ? `<span class="n">${c}</span>` : '')(news.filter(x => !seen.has(x.link)).length) : ''}</button>`).join('');
-  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : ''; $('#outBtn').innerHTML = ic('out', 20) + 'Log out';
+  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : '';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
   $('#status').textContent = working;
   try { history.replaceState(null, '', view === 'read' && P ? `#/read/${P.id}/${tab}` : `#/${view}${view === 'notebook' && N ? '/' + N : ''}`); } catch {} // the screen lives in the URL so a reload comes back to it
@@ -2651,7 +2622,6 @@ document.addEventListener('keydown', e => {
 const ACT = {
   tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
   look: el => { const v = el.dataset.v; try { localStorage.look = v; } catch {} vt(() => { v ? document.documentElement.dataset.look = v : delete document.documentElement.dataset.look; render(); }); },
-  logout: async () => { await fetch('/api/logout', { method: 'POST' }).catch(() => {}); location.reload(); },
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
   palette: () => { palPick = null; $('#palq').value = ''; $('#palq').placeholder = 'Jump to a source, a note or a page. Or paste a link to add it.'; palI = 0; palette(); $('#pal').showModal(); },

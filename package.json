@@ -7,7 +7,8 @@
   },
   "scripts": {
     "start": "node --env-file=.env server.js",
-    "test": "node --env-file=.env --env-file=.env.test test.js && node test-frontend.js",
-    "test:ui": "node --env-file=.env.test test-ui.mjs"
+    "test": "node --env-file=.env test.js && node test-frontend.js",
+    "test:ui": "node test-ui.mjs",
+    "migrate": "node --env-file=.env --env-file=.env.migrate migrate.js"
   }
 }

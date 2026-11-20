@@ -12,16 +12,16 @@ Everything is in `index.html`: the stylesheet, the page skeleton, and one `<scri
 |---|---|
 | `<head>` | CDN scripts (Editor.js and its plugins, Cytoscape, KaTeX, DOMPurify, Readability, PDF.js). A tiny inline script applies `?look=` and `?theme=` before first paint. |
 | `<style>` | Base styles, then every look between `/* LOOKS-BEGIN */` and `/* LOOKS-END */`, then the shell every look shares: sidebar, wordmark and pill shapes (see [looks](looks.md)). |
-| `<body>` | `#signin` (login form), `#rail` (left navigation), `#page` (every screen except the reader), `#reader` (source plus study panel), the selection toolbar `#sel`, and dialogs `#pal` (command palette), `#peek` (matrix cell) and `#sure` (confirmations). |
+| `<body>` | `#rail` (left navigation), `#page` (every screen except the reader), `#reader` (source plus study panel), the selection toolbar `#sel`, and dialogs `#pal` (command palette), `#peek` (matrix cell) and `#sure` (confirmations). |
 | module script | Sections marked `// ---------- name ----------`, in this order: helpers, storage, AI, state, transcription, adding sources, feeds, readers, study panel, pages, export/backup/migration, notebook, actions, reader tools, selection toolbar, boot. |
 
 ## Talking to the server
 
-- `api(path, opts)` wraps `fetch('/api/' + path)`. On a `401` it shows the login form (`signIn()`), waits for a successful login, then repeats the request, so work in progress is not lost.
+- `api(path, opts)` wraps `fetch('/api/' + path)` and turns an error response into a thrown `Error` with the server's message. There is no login step.
 - `save(p, parts)` queues every item save behind the one before it, so an older save can never land after a newer one. The source text (`parts`) is sent only when it changed.
 - `saveNote()`, `saveProjects()` and `log()` (activity) save notebook pages, the project list and study activity.
 
-> The comment above the storage section still says "everything lives in the server's SQLite database". Storage is in Supabase now; see [database](../database/schema.md).
+Everything is stored by the local backend; see [database](../database/schema.md).
 
 ## State and rendering
 

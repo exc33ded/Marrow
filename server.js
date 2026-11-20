@@ -1,12 +1,12 @@
-// Marrow server: serves the app and proxies AI calls, page fetches and paper search. Accounts, the library and PDFs live in Supabase
-// (Auth, Postgres with row-level security, Storage); the server only ever talks to Supabase as the logged-in user.
+// Marrow server: serves the app, keeps the library and PDFs in local SQLite, and proxies AI calls, page fetches and paper search.
 // Run: node --env-file=.env server.js
 const http = require('http'), fs = require('fs'), path = require('path'), net = require('net'), dns = require('dns').promises;
 const { randomBytes, createCipheriv, createDecipheriv } = require('crypto');
+const local = require('./local');
 
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || '127.0.0.1'; // local only; set HOST=0.0.0.0 to reach it from other devices or a host's proxy
-const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // only Whisper's downloads live here now
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // the database, PDFs and Whisper's downloads all live here
 // Free models only, tried in order until one answers. Override with MODELS=a,b,c in .env.
 const MODELS = (process.env.MODELS ||
   'baidu/ernie-5.5-flash-preview:free,nvidia/nemotron-3-ultra-550b-a55b:free,google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,openrouter/free'
@@ -16,54 +16,15 @@ const VISION = (process.env.VISION_MODELS ||
   'nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,openrouter/free'
 ).split(',');
 
-// ---------- Supabase ----------
-const SB = (process.env.SUPABASE_URL || '').replace(/\/+$/, ''), PK = process.env.SUPABASE_PUBLISHABLE_KEY, APP_KEY = Buffer.from(process.env.APP_SECRET || '', 'hex');
-if (!SB || !PK || APP_KEY.length !== 32) {
-  console.error('Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and APP_SECRET (64 hex characters) in .env.\nNew secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+// ---------- local store ----------
+const APP_KEY = Buffer.from(process.env.APP_SECRET || '', 'hex');
+if (APP_KEY.length !== 32) {
+  console.error('Set APP_SECRET (64 hex characters) in .env.\nNew secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
   process.exit(1);
 }
-const sb = (p, { token, method = 'GET', body, headers } = {}) => fetch(SB + p, {
-  method, signal: AbortSignal.timeout(120000), body: body === undefined || Buffer.isBuffer(body) ? body : JSON.stringify(body),
-  headers: { apikey: PK, ...(token && { Authorization: 'Bearer ' + token }), ...(body !== undefined && !Buffer.isBuffer(body) && { 'Content-Type': 'application/json' }), ...headers } });
-// Postgres through PostgREST, as the user: row-level security does the isolation, so no query here filters by user.
-async function db(ctx, p, o) {
-  const r = await sb('/rest/v1/' + p, { token: ctx.token, ...o }), t = await r.text();
-  if (!r.ok) { let m; try { m = JSON.parse(t).message; } catch {} throw fail(r.status >= 500 ? 502 : [401, 403].includes(r.status) ? r.status : 400, m || 'the database refused that'); }
-  return t ? JSON.parse(t) : null;
-}
-const rpc = (ctx, fn, args = {}) => db(ctx, 'rpc/' + fn, { method: 'POST', body: args });
-const upsert = (ctx, table, rows, on) => db(ctx, `${table}?on_conflict=${on}`, { method: 'POST', body: rows, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } });
-const settingsOf = async ctx => Object.fromEntries((await db(ctx, 'settings?select=k,v')).map(r => [r.k, r.v]));
+const S = () => local.settingsOf();
 
-// Sessions: Supabase's access and refresh tokens live in HttpOnly cookies, so page scripts never see them.
-// A verified token is remembered for 5 minutes so each request doesn't call Supabase Auth; an expired one is refreshed from the refresh cookie.
-const cookies = req => Object.fromEntries((req.headers.cookie || '').split(/;\s*/).filter(c => c.includes('=')).map(c => { const i = c.indexOf('='); return [c.slice(0, i), decodeURIComponent(c.slice(i + 1))]; }));
-function setSession(req, res, t) {
-  const secure = req.headers['x-forwarded-proto'] === 'https' || req.socket.encrypted ? '; Secure' : '';
-  const c = (k, v, age) => `${k}=${encodeURIComponent(v)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure}`;
-  res.setHeader('Set-Cookie', t ? [c('mw_at', t.access_token, 2592000), c('mw_rt', t.refresh_token, 2592000)] : [c('mw_at', '', 0), c('mw_rt', '', 0)]);
-}
-const verified = new Map(), refreshing = new Map();
-async function whoIs(token) {
-  const hit = verified.get(token); if (hit && hit.until > Date.now()) return hit;
-  const r = await sb('/auth/v1/user', { token }); if (!r.ok) return null;
-  const u = await r.json(), v = { token, uid: u.id, email: u.email, until: Date.now() + 5 * 60e3 };
-  verified.set(token, v); if (verified.size > 500) verified.delete(verified.keys().next().value);
-  return v;
-}
-async function session(req, res) {
-  const { mw_at, mw_rt } = cookies(req);
-  let v = mw_at && await whoIs(mw_at);
-  if (!v && mw_rt) { // concurrent requests share one refresh: the refresh token is single-use
-    if (!refreshing.has(mw_rt)) refreshing.set(mw_rt, sb('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: mw_rt } }).then(r => r.ok ? r.json() : null).catch(() => null).finally(() => setTimeout(() => refreshing.delete(mw_rt), 15000)));
-    const t = await refreshing.get(mw_rt);
-    if (t) { setSession(req, res, t); v = await whoIs(t.access_token); }
-  }
-  if (!v) throw fail(401, 'log in');
-  return v;
-}
-
-// Each reader's AI keys are stored encrypted with APP_SECRET, so reading the database (or a backup) does not reveal them. They are decrypted only here, to call the provider.
+// AI keys are stored encrypted with APP_SECRET, so reading the database (or a backup) does not reveal them. They are decrypted only here, to call the provider.
 const seal = s => {
   if (!s) return '';
   const iv = randomBytes(12), c = createCipheriv('aes-256-gcm', APP_KEY, iv), ct = Buffer.concat([c.update(s, 'utf8'), c.final()]);
@@ -75,7 +36,7 @@ const unseal = s => {
   catch { return ''; } // wrong APP_SECRET: the reader has to enter the key again
 };
 
-// AI settings of one reader (S = their settings rows). The server supplies no key of its own: each reader brings their own.
+// AI settings (S = the settings rows). The server supplies no key of its own.
 // Providers each have their own address and key; "chain" and "vision" are ordered lists of { p: provider id, m: model } tried top to bottom.
 const isOR = url => /(^|\.)openrouter\.ai$/.test(new URL(url).hostname);
 const conf = S => {
@@ -85,13 +46,8 @@ const conf = S => {
   return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: S.paid === '1', embed: jsonOf('embed') };
 };
 
-// ponytail: an item is saved whole, so its cards and notes are rewritten each time (inside the put_item function). Diff them if items grow to thousands of cards.
-const putItem = (ctx, id, { cards = [], notes = [], parts, kind, title, url, project, done, added, opened, id: _, ...data }) =>
-  rpc(ctx, 'put_item', { p_id: id, p: { kind, title: String(title || 'Untitled'), url, project: String(project || ''), done: done ? 1 : 0, added: +added || Date.now(), opened, data, cards, notes,
-    parts: Array.isArray(parts) ? parts.map(p => ({ t: p.t, html: p.html, body: String(p.body ?? '') })) : null } });
-const drop = r => { for (const k in r) if (r[k] === null) delete r[k]; return { ...r }; }; // NULL columns become absent fields
-// Full-text search over the reader's library. \x01 and \x02 mark the matched words (the client escapes, then styles them).
-const search = (ctx, q, phrase) => (q.match(/[\p{L}\p{N}]+/gu) || []).length ? rpc(ctx, 'search_parts', { q, phrase: !!phrase }) : [];
+const putItem = (id, b) => local.putItem(id, b);
+const search = (q, phrase) => local.searchParts(q, phrase);
 
 
 // ---------- http helpers ----------
@@ -127,10 +83,10 @@ async function fetchPublic(link) {
 }
 
 // A model that just failed is skipped for 10 minutes, so one flaky provider doesn't slow every request.
-const cooling = new Map(); // keyed by reader, provider and model
+const cooling = new Map(); // keyed by provider and model
 const headers = p => ({ 'Content-Type': 'application/json', 'X-Title': 'Marrow', ...(p.key && { Authorization: `Bearer ${p.key}`, ...(/anthropic\.com$/.test(new URL(p.url).hostname) && { 'x-api-key': p.key, 'anthropic-version': '2023-06-01' }) }) });
-async function ai(uid, c, messages) {
-  const errs = [], badKey = new Set(), ck = (p, m) => uid + '|' + p + '|' + m;
+async function ai(c, messages) {
+  const errs = [], badKey = new Set(), ck = (p, m) => p + '|' + m;
   const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.chain;
   const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now()));
   for (const { p: pid, m: model } of open.length ? open : all) {
@@ -178,11 +134,11 @@ async function embed(c, texts) {
   return v;
 }
 // Embed the parts of one source that have no vector yet.
-async function embedItem(ctx, c, id) {
-  const rows = await db(ctx, `parts?item_id=eq.${id}&emb=is.null&select=id,body&order=n`);
+async function embedItem(c, id) {
+  const rows = local.partsWithoutEmb(id);
   for (let i = 0; i < rows.length; i += 64) {
     const b = rows.slice(i, i + 64), v = await embed(c, b.map(r => r.body));
-    await rpc(ctx, 'set_emb', { p: b.map((r, k) => ({ id: r.id, v: v[k] })), m: c.embed.m });
+    local.setEmb(b.map((r, k) => ({ id: r.id, v: v[k] })), c.embed.m);
   }
 }
 
@@ -297,8 +253,9 @@ async function youtubeAudio(vid, res) {
   const out = path.join(WH, 'yt-' + vid), pre = path.basename(out) + '.';
   for (const f of fs.readdirSync(WH)) if (f.startsWith(pre)) fs.rmSync(path.join(WH, f), { force: true }); // a leftover from an earlier try
   await run(exe, ['-f', 'bestaudio[ext=m4a]/bestaudio', '--no-playlist', '--quiet', '--no-progress', '-o', out + '.%(ext)s', 'https://www.youtube.com/watch?v=' + vid]).catch(e => { throw fail(502, e.message); });
-  const file = fs.readdirSync(WH).map(f => path.join(WH, f)).find(f => f.startsWith(pre));
-  if (!file) throw fail(502, 'YouTube sent no audio');
+  const name = fs.readdirSync(WH).find(f => f.startsWith(pre));
+  if (!name) throw fail(502, 'YouTube sent no audio');
+  const file = path.join(WH, name);
   res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': fs.statSync(file).size });
   await pipeline(fs.createReadStream(file), res).catch(() => res.destroy()).finally(() => fs.rmSync(file, { force: true }));
 }
@@ -357,7 +314,6 @@ async function youtubeCaptions(vid) {
 // ---------- routes ----------
 // Names this server may be reached by, besides localhost and plain IP addresses: ALLOWED_HOSTS=marrow.example.com,...
 const HOSTS = (process.env.ALLOWED_HOSTS || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
-const store = (uid, id) => `/storage/v1/object/files/${uid}/${id}.pdf`;
 http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://x'), M = req.method, p = url.pathname, q = k => url.searchParams.get(k) || '';
@@ -369,54 +325,37 @@ http.createServer(async (req, res) => {
     if (p.startsWith('/api/') && /^(cross-site|same-site)$/.test(req.headers['sec-fetch-site'] || '')) throw fail(403, 'cross-site request refused');
 
     if (M === 'GET' && (p === '/' || p === '/index.html')) return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8');
-    // Accounts are made by the admin in the Supabase dashboard; there is no sign-up route. Every other /api route needs a logged-in reader.
-    if (p === '/api/login' && M === 'POST') {
-      const { email, password } = await json(req, 1e4);
-      const r = await sb('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: String(email || '').trim(), password: String(password || '') } });
-      if (r.status === 429) throw fail(429, 'too many attempts: wait a minute and try again');
-      if (r.status >= 500) throw fail(502, 'the login service is not answering');
-      const t = await r.json().catch(() => ({}));
-      if (!r.ok || !t.access_token) throw fail(401, 'wrong email or password');
-      setSession(req, res, t); return send(res, 200, { email: t.user?.email });
-    }
-    if (p === '/api/logout' && M === 'POST') {
-      const { mw_at } = cookies(req); if (mw_at) { verified.delete(mw_at); sb('/auth/v1/logout', { method: 'POST', token: mw_at }).catch(() => {}); }
-      setSession(req, res, null); return send(res, 200, {});
-    }
-    const ctx = await session(req, res), S = () => settingsOf(ctx);
-    if (p === '/api/me') return send(res, 200, { email: ctx.email });
-
-    if (M === 'GET' && p === '/api/library') return send(res, 200, await rpc(ctx, 'library'));
+    if (M === 'GET' && p === '/api/library') return send(res, 200, local.library());
     if (M === 'PUT' && p === '/api/projects') { // project names, so a project with nothing in it yet is kept too
       const b = await json(req, 1e5); if (!Array.isArray(b.list)) throw fail(400, 'list must be an array');
-      await upsert(ctx, 'settings', [{ k: 'projects', v: JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean)) }], 'user_id,k'); return send(res, 200, {});
+      local.saveSettings([{ k: 'projects', v: JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean)) }]); return send(res, 200, {});
     }
-    if (M === 'GET' && p === '/api/search') return send(res, 200, await search(ctx, q('q'), q('phrase')));
+    if (M === 'GET' && p === '/api/search') return send(res, 200, search(q('q'), q('phrase')));
     if (M === 'POST' && p === '/api/retrieve') { // the passages that best answer a question; item omitted = the whole library
-      const b = await json(req, 1e5), c = conf(await S()), query = String(b.q || '').trim();
+      const b = await json(req, 1e5), c = conf(S()), query = String(b.q || '').trim();
       if (!query) throw fail(400, 'q required');
       const [e] = await embed(c, [query]);
-      return send(res, 200, await rpc(ctx, 'match_parts', { qe: e, q: query, m: c.embed.m, k: 12, only_item: b.item ? String(b.item) : null }));
+      return send(res, 200, local.matchParts({ qe: e, q: query, m: c.embed.m, k: 12, only_item: b.item ? String(b.item) : null }));
     }
     if (M === 'POST' && p === '/api/embed') { // embed what has no vector yet: one source, or the whole library
-      const b = await json(req, 1e4), c = conf(await S());
+      const b = await json(req, 1e4), c = conf(S());
       if (!c.embed) throw fail(400, 'pick an embedding model in Settings');
-      const ids = b.all ? (await db(ctx, 'items?select=id')).map(r => r.id) : [String(b.item || '')];
-      for (const id of ids) if (/^[\w-]{1,64}$/.test(id)) await embedItem(ctx, c, id);
+      const ids = b.all ? local.allItemIds() : [String(b.item || '')];
+      for (const id of ids) if (/^[\w-]{1,64}$/.test(id)) await embedItem(c, id);
       return send(res, 200, { items: ids.length });
     }
     if (M === 'GET' && p === '/api/discover') return send(res, 200, await discover(q('q')));
     if (M === 'POST' && p === '/api/ai') {
       const { messages } = await json(req, 6e6); // source text plus one cropped image
       if (!Array.isArray(messages)) throw fail(400, 'messages required');
-      return send(res, 200, await ai(ctx.uid, conf(await S()), messages));
+      return send(res, 200, await ai(conf(S()), messages));
     }
     if (p === '/api/settings' && M === 'GET') { // keys never leave the server: only whether there is one, and its last four characters
-      const c = conf(await S());
+      const c = conf(S());
       return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, embed: c.embed, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
     }
     if (p === '/api/settings' && M === 'PUT') {
-      const b = await json(req, 1e5); let have = []; try { have = JSON.parse((await S()).providers) || []; } catch {}
+      const b = await json(req, 1e5); let have = []; try { have = JSON.parse(S().providers) || []; } catch {}
       if (!Array.isArray(b.providers) || !b.providers.length) throw fail(400, 'add at least one provider');
       const ids = new Set(), providers = b.providers.map(x => {
         const id = String(x.id || ''), url = String(x.url || '').trim(), name = String(x.name || '').trim() || url;
@@ -428,19 +367,20 @@ http.createServer(async (req, res) => {
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
       const chain = clean(b.chain); if (!chain.length) throw fail(400, 'pick at least one model');
       const vision = clean(b.vision);
-      await upsert(ctx, 'settings', [{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }], 'user_id,k');
-      for (const k of cooling.keys()) if (k.startsWith(ctx.uid + '|')) cooling.delete(k);
+      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
+      cooling.clear();
       return send(res, 200, {});
     }
     if (p === '/api/settings/models' && M === 'POST') { // the key comes from the form if typed, else the saved one for that provider
-      const b = await json(req, 1e5), url = String(b.url || '').trim().replace(/\/+$/, '');
+      const b = await json(req, 1e5), url = String(b.url || '').trim().replace(/\/+$/, ''), typed = String(b.key || '').trim();
       try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw fail(400, 'the API address must start with http:// or https://'); }
-      const saved = conf(await S()).providers.find(x => x.id === b.id);
-      return send(res, 200, await offered({ name: String(b.name || '').trim() || url, url, key: String(b.key || '').trim() || (b.clearKey ? '' : saved?.key || '') }));
+      const saved = conf(S()).providers.find(x => x.id === b.id);
+      const reuse = !typed && !b.clearKey && saved?.key, target = reuse && saved.url ? saved.url : url;
+      return send(res, 200, await offered({ name: String(b.name || '').trim() || target, url: target, key: typed || (b.clearKey ? '' : saved?.key || '') }));
     }
-    if (p === '/api/settings/test' && M === 'POST') { const b = await json(req, 1e4), c = conf(await S()); if (b.p && b.m) c.chain = [{ p: String(b.p), m: String(b.m) }]; /* one model, or the whole saved list */ const r = await ai(ctx.uid, c, [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
-    // ponytail: Whisper and yt-dlp run on this server's computer and are shared by every reader. Fine on your own machine; a small free host can't run them.
-    if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState(await S()));
+    if (p === '/api/settings/test' && M === 'POST') { const b = await json(req, 1e4), c = conf(S()); if (b.p && b.m) c.chain = [{ p: String(b.p), m: String(b.m) }]; /* one model, or the whole saved list */ const r = await ai(c, [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
+    // ponytail: Whisper and yt-dlp run on this computer. Fine on your own machine; a small free host can't run them.
+    if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState(S()));
     if (p === '/api/whisper' && (M === 'POST' || M === 'DELETE')) { // what = model:<id> | program | ytdlp
       const what = q('what'), id = what.startsWith('model:') && what.slice(6);
       if (id ? !WMODELS.some(m => m[0] === id) : !['program', 'ytdlp'].includes(what)) throw fail(400, 'unknown download');
@@ -452,16 +392,16 @@ http.createServer(async (req, res) => {
         jobs[what]?.ac?.abort(); delete jobs[what];
         fs.rmSync(id ? modelFile(id) : what === 'program' ? BIN : YTDLP, { recursive: true, force: true });
       }
-      return send(res, 200, whisperState(await S()));
+      return send(res, 200, whisperState(S()));
     }
     if (p === '/api/whisper/use' && M === 'PUT') {
       if (!haveModels().includes(q('id'))) throw fail(400, 'download that model first');
-      await upsert(ctx, 'settings', [{ k: 'whisper', v: q('id') }], 'user_id,k'); return send(res, 200, whisperState(await S()));
+      local.saveSettings([{ k: 'whisper', v: q('id') }]); return send(res, 200, whisperState(S()));
     }
     if (p === '/api/transcribe') {
-      const id = q('id'), key = 'tx:' + ctx.uid + ':' + id, j = jobs[key];
+      const id = q('id'), key = 'tx:' + id, j = jobs[key];
       if (!/^[\w-]{1,64}$/.test(id)) throw fail(400, 'which source?');
-      if (M === 'POST') { await transcribe(id, req, await S(), key); return send(res, 200, {}); }
+      if (M === 'POST') { await transcribe(id, req, S(), key); return send(res, 200, {}); }
       if (M === 'DELETE') { j?.ch?.kill(); delete jobs[key]; return send(res, 200, {}); }
       if (M === 'GET') { if (!j) throw fail(404, 'nothing is being transcribed'); if (j.segs || j.error) delete jobs[key]; return send(res, 200, { pct: j.pct, segs: j.segs, error: j.error }); }
     }
@@ -475,16 +415,16 @@ http.createServer(async (req, res) => {
     }
     if (M === 'POST' && p === '/api/activity') {
       const { kind, item_id } = await json(req, 1e4);
-      await db(ctx, 'activity', { method: 'POST', body: { ts: Date.now(), kind: String(kind), item_id: item_id ?? null }, headers: { Prefer: 'return=minimal' } });
+      local.addActivity(kind, item_id);
       return send(res, 200, {});
     }
     if (M === 'PUT' && p === '/api/feeds') {
       const f = await json(req, 1e4);
       if (!/^https?:\/\//.test(f.url)) throw fail(400, 'feed address required');
-      await upsert(ctx, 'feeds', [{ url: f.url, title: String(f.title || f.url), added: Date.now() }], 'user_id,url');
+      local.saveFeed(f);
       return send(res, 200, {});
     }
-    if (M === 'DELETE' && p === '/api/feeds') { await db(ctx, 'feeds?url=eq.' + encodeURIComponent(q('url')), { method: 'DELETE' }); return send(res, 200, {}); }
+    if (M === 'DELETE' && p === '/api/feeds') { local.deleteFeed(q('url')); return send(res, 200, {}); }
     if (M === 'GET' && p === '/api/fetch') {
       const { r, url: final } = await fetchPublic(q('url'));
       if (!r.ok) throw fail(502, `the site answered ${r.status}`);
@@ -498,26 +438,24 @@ http.createServer(async (req, res) => {
     const m = p.match(/^\/api\/(items|files|notes)\/([\w-]{1,64})(\/parts)?$/);
     if (m) {
       const [, what, id, parts] = m;
-      if (what === 'items' && parts && M === 'GET') return send(res, 200, (await db(ctx, `parts?item_id=eq.${id}&select=n,t,body,html&order=n`)).map(drop));
+      if (what === 'items' && parts && M === 'GET') return send(res, 200, local.getParts(id));
       if (what === 'items' && M === 'PUT') {
-        const b = await json(req), c = conf(await S()); await putItem(ctx, id, b);
-        if (Array.isArray(b.parts) && c.embed) embedItem(ctx, c, id).catch(e => console.warn('embed failed ->', e.message)); // in the background: a failure never blocks the save
+        const b = await json(req), c = conf(S()); putItem(id, b);
+        if (Array.isArray(b.parts) && c.embed) embedItem(c, id).catch(e => console.warn('embed failed ->', e.message)); // in the background: a failure never blocks the save
         return send(res, 200, {});
       }
-      if (what === 'items' && M === 'DELETE') { await db(ctx, 'items?id=eq.' + id, { method: 'DELETE' }); await sb(store(ctx.uid, id), { method: 'DELETE', token: ctx.token }).catch(() => {}); return send(res, 200, {}); }
-      if (what === 'notes' && M === 'PUT') { const n = await json(req, 5e6); await upsert(ctx, 'notes', [{ id, title: n.title, project: n.project, note: n.note, updated: Date.now() }], 'id'); return send(res, 200, {}); }
-      if (what === 'notes' && M === 'DELETE') { await db(ctx, `notes?id=eq.${id}&item_id=is.null`, { method: 'DELETE' }); return send(res, 200, {}); }
+      if (what === 'items' && M === 'DELETE') { local.deleteItem(id); return send(res, 200, {}); }
+      if (what === 'notes' && M === 'PUT') { const n = await json(req, 5e6); local.saveNote(id, n); return send(res, 200, {}); }
+      if (what === 'notes' && M === 'DELETE') { local.deleteNote(id); return send(res, 200, {}); }
       if (what === 'files' && M === 'PUT') {
         const buf = await slurp(req, 150e6);
         if (!buf.subarray(0, 1024).includes('%PDF-')) throw fail(415, 'not a PDF');
-        const r = await sb(store(ctx.uid, id), { method: 'POST', token: ctx.token, body: buf, headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'true' } });
-        if (!r.ok) { const e = await r.json().catch(() => ({})); throw fail(r.status === 413 ? 413 : r.status >= 500 ? 502 : 400, e.message || `the file store refused the PDF (${r.status})`); }
+        local.putFile(id, buf);
         return send(res, 200, {});
       }
       if (what === 'files' && M === 'GET') {
-        // the unique ?t= keeps Supabase's CDN from serving a PDF that was just deleted or replaced
-        const r = await sb(store(ctx.uid, id).replace('/object/', '/object/authenticated/') + '?t=' + Date.now(), { token: ctx.token });
-        return r.ok ? send(res, 200, Buffer.from(await r.arrayBuffer()), 'application/pdf') : send(res, 404, { error: 'the PDF file is missing' });
+        const buf = local.getFile(id);
+        return buf ? send(res, 200, buf, 'application/pdf') : send(res, 404, { error: 'the PDF file is missing' });
       }
     }
     send(res, 404, { error: 'not found' });
