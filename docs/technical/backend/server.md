@@ -11,29 +11,30 @@ covers: [server.js]
 1. **Host.** It must be `localhost`, an IP address, or a name in `ALLOWED_HOSTS`. This blocks DNS rebinding.
 2. **Origin.** If an `Origin` header is sent, it must match `Host`.
 3. **Cross-site.** `/api/*` refuses `Sec-Fetch-Site: cross-site` or `same-site`, which catches `<img>`/`<script>` GETs that carry no `Origin`.
-4. **Login.** Every route except `/`, `/api/login` and `/api/logout` needs a session (`session()`). Otherwise it answers `401 log in`.
+
+There is no session check: this is a single-user local server. Anyone who can reach the port has full access, so keep the default `HOST=127.0.0.1` unless you provide your own access control.
 
 ## Routes
 
 | Method & path | Does |
 |---|---|
 | `GET /` | serves `index.html` |
-| `POST /api/login`, `POST /api/logout` | see [auth](auth-and-ai.md) |
-| `GET /api/me` | the logged-in email |
-| `GET /api/library` | everything at start, via the `library()` database function |
-| `PUT /api/items/:id` | save a source with its cards, notes and, optionally, `parts` (`put_item`) |
+| `GET /api/library` | everything at start, via `local.library()` |
+| `PUT /api/items/:id` | save a source with its cards, notes and, optionally, `parts` (`local.putItem()`) |
 | `GET /api/items/:id/parts` | a source's text |
 | `DELETE /api/items/:id` | delete the source and its PDF |
-| `PUT` / `GET /api/files/:id` | upload (must start with `%PDF-`, max 150 MB) / download a PDF from Storage |
+| `PUT` / `GET /api/files/:id` | upload (must start with `%PDF-`, max 150 MB) / download a PDF from its project folder (see [library folder](../database/schema.md#library-folder)) |
+| `GET` / `POST /api/store` | where the library lives (`dir` is null until chosen) / choose it on first launch or move it; refused unless the server listens on loopback with no `ALLOWED_HOSTS` |
 | `PUT` / `DELETE /api/notes/:id` | save / delete a notebook page |
 | `PUT /api/projects` | the project-name list |
-| `GET /api/search?q=&phrase=` | full-text search (`search_parts`) |
+| `GET /api/search?q=&phrase=` | full-text search (`local.searchParts()`) |
 | `GET /api/discover?q=` | OpenAlex search, abstracts rebuilt from the inverted index |
 | `PUT` / `DELETE /api/feeds` | follow / unfollow a feed |
 | `POST /api/activity` | log a study event |
 | `GET /api/fetch?url=` | fetch a pasted link (below) |
 | `POST /api/ai` | AI proxy |
-| `POST /api/retrieve`, `POST /api/embed` | meaning-based search of a source or the library; embed what has no vector yet (see [auth-and-ai](auth-and-ai.md)) |
+| `POST /api/retrieve`, `POST /api/embed` | meaning-based search of a source or the library; embed what has no vector yet (see [keys-and-ai](auth-and-ai.md)) |
+| `POST /api/concept-near` | the concept map's similar-meaning links: `{ texts }` (3 to 3000 concepts) returns each one's 10 nearest neighbours and the `same` / `cross` cut-offs, or `{}` with no embedding model |
 | `GET` / `PUT /api/settings`, `POST /api/settings/models`, `POST /api/settings/test` | AI settings |
 | `/api/whisper`, `/api/whisper/use`, `/api/transcribe`, `/api/ytaudio`, `/api/ytsubs` | see [transcription](transcription.md) |
 

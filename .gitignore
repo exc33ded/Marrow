@@ -4,6 +4,7 @@ data/
 node_modules/
 package-lock.json
 .env.test
+.env.migrate
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/

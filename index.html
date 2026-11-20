@@ -70,7 +70,7 @@ ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-to
 @keyframes grow{from{transform:scaleX(0)}}
 @keyframes shim{from{background-position:100% 0}to{background-position:0 0}}
 @keyframes vtout{to{opacity:0}} @keyframes vtin{from{opacity:0}}
-.in>.wrap>*,#body.in>*,#doc.in>article,#doc.in>.vid,.in :is(.grid,.rows,.tiles)>*,.fxin{animation:rise .45s var(--e) backwards}
+.in>.wrap>*,#body.in>*,#doc.in>article,#doc.in>.vid,.in :is(.grid,.rows,.tiles)>*{animation:rise .45s var(--e) backwards}
 .in :is(.wrap,.grid,.rows,.tiles)>:nth-child(2),#body.in>:nth-child(2){animation-delay:35ms}
 .in :is(.wrap,.grid,.rows,.tiles)>:nth-child(3),#body.in>:nth-child(3){animation-delay:70ms}
 .in :is(.wrap,.grid,.rows,.tiles)>:nth-child(4),#body.in>:nth-child(4){animation-delay:105ms}
@@ -112,9 +112,9 @@ kbd{font:600 11px var(--f-body);border:1px solid currentColor;border-radius:5px;
 .addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px;box-shadow:var(--sh);margin:0 0 22px}
 .addbar input{border:0;background:none;font-size:15.5px;min-width:0} .addbar input:focus-visible{outline:0} .addbar:focus-within{border-color:var(--acc)}
 .heatwrap{padding-bottom:6px;--cs:14px}
-.heat{display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:5px;width:100%;font-size:11px;color:var(--muted)}
-.hm{grid-column:2;display:grid;grid-template-columns:repeat(53,1fr);column-gap:3px;height:14px} .hm span{white-space:nowrap}
-.hd{display:grid;grid-template-rows:repeat(7,1fr);row-gap:3px;align-items:center;line-height:1} .hd span:nth-child(1){grid-row:2} .hd span:nth-child(2){grid-row:4} .hd span:nth-child(3){grid-row:6}
+.heat{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:5px;width:100%;font-size:11px;color:var(--muted)}
+.hm{grid-column:2;display:grid;grid-template-columns:repeat(53,minmax(0,1fr));column-gap:3px;height:14px} .hm span{white-space:nowrap}
+.hd{display:grid;grid-template-rows:repeat(7,minmax(0,1fr));row-gap:3px;align-items:center;line-height:1;height:0;min-height:100%} /* the labels take the cells' height; sized by the labels, the square cells grew wider than the column */ .hd span:nth-child(1){grid-row:2} .hd span:nth-child(2){grid-row:4} .hd span:nth-child(3){grid-row:6}
 .hg{display:grid;grid-template-rows:repeat(7,auto);grid-auto-flow:column;grid-auto-columns:1fr;gap:3px} .hg i{aspect-ratio:1}
 .heat i,.hleg i{display:block;border-radius:2px;background:var(--h0)} .hleg i{width:var(--cs);height:var(--cs)}
 i[data-l="1"]{background:var(--h1)} i[data-l="2"]{background:var(--h2)} i[data-l="3"]{background:var(--h3)} i[data-l="4"]{background:var(--h4)}
@@ -284,6 +284,29 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 .k{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;background:var(--acc-bg);border-radius:var(--r2);padding:2px 8px;margin:1.3em 0 .4em}
 .badge{font:700 12px var(--f-body);color:var(--ok);float:right}
 .q{font:600 19px/1.4 var(--f-display)}
+/* study deck: flashcards stacked like a deck; grading slides the top card back in at its new depth. Only theme tokens, so every look restyles it. */
+.study{overflow-x:clip;overflow-clip-margin:0} /* the card flying out never adds a sideways scrollbar */
+.srow{display:flex;align-items:center;gap:12px} .scount{display:flex;gap:12px;font-weight:700;font-variant-numeric:tabular-nums;margin-left:auto}
+.scount .n{color:var(--web)} .scount .l{color:var(--acc)} .scount .r{color:var(--ok)}
+.sdeck{position:relative;aspect-ratio:5/3;max-width:560px;margin:30px auto 0;perspective:1600px;isolation:isolate}
+.scard{position:absolute;inset:0;transition:transform .45s cubic-bezier(.2,.8,.2,1)} .scard[data-act]{cursor:pointer}
+.sin{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,1.25,.5,1)} .scard.flip .sin{transform:rotateY(180deg)}
+.sface{position:absolute;inset:0;backface-visibility:hidden;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:calc(var(--r) * 3);box-shadow:0 1px 2px #0000002e,0 14px 28px -18px #00000080;display:grid;place-items:center;padding:34px 40px;text-align:center;overflow:auto}
+.sface::before{content:"";position:absolute;inset:9px;border:1px solid color-mix(in srgb,var(--acc) 22%,var(--line));border-radius:calc(var(--r) * 2);pointer-events:none}
+.scard:not([data-act]) .sface{box-shadow:0 1px 2px #00000024} /* only the top card casts the deep shadow, or a big deck turns into a smear */
+.sback{transform:rotateY(180deg);background:color-mix(in srgb,var(--acc-bg) 35%,var(--panel))} .sback blockquote{font-size:13px;text-align:left;margin:.6em 0 0}
+.sface .q{margin:0;font-size:21px} .sfrom{position:absolute;top:16px;left:0;right:0;padding:0 40px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swhere{position:absolute;left:50%;top:-14px;z-index:900;transform:translate(-50%,-6px);background:var(--acc);color:var(--on-pri,#fff);font-size:13px;font-weight:700;padding:5px 14px;border-radius:99px;box-shadow:0 4px 14px #0004;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+.swhere.on{opacity:1;transform:translate(-50%,0)}
+.sbar{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:58px auto 18px;max-width:460px;min-height:58px}
+.sbar button[data-g]{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px} .sbar small{font-weight:500;color:var(--muted);font-size:12px} .sbar p{flex-basis:100%;text-align:center;margin:0}
+.folders{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.folder{box-sizing:border-box;position:relative;display:block;color:var(--ink);text-decoration:none;background:var(--panel);border:1px solid var(--line);border-radius:var(--r2) calc(var(--r2) + 4px) calc(var(--r2) + 4px);padding:16px 14px 14px;margin-top:11px}
+.folder::before{content:"";position:absolute;left:-1px;top:-11px;width:44%;height:12px;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:calc(var(--r2) + 3px) calc(var(--r2) + 3px) 0 0}
+.folder:hover,.folder:focus-visible,.folder:hover::before,.folder:focus-visible::before{border-color:var(--acc)}
+.folder b{display:block;font:600 15px/1.3 var(--f-display);margin-bottom:6px} .folder small{color:var(--muted)} .folder .due{color:var(--acc);font-weight:700}
+.crow{display:flex;gap:12px;align-items:flex-start} .crow .muted p{margin:.2em 0 0} .cardform{display:grid;gap:8px}
+#keys{border:1px solid var(--line);border-radius:var(--r2);background:var(--panel);color:var(--ink);padding:18px 22px;box-shadow:var(--pop)} #keys h3{margin:0 0 8px} #keys td{padding:4px 14px 4px 0}
 .msg{margin:0 0 12px;padding:10px 12px;border-radius:var(--r);background:var(--panel);border:1px solid var(--line)}
 .msg.user{background:var(--acc-bg);border-color:transparent;margin-left:15%}
 .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc-bg);color:var(--acc);font:700 12px var(--f-body);margin-right:6px;vertical-align:2px}
@@ -291,7 +314,7 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 progress{width:100%;height:6px;accent-color:var(--ok)}
 .warn{color:#b58900;font-size:12.5px}
 .textLayer span.hl{background:#ffd60070;cursor:pointer}
-::highlight(find){background:#ffb14e99} ::highlight(findcur){background:#ff6a00}
+::highlight(find){background:#ffb14e99} ::highlight(findcur){background:#ff6a00} ::highlight(cite){background:#ffcf3399;text-decoration:underline;text-decoration-color:#e0531a;text-decoration-thickness:2px}
 .textLayer span.c2{background:#6fdc8c80} .textLayer span.c3{background:#ff8fb180}
 .textLayer span.ul{background:none;box-shadow:inset 0 -2.5px 0 #e0531a;cursor:pointer}
 .dot{width:22px;height:22px;min-height:0!important;padding:0;border-radius:50%!important;margin:6px 4px;border:2px solid #fff8!important}
@@ -301,7 +324,6 @@ progress{width:100%;height:6px;accent-color:var(--ok)}
 .mbar button{min-height:30px;padding:.1em .55em;margin:4px 4px 0 0}
 .mprev:not(:empty){border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin:6px 0}
 .mprev:not(:empty)::before{content:"Preview";display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-details.cardrow summary{cursor:pointer;font-weight:600;list-style-position:outside;margin-left:1em}
 body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer-events:none} body.snip #snipBtn{background:var(--acc);color:#fff}
 #snipbox{position:absolute;border:2px dashed var(--acc);background:color-mix(in srgb,var(--acc) 13%,transparent);pointer-events:none;z-index:5}
 #sel{position:fixed;z-index:20;display:none;background:#221f1a;border-radius:var(--r);padding:4px;gap:2px;box-shadow:0 4px 16px #0005;animation:pop .16s var(--e)}
@@ -316,12 +338,39 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 #pall button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;border-radius:var(--r);padding:.55em .7em} #pall button.on{background:var(--acc-bg)}
 #pall .grow{overflow:hidden;text-overflow:ellipsis}
 #status:empty{display:none}
+#status{padding-left:34px;left:auto;right:16px;border-radius:var(--r2);max-width:min(400px,80vw)} #status::before{position:absolute;left:14px;top:11px}
+#status b{display:block;font-weight:600} #status small{display:block;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere} #status small.bad{color:var(--vid)}
+#toast{white-space:pre-line}
+.mlegend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted);margin:10px 0} .mlegend span{display:inline-flex;align-items:center;gap:7px} .mlegend i{display:inline-block;flex:none}
+.k-dot{width:12px;height:12px;border-radius:50%;background:var(--muted)} .k-dot.acc{background:var(--acc)} .k-dot.gap{outline:2px dashed var(--ink);outline-offset:1px}
+.k-arrow{width:22px;border-top:1.5px solid var(--muted);position:relative} .k-arrow::after{content:"";position:absolute;right:-2px;top:-5.5px;border:4px solid transparent;border-left:6px solid var(--muted)}
+.k-dots{width:22px;border-top:2px dotted var(--muted)} .k-src{width:14px;height:10px;border-radius:3px;background:var(--ok)} .k-page{width:9px;height:9px;background:var(--ink);transform:rotate(45deg)}
+#node .rel{margin:0 0 10px} #node .rel p{margin:0 0 2px} #node .rel small{display:block;font-size:12.5px;line-height:1.45} #node .mstat{font-size:13px;margin-top:-4px}
+#node .explain{border-left:3px solid var(--acc);padding:2px 0 2px 12px;margin:0 0 14px} #node .explain blockquote{margin:4px 0 0;font-size:13px} #node .bad{color:var(--vid)}
+.set .okc{color:var(--ok)} .set .bad,#status .bad{color:var(--vid)}
+.prov{padding:12px 16px;margin:0 0 8px} .prov details{margin-top:6px} .prov summary{cursor:pointer;font-size:13px;width:fit-content}
+.phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap} .phead b{flex:1;font-size:15px} .phead button{min-width:0;width:auto}
+.pst{font-size:13px;font-weight:600;color:var(--muted);overflow-wrap:anywhere}
+.set .busy::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:7px;vertical-align:-1px;animation:spin 1s linear infinite}
+.set .mhead{margin:24px 0 8px}
+ol.chain{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}
+ol.chain li{display:flex;align-items:center;gap:10px;padding:4px 6px 4px 10px;min-height:42px;cursor:grab;background:var(--panel)} ol.chain li+li{border-top:1px solid var(--line)} ol.chain li:hover{background:var(--bg)}
+ol.chain .grip{color:var(--muted);opacity:.6} ol.chain .ix{min-width:1.3em;text-align:right;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+ol.chain code,.mlist code{background:none!important;border:0!important;padding:0!important} ol.chain code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px} ol.chain .tag{flex:none}
+ol.chain .mst{flex:none;max-width:40%;font-size:12.5px;font-weight:600;color:var(--muted)}
+ol.chain .ib{border-color:transparent!important;background:none!important;box-shadow:none!important;opacity:0} ol.chain li:hover .ib,ol.chain li:focus-within .ib{opacity:1} @media (hover:none){ol.chain .ib{opacity:1}}
+.madd{display:flex;gap:8px;margin-top:8px} .madd select{width:auto;flex:none} .madd input{flex:1;min-width:0} .madd button{flex:none;min-width:0;width:auto}
+.mlist:empty{display:none} .mlist{margin-top:6px;border:1px solid var(--line);border-radius:var(--r2);max-height:264px;overflow:auto;background:var(--panel);box-shadow:var(--sh)}
+.mlist button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0!important;border-radius:0!important;background:none;min-height:36px;padding:4px 12px!important;font-size:13px;box-shadow:none!important}
+.mlist button:hover,.mlist button:focus-visible{background:var(--acc-bg)} .mlist .mlhead{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 2px 12px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted);position:sticky;top:0;background:var(--panel)} .mlist .mlhead .ib{min-height:30px;height:30px}
+.set .mnote{margin:-4px 0 10px;font-size:13px}
+ol.chain .flag{flex:none;min-width:0!important;width:auto!important;min-height:26px;height:26px;padding:0 10px!important;font-size:12px;border-radius:99px;background:none;color:var(--muted);border:1px dashed var(--line)} ol.chain .flag[aria-pressed=true]{background:var(--acc-bg);color:var(--ink);border:1px solid var(--acc);font-weight:600} .mlist code{flex:1;min-width:0;background:none;padding:0;overflow-wrap:anywhere} .mlist p{margin:10px 12px;font-size:13px}
 #status::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;vertical-align:-1px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (max-width:900px){
   body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
   #rail{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px;justify-content:space-between} .logo,#rail .sp{display:none}
-  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn,#rail #setBtn,#rail #outBtn{display:none}
+  #rail button{width:auto;flex:1;min-width:0;font-size:9.5px} #rail #palBtn,#rail #setBtn{display:none}
   .wrap{padding:22px 16px 60px} .hero{font-size:32px}
   .addbar{flex-wrap:wrap} .addbar input{flex:1 1 100%}
   .nb{grid-template-columns:1fr;height:auto} .nbside{border-right:0;border-bottom:1px solid var(--line);max-height:32vh} .nbpage{padding:24px 18px} .bench{padding:10px 18px}
@@ -572,6 +621,7 @@ html[data-look=concourse] .mx td textarea:hover,html[data-look=concourse] .mx td
 /* misc */
 html[data-look=concourse] #status{background:#FFD100;color:#111;border:2px solid #111;border-radius:var(--r);font-weight:600}
 html[data-look=concourse] #status::before{border-color:#111;border-top-color:transparent}
+html[data-look=concourse] #status small{color:#2b2b2b} html[data-look=concourse] #status .bad{color:#8a0000}
 html[data-look=concourse] #toast{border:2px solid var(--fr);border-radius:var(--r)}
 html[data-look=concourse] #sure .danger{background:var(--vid);color:#fff;border:2px solid var(--fr);font-weight:700}
 html[data-look=concourse][data-theme=dark] #sure .danger{color:#111}
@@ -979,7 +1029,7 @@ html[data-look=studio] .msg{border-radius:var(--r2)} html[data-look=studio] .msg
 html[data-look=studio] :is(#peek,#sure,#pal){border:1px solid var(--line);border-radius:var(--rc);box-shadow:var(--pop)}
 html[data-look=studio] #sure .danger{background:var(--vid);border-color:var(--vid);color:#fff}
 html[data-look=studio][data-theme=dark] #sure .danger{color:#111}
-html[data-look=studio] :is(#status,#toast){border-radius:99px;box-shadow:var(--pop)}
+html[data-look=studio] :is(#status,#toast){border-radius:99px;box-shadow:var(--pop)} html[data-look=studio] #status{border-radius:18px}
 html[data-look=studio] :is(.askbar,.icons){border-radius:var(--r2);box-shadow:var(--pop)}
 html[data-look=studio] .lookcard{border-radius:var(--r2)} html[data-look=studio] .lookcard[aria-pressed=true]{outline:2px solid var(--acc);outline-offset:2px}
 html[data-look=studio] :is(.heat i,.hleg i){border-radius:3px}
@@ -1005,22 +1055,9 @@ html[data-theme] #rail .n{position:static;margin-left:auto;min-width:20px;text-a
 html[data-theme] #rail .sp{border-bottom:1px solid var(--line);margin:0 4px 8px}
 html[data-theme] #palBtn::after{content:"Ctrl K";margin-left:auto;font:500 11px/1 var(--f-body);color:inherit;opacity:.75;border:1px solid currentColor;border-radius:5px;padding:3px 5px}
 }
-#signin{position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;padding:16px}
-#signin form{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:28px;width:min(380px,100%);display:grid;gap:4px}
-#signin h2{margin:0 0 2px} #signin label{font-weight:600;margin-top:12px} #signin button{margin-top:18px;border-color:var(--acc);color:var(--acc);font-weight:600} #signin .err{color:var(--vid);min-height:1.4em;margin:8px 0 0}
 </style>
 </head>
 <body>
-<div id="signin" hidden>
-  <form id="signinForm" autocomplete="on">
-    <h2>Log in to Marrow</h2>
-    <small class="muted">Accounts are created by the person who runs this server. Ask them for one.</small>
-    <label for="siEmail">Email</label><input id="siEmail" name="email" type="email" autocomplete="username" required>
-    <label for="siPw">Password</label><input id="siPw" name="password" type="password" autocomplete="current-password" required>
-    <p id="signinErr" class="err" role="alert"></p>
-    <button type="submit">Log in</button>
-  </form>
-</div>
 <nav id="rail" aria-label="Sections">
   <div class="logo" title="Marrow">M</div>
   <div id="nav"></div>
@@ -1028,7 +1065,6 @@ html[data-theme] #palBtn::after{content:"Ctrl K";margin-left:auto;font:500 11px/
   <button id="palBtn" data-act="palette" title="Search everything, or paste a link to add it (Ctrl K)"></button>
   <button id="setBtn" data-view="settings"></button>
   <button id="themeBtn" data-act="theme"></button>
-  <button id="outBtn" data-act="logout" title="Log out"></button>
 </nav>
 <div id="page"></div>
 <div id="reader" hidden>
@@ -1062,6 +1098,10 @@ html[data-theme] #palBtn::after{content:"Ctrl K";margin-left:auto;font:500 11px/
 <datalist id="projects"></datalist>
 <dialog id="pal" aria-label="Jump to anything"><input id="palq" autocomplete="off" placeholder="Jump to a source, a note or a page. Or paste a link to add it." aria-label="Search everything"><div id="pall"></div></dialog>
 <dialog id="peek" aria-label="Reading a matrix cell"></dialog>
+<div id="keys" popover><h3>Keyboard</h3><table>
+  <tr><td><kbd>Space</kbd></td><td>Show the answer</td></tr><tr><td><kbd>1</kbd></td><td>Again: back after the next card</td></tr>
+  <tr><td><kbd>2</kbd></td><td>Hard: back in 3 cards</td></tr><tr><td><kbd>3</kbd></td><td>Good: back in the middle, or done if you knew it already</td></tr>
+  <tr><td><kbd>4</kbd></td><td>Easy: to the bottom, done for today</td></tr><tr><td><kbd>/</kbd> or <kbd>Ctrl K</kbd></td><td>Jump to anything</td></tr><tr><td><kbd>?</kbd></td><td>Show or hide this list</td></tr></table></div>
 <dialog id="sure"></dialog>
 <div id="status" role="status"></div>
 <div id="toast" role="status"></div>
@@ -1116,7 +1156,7 @@ const KIND = { pdf: ['Paper', 'file'], web: ['Article', 'globe'], video: ['Video
 const clock = t => t == null ? '' : (t >= 3600 ? Math.floor(t / 3600) + ':' + String(Math.floor(t / 60) % 60).padStart(2, '0') : Math.floor(t / 60)) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 // The AI always sees and cites [p.N] markers. What N means to the reader depends on the source: a page, a paragraph, or a moment in a video.
 const loc = (p, n) => !p || p.kind === 'pdf' ? 'p.' + n : p.kind === 'web' ? '¶' + n : clock(p.times?.[n - 1]) || '#' + n;
-const cite = (p, n) => `<a href="#" data-page="${+n}" data-pid="${esc(p.id)}">${esc(loc(p, +n))}</a>`;
+const cite = (p, n, q) => `<a href="#" data-page="${+n}" data-pid="${esc(p.id)}"${q ? ` data-q="${esc(q)}" title="Open the page and light up this sentence"` : ''}>${esc(loc(p, +n))}</a>`; // q: the quoted sentence, lit up when the page opens
 // ponytail: tiny markdown (headings, bold, code, bullets, source links). Swap in a real renderer if notes need tables or nested lists.
 const inline = (s, p) => s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\bp\.\s?(\d+)/g, (m, n) => p ? cite(p, n) : m);
 function md(s, p = P) {
@@ -1141,7 +1181,7 @@ const sure = (title, body, ok = 'Delete', danger = true) => new Promise(done => 
   d.returnValue = ''; d.onclick = e => { if (e.target === d) d.close(); }; d.onclose = () => done(d.returnValue === 'yes'); d.showModal();
 });
 let toastT;
-const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6000); };
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), Math.max(6000, m.length * 50)); }; // long messages (a list of failed models) stay up long enough to read
 // Motion. enter(): the next render inside these containers plays its entrance. vt(): cross-fade a whole-screen change where the browser can.
 const enter = (...els) => els.forEach(el => { el.classList.add('in'); clearTimeout(el._in); el._in = setTimeout(() => el.classList.remove('in'), 900); });
 const vt = fn => {
@@ -1154,41 +1194,49 @@ const fname = s => String(s).replace(/[^\w ]+/g, '').trim().slice(0, 60) || 'mar
 
 // ---------- storage: everything lives in the server's SQLite database ----------
 const JH = { 'Content-Type': 'application/json' };
-// Accounts are made by the admin (no sign-up). A 401 anywhere shows the login form, then the request is repeated, so nothing in progress is lost.
-let signing;
-const signIn = () => signing ||= new Promise(ok => {
-  const box = $('#signin'), f = $('#signinForm'), err = $('#signinErr'), btn = f.querySelector('button');
-  box.hidden = false; $('#siEmail').focus();
-  f.onsubmit = async e => {
-    e.preventDefault(); err.textContent = ''; btn.disabled = true;
-    try {
-      const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email.value, password: f.password.value }) });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'could not log in');
-      f.password.value = ''; box.hidden = true; signing = null; ok();
-    } catch (x) { err.textContent = x.message; } finally { btn.disabled = false; }
-  };
-});
-async function api(path, opts, again) {
+async function api(path, opts) {
   const r = await fetch('/api/' + path, opts), isJ = r.headers.get('content-type')?.includes('json');
-  if (r.status === 401 && !again) { await signIn(); return api(path, opts, true); }
   if (!r.ok) throw new Error(isJ ? (await r.json()).error : r.statusText);
   return isJ ? r.json() : r.arrayBuffer();
 }
 const send = (method, path, body) => api(path, { method, headers: JH, body: JSON.stringify(body) });
 // Saves are queued so an older save can never land after a newer one. The source text (parts) is only sent when it changes.
 let saving = Promise.resolve();
+// Each save also carries the Markdown copy the server keeps in the library folder. If it can't be written, the save goes without it.
+const mdOr = f => { try { return f(); } catch { return undefined; } };
+const pageMd = n => `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`;
 const save = (p, parts) => {
-  const { pages, parts: _, ...rest } = p, body = JSON.stringify(parts ? { ...rest, parts } : rest);
+  const { pages, parts: _, ...rest } = p, md = mdOr(() => srcMd(p)), body = JSON.stringify(parts ? { ...rest, parts, md } : { ...rest, md });
   return saving = saving.then(() => api('items/' + p.id, { method: 'PUT', headers: JH, body })).catch(e => toast('Could not save (' + e.message + '). Nothing is lost: it is saved again with your next change.'));
 };
-const saveNote = n => n && send('PUT', 'notes/' + n.id, { title: n.title, project: n.project, note: n.note }).catch(e => toast('Could not save the note: ' + e.message));
+const saveNote = n => n && send('PUT', 'notes/' + n.id, { title: n.title, project: n.project, note: n.note, md: mdOr(() => pageMd(n)) }).catch(e => toast('Could not save the note: ' + e.message));
 const text = async p => p.pages || (p.parts = await api(`items/${p.id}/parts`), p.pages = p.parts.map(x => x.body));
 const log = (kind, p) => { activity.push({ ts: Date.now(), kind, item_id: p?.id }); send('POST', 'activity', { kind, item_id: p?.id }).catch(() => {}); };
 
 // ---------- AI ----------
+// While a model works, the pill under the rail counts the seconds, names the model answering and says which ones already failed.
+// "Usually" is this kind of job's recent time on this computer, keyed by the start of its instructions, so it is only shown once there is one.
+const took = (() => { try { return JSON.parse(localStorage.aiTook) || {}; } catch { return {}; } })();
+let aiNow = null; // { rid, t0, kind, prog }
+function paintStatus() { // #status is a live region: its markup changes only when what it says changes, and the ticking seconds are hidden from screen readers
+  const s = $('#status'); if (!working) { s.innerHTML = ''; s.said = ''; return; }
+  const g = aiNow?.prog, u = aiNow && took[aiNow.kind], last = g?.failed?.at(-1);
+  const html = `<b>${esc(working)}</b>` + (aiNow ? `<small><span class="tick" aria-hidden="true"></span>${u ? `usually about ${u} s` : ''}${g?.model ? `${u ? ' · ' : ''}${esc(g.provider)}: ${esc(g.model)}${g.of > 1 ? ` (model ${g.n} of ${g.of})` : ''}` : ''}</small>` +
+    (last ? `<small class="bad">${plural(g.failed.length, 'model')} failed. Last: ${esc(last)}</small>` : '') : '');
+  if (s.said !== html) s.innerHTML = s.said = html;
+  const t = s.querySelector('.tick'); if (t) t.textContent = Math.round((Date.now() - aiNow.t0) / 1000) + ' s' + (u || g?.model ? ' · ' : '');
+}
 async function ai(messages) {
-  try { return (await send('POST', 'ai', { messages })).text; }
-  catch (e) { throw new Error('AI is unavailable right now (' + e.message + '). Try again in a moment.'); }
+  const rid = crypto.randomUUID(), kind = String(messages[0]?.content).slice(0, 40), t0 = Date.now(), me = aiNow = { rid, t0, kind };
+  const tick = setInterval(() => { paintStatus(); api('ai/progress?id=' + rid).then(g => { if (aiNow === me && g.model) me.prog = g; }).catch(() => {}); }, 1000);
+  paintStatus();
+  try {
+    const r = await send('POST', 'ai', { messages, rid }), sec = Math.round((Date.now() - t0) / 1000);
+    took[kind] = took[kind] ? Math.round((took[kind] * 2 + sec) / 3) : sec; try { localStorage.aiTook = JSON.stringify(took); } catch {}
+    if (r.failed?.length) toast(`${r.provider}: ${r.model} answered after ${plural(r.failed.length, 'model')} failed:\n${r.failed.join('\n')}`);
+    return r.text;
+  } catch (e) { throw new Error('No AI model could answer:\n' + e.message + '\nTry again in a minute, or put a different model first in Settings.'); }
+  finally { clearInterval(tick); if (aiNow === me) aiNow = null; paintStatus(); }
 }
 async function aiJSON(system, user) {
   const t = await ai([{ role: 'system', content: system + '\nReturn ONLY one valid JSON object. No markdown fences, no commentary.' }, { role: 'user', content: user }]);
@@ -1204,6 +1252,9 @@ async function sourceText(p, q) {
   return fullText(p);
 }
 
+// What makes a card worth keeping: understanding the source's argument, not recall of facts about it. Answers follow the ASD-STE100 writing rules, without its word list.
+const CARD_RULES = `The reader wants to understand the source's argument well enough to explain it, judge it and use it, not to recite facts about it. Across the cards, cover at least once each: why the problem is hard or why earlier approaches fall short; how the key step of the method works and what it buys; what evidence supports the main claim and how strong it is (ask what a number means, never the number alone); which assumption the result depends on and what breaks without it; how it differs from the closest alternative. Never ask for authors, year, venue, dataset or benchmark names, section titles, or a bare figure. Each card tests one idea, has one clear answer, does not give the answer away in its question, and can be answered without the source open by someone who understood it. Write each answer in Simplified Technical English (ASD-STE100) style: 1-2 sentences, at most 20 words each and 35 words in total, one idea per sentence, active voice, present tense, no idioms, the same word for the same thing every time. Keep the source's own technical terms.`;
+const SYS_CARDS = `You write flashcards for a reader working through a source: a research paper, a web article, or the transcript of a talk. Markers like [p.N] number its parts. Produce JSON: {"cards":[{"q":"","a":"1-2 short sentences","quote":"one sentence copied VERBATIM from the source that proves the answer"}]}. Write 4-6 cards. Every card must be provable from its quote; never invent facts or numbers. Plain text only, no LaTeX. ${CARD_RULES}`;
 const SYS_ANALYZE = `You are an expert research mentor preparing a student to deeply master a source: a research paper, a web article, or the transcript of a talk or lecture. Markers like [p.N] number its pages, paragraphs or transcript chunks; wherever "page" is asked for, give that number N. Produce JSON:
 {"title":"title of the source","authors":["Full Name"],"year":"YYYY","venue":"short name of the journal/conference, site or channel, e.g. NeurIPS",
 "tldr":"2 plain sentences",
@@ -1216,42 +1267,61 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 "sections":[{"title":"","page":1,"gist":"what to look for in this part","question":"a checkpoint question testing understanding (why/how), answerable from this part"}],
 "concepts":[{"name":"short noun phrase","def":"one sentence"}],
 "links":[{"from":"concept name","to":"concept name","label":"verb phrase"}],
-"cards":[{"q":"","a":"short answer","quote":"one sentence copied VERBATIM from the source that proves the answer"}],
+"cards":[{"q":"","a":"1-2 short sentences","quote":"one sentence copied VERBATIM from the source that proves the answer"}],
 "references":[{"title":"exact title as written in the source's reference list","why":"why reading it helps understand this source"}]}
-Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
+Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 8-12. ${CARD_RULES}`;
 
 // ---------- state ----------
-let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, ffilter = {}, stat = {}, mstat = {}, dragFrom = null; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
+let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, pick = { models: { q: '', open: false } }, stat = {}, mstat = {}, dragFrom = null; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
 const PRESETS = [['OpenRouter', 'https://openrouter.ai/api/v1'], ['OpenAI', 'https://api.openai.com/v1'], ['Claude (Anthropic)', 'https://api.anthropic.com/v1'], ['Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/openai'], ['NVIDIA', 'https://integrate.api.nvidia.com/v1'], ['Groq', 'https://api.groq.com/openai/v1'], ['DeepSeek', 'https://api.deepseek.com/v1'], ['Mistral', 'https://api.mistral.ai/v1'], ['xAI (Grok)', 'https://api.x.ai/v1'], ['Together AI', 'https://api.together.xyz/v1'], ['Fireworks', 'https://api.fireworks.ai/inference/v1'], ['Hugging Face', 'https://router.huggingface.co/v1'], ['Cerebras', 'https://api.cerebras.ai/v1'], ['SambaNova', 'https://api.sambanova.ai/v1'], ['Ollama (this computer)', 'http://localhost:11434/v1'], ['Other', '']];
 // One ordered list of models. Each row says which provider answers it; ↑ ↓ change the order they are tried in.
-const foundHTML = (p, i) => { // what a provider offers: a filter and a short scrolling list; clicking a name adds it
-  if (!found[p.id]) return ''; if (typeof found[p.id] === 'string') return `<small class="muted">${esc(found[p.id])}</small>`;
-  const v = left(p); // models already in the list are not offered again
-  const q = (ffilter[p.id] || '').toLowerCase(), hit = v.filter(m => m.id.toLowerCase().includes(q));
-  return `<input data-ff="${i}" value="${esc(ffilter[p.id] || '')}" placeholder="Filter ${v.length} models" aria-label="Filter models" autocomplete="off" spellcheck="false" style="margin-top:6px"><div id="fl${i}" style="max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:var(--r);margin-top:4px">${foundRows(p, i)}</div><small class="muted" id="fc${i}">${hit.length > 80 ? `Showing 80 of ${hit.length}. Type to narrow it down.` : `${hit.length} shown. Click one to add it.`}</small>`;
+// Adding a model: choose the service, then type. Matches come from what the service offers (models already in the list are not offered again);
+// a name it does not list can still be added as typed. Results only show while there is something typed, so the page never holds a 400-row box.
+const pickP = k => pick[k].p || cfg.providers[0]?.id;
+const offered = k => { const p = pickP(k), l = found[p]; return Array.isArray(l) ? l.filter(m => !cfg[k].some(e => e.p === p && e.m === m.id)) : []; };
+const pickRows = k => {
+  const q = pick[k].q.trim().toLowerCase(); if (!q || !pick[k].open) return ''; // closed with ×, Esc or a click elsewhere; typing opens it again
+  const hit = offered(k).filter(m => m.id.toLowerCase().includes(q));
+  return `<div class="mlhead"><span>${hit.length ? plural(hit.length, 'match') : 'No match'}</span><button type="button" class="ib" data-act="cfgclose" data-k="${k}" title="Close (Esc)" aria-label="Close the list">${ic('x', 16)}</button></div>` +
+    (hit.length ? hit.slice(0, 40).map(m => `<button type="button" data-act="cfgpick" data-k="${k}" data-id="${esc(m.id)}">${ic('plus', 15)}<code>${esc(m.id)}</code>${m.img ? '<span class="tag">images</span>' : ''}${m.free ? '<span class="tag ok">free</span>' : paidAt(pickP(k), m.id) ? '<span class="tag">paid</span>' : ''}</button>`).join('') + (hit.length > 40 ? `<p class="muted">${hit.length - 40} more. Keep typing to narrow it down.</p>` : '')
+    : `<p class="muted">${found[pickP(k)] ? 'Nothing it offers matches.' : 'Test this service to search its models.'} Add puts “${esc(pick[k].q.trim())}” in the list as typed.</p>`);
 };
-const left = p => found[p.id].filter(m => !cfg.chain.some(e => e.p === p.id && e.m === m.id));
-const foundRows = (p, i) => { const q = (ffilter[p.id] || '').toLowerCase(); return left(p).filter(m => m.id.toLowerCase().includes(q)).slice(0, 80).map(m => `<button type="button" data-act="cfgpick" data-i="${i}" data-id="${esc(m.id)}" style="display:block;width:100%;text-align:left;border:0;border-radius:0;min-height:30px;padding:3px 10px;background:none;font-size:13px;white-space:normal;overflow-wrap:anywhere">${esc(m.id)}${m.free ? ' <small class="muted">free</small>' : ''}</button>`).join('') || '<p class="muted" style="margin:8px 10px">No match.</p>'; };
 const probe = async p => { // asks the service for its model list: proves the address and key work, and fills the pick list
   stat[p.id] = { ok: null, msg: 'Testing…' }; found[p.id] = '';
   try { const l = await send('POST', 'settings/models', { id: p.id, name: p.name, url: p.url, key: p.key, clearKey: p.clearKey }); found[p.id] = l; stat[p.id] = { ok: true, msg: `Connected · ${l.length} model${l.length === 1 ? '' : 's'}` }; }
   catch (e) { delete found[p.id]; stat[p.id] = { ok: false, msg: e.message }; }
 };
 const saveCfg = async () => { // writes the Settings form to the server and reloads it (keys come back masked); true if it worked
-  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: cfg.chain, vision: cfg.vision, embed: cfg.embed, paid: !!$('input[name=paid]')?.checked }); cfg = await api('settings'); return true; }
+  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: pairs(cfg.models.filter(e => e.text)), vision: pairs(cfg.models.filter(e => e.img)), embed: cfg.embed }); cfg = merged(await api('settings')); CN.key = ''; return true; }
   catch (e) { toast('Could not save the settings: ' + e.message + '.'); return false; }
 };
 const persist = async () => { render(); if (await saveCfg()) render(); }; // order and picks are saved as soon as they change
+// Embedding models the service offers, suggested in the model box (found after a test; their names say "embed").
+const embOpts = pid => (Array.isArray(found[pid]) ? found[pid] : []).filter(m => /embed/i.test(m.id)).map(m => `<option value="${esc(m.id)}">`).join('');
 const embedHTML = () => { const e = cfg.embed || {};
-  return `<h4 style="margin:16px 0 4px">Embedding model (to ask questions of sources too long to send whole)</h4><p class="row" style="margin:0"><select id="emb-p" aria-label="Provider" style="width:auto;flex:none"><option value="">None</option>${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === e.p ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input id="emb-m" class="grow" value="${esc(e.m || '')}" placeholder="e.g. text-embedding-3-small" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgemb" style="min-width:0;width:auto;flex:none">Save</button><button type="button" data-act="cfgidx" style="min-width:0;width:auto;flex:none">Index my library</button></p><small class="muted">It must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model). The text of your sources is sent to this service.</small>`;
+  const on = e.p && e.m, pn = e.p === 'local' ? 'This computer' : cfg.providers.find(p => p.id === e.p)?.name, here = e.p === 'local' || (le?.program.have && le?.model.have);
+  return `<h4 class="mhead" id="emb">Map links and long sources</h4><p class="muted mnote">An embedding model lets the Map join concepts that mean the same thing, across your sources and under different names, and lets Ask search inside sources too long to send whole.</p>
+    <p class="${on ? 'okc' : 'muted'}" style="margin:0 0 8px;font-weight:600">${on ? `● On: ${esc(pn || '?')}, ${esc(e.m)}` : '○ Off: the Map only links concepts inside one source, by shared words.'}</p><div class="box flat" style="margin:0 0 12px"><div class="k" style="margin-top:0">Free, on this computer</div><div id="lebox">${leBox()}</div></div>
+    <p class="muted" style="margin:0 0 6px;font-size:13px">Or choose here, and switch any time. Vectors are kept per model, so switching back is quick.</p><p class="row" style="margin:0"><select id="emb-p" aria-label="Provider" style="width:auto;flex:none"><option value="">None</option>${here ? `<option value="local" ${e.p === 'local' ? 'selected' : ''}>This computer (free)</option>` : ''}${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === e.p ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input id="emb-m" class="grow" list="emb-list" value="${esc(e.m || '')}" placeholder="e.g. text-embedding-3-small" autocomplete="off" spellcheck="false"><datalist id="emb-list">${embOpts(e.p || cfg.providers[0]?.id)}</datalist><button type="button" data-act="cfgemb" style="min-width:0;width:auto;flex:none">Save</button><button type="button" data-act="cfgidx" style="min-width:0;width:auto;flex:none">Index my library</button></p><small class="muted">A service must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model), and the text of your sources is sent to it. The free model on this computer sends nothing anywhere.</small>`;
 };
+// One list of models. Each says whether it answers text, images (figures), or both; Marrow saves these as the two ordered lists the server tries.
+const paidAt = (pid, m) => /openrouter\.ai/.test(cfg.providers.find(p => p.id === pid)?.url || '') && !m.endsWith(':free') && m !== 'openrouter/free'; // costs money when it answers
+const pairs = l => l.map(({ p, m }) => ({ p, m }));
+const merged = c => { const id = e => e.p + '|' + e.m, v = new Set(c.vision.map(id)), t = new Set(c.chain.map(id));
+  c.models = [...c.chain.map(e => ({ ...e, text: true, img: v.has(id(e)) })), ...c.vision.filter(e => !t.has(id(e))).map(e => ({ ...e, text: false, img: true }))]; return c; };
+const fresh = (p, m) => ({ p, m, text: true, img: !!(Array.isArray(found[p]) && found[p].find(x => x.id === m)?.img) }); // images on when the service says the model reads them
+const closePick = k => { pick[k].open = false; const l = $('#ml-' + k); if (l) l.innerHTML = ''; };
 const chainHTML = (k, label) => {
-  const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?';
-  return `<h4 style="margin:16px 0 4px">${label}</h4><ol class="chain" style="padding-left:22px;margin:0">${rows.map((e, i) => { const t = mstat[k + '|' + e.p + '|' + e.m]; return `<li draggable="true" data-k="${k}" data-i="${i}" style="margin:3px 0;cursor:grab"><span class="row" style="gap:6px;flex-wrap:nowrap"><span aria-hidden="true" title="Drag to reorder" class="muted" style="flex:none">⠿</span><small class="muted" style="flex:none;max-width:30%">${esc(name(e.p))}</small> <code style="flex:1;min-width:0;overflow-wrap:anywhere;font-size:12.5px;background:none;padding:0">${esc(e.m)}</code>${t ? `<small role="status" style="flex:none;font-weight:600;color:var(${t.ok === null ? '--muted' : t.ok ? '--ok' : '--vid'})">● ${esc(t.msg)}</small>` : ''}
-    <button type="button" data-act="cfgtm" data-k="${k}" data-i="${i}" style="min-width:0;width:auto;flex:none;padding:2px 10px" aria-label="Test ${esc(e.m)}">Test</button><button type="button" data-act="cfgrm" data-k="${k}" style="min-width:0;width:auto;flex:none;padding:2px 10px" data-i="${i}" aria-label="Remove ${esc(e.m)}">Remove</button></span></li>`; }).join('') || '<li class="muted">Empty.' + (k === 'vision' ? ' Figures then use the model list above.' : '') + '</li>'}</ol>
-    <p class="row" style="margin:8px 0 0"><select id="add-${k}-p" aria-label="Provider" style="width:auto;flex:none">${cfg.providers.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><input id="add-${k}-m" class="grow" placeholder="model name" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgadd" data-k="${k}" style="min-width:0;width:auto;flex:none">Add</button></p>`;
+  const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?', n = offered(k).length;
+  return `<h4 class="mhead">${label}</h4><p class="muted mnote">Each model can do <b>Text</b> (answers, briefs, cards), <b>Images</b> (explaining a figure you snip), or both. Click to switch. With no model on Images, figures go to the Text models.</p><ol class="chain">${rows.map((e, i) => { const t = mstat[k + '|' + e.p + '|' + e.m];
+    return `<li draggable="true" data-k="${k}" data-i="${i}"><span class="grip" aria-hidden="true" title="Drag to reorder">⠿</span><span class="ix">${i + 1}</span><span class="tag">${esc(name(e.p))}</span><code>${esc(e.m)}</code>${paidAt(e.p, e.m) ? '<span class="tag">paid</span>' : ''}` +
+      (t ? `<span role="status" class="mst ${t.ok === null ? 'busy' : t.ok ? 'okc' : 'bad'}">${esc(t.msg)}</span>` : '') +
+      [['text', 'Text', 'Use it for writing and answering'], ['img', 'Images', 'Use it to explain figures (the model must read images)']].map(([f, l, tip]) => `<button type="button" class="flag" data-act="cfgflag" data-i="${i}" data-f="${f}" aria-pressed="${!!e[f]}" title="${tip}">${l}</button>`).join('') +
+      `<button type="button" class="ib" data-act="cfgtm" data-k="${k}" data-i="${i}" title="Test this model" aria-label="Test ${esc(e.m)}">${ic('play', 16)}</button><button type="button" class="ib" data-act="cfgrm" data-k="${k}" data-i="${i}" title="Remove" aria-label="Remove ${esc(e.m)}">${ic('x', 16)}</button></li>`; }).join('') ||
+    '<li class="muted">No models yet. Search below to add one.</li>'}</ol>
+    <div class="madd"><select data-pk="${k}" aria-label="Service for the new model">${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === pickP(k) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input data-pq="${k}" value="${esc(pick[k].q)}" placeholder="${n ? `Search ${n} models` : 'Model name'}" aria-label="Find a model to add" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgadd" data-k="${k}">Add</button></div><div class="mlist" id="ml-${k}">${pickRows(k)}</div>`;
 };
-let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, fx = false;
+let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, sess = null, busy = false, seq = 0, rtab = 'study', rdeck = null, ropen = null, adding = null; // sess: the study deck on screen; rdeck: the one paper Review studies; ropen: the deck open under Decks; adding: the deck whose new-card form is open
 let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
 const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: '', rows: null, busy: false };
 const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'compass'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
@@ -1321,6 +1391,38 @@ const ring = p => `<span class="ring" style="--p:${mastery(p)}" title="${esc(bre
 const norm = s => String(s || '').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g, '');
 const ckey = s => norm(String(s).replace(/\(.*?\)/g, '')).replace(/s$/, ''); // "Self-Attention", "self attention (SA)", "Self-attentions" merge
 const tkey = p => norm(p.title).slice(0, 40);
+// Local semantic vectors for the map: word + character 3-gram TF-IDF. No model, no network call.
+function conceptVecs(cs) {
+  const feats = c => {
+    const t = norm(c.label + ' ' + (c.def || '')), words = String(c.label + ' ' + (c.def || '')).toLowerCase().match(/[a-z]{3,}/g) || [], grams = [];
+    for (let i = 0; i + 3 <= t.length; i++) grams.push(t.slice(i, i + 3));
+    const f = new Map(); for (const w of [...words, ...grams]) f.set(w, (f.get(w) || 0) + 1); return f;
+  };
+  const docs = cs.map(feats), df = new Map();
+  for (const d of docs) for (const k of d.keys()) df.set(k, (df.get(k) || 0) + 1);
+  return docs.map(d => {
+    const v = new Map();
+    for (const [k, tf] of d) v.set(k, (1 + Math.log(tf)) * Math.log((docs.length + 1) / (df.get(k) + 1)));
+    const len = Math.hypot(...v.values()) || 1;
+    for (const [k, x] of v) v.set(k, x / len);
+    return v;
+  });
+}
+// With an embedding model chosen in Settings, "similar meaning" comes from the model: every concept in the library is sent once,
+// the server answers with each one's nearest neighbours and two cut-offs. Until that arrives, or with no model, the map uses vecCos.
+let CN = { key: '' };
+function conceptNear() {
+  const by = new Map(); for (const p of lib) for (const c of p.concepts || []) if (!by.has(ckey(c.name))) by.set(ckey(c.name), c.name + ': ' + (c.def || ''));
+  const keys = [...by.keys()], texts = [...by.values()], key = texts.join('\n');
+  if (CN.key === key) return CN.near && CN;
+  CN = { key }; if (keys.length < 3 || keys.length > 3000) { CN.none = 1; return; }
+  send('POST', 'concept-near', { texts }).then(r => {
+    if (CN.key !== key) return; if (!r.near) { CN.none = 1; return; }
+    CN.near = new Map(keys.map((k, i) => [k, r.near[i].map(([j, s]) => [keys[j], s])])); CN.same = r.same; CN.cross = r.cross;
+    if (view === 'map') drawBig();
+  }).catch(() => { if (CN.key === key) CN.failed = 1; }); // no embedding model, or the provider is down: the local links stay, and this is not retried until the library or Settings change
+}
+const vecCos = (a, b) => { let s = 0; for (const [k, x] of a) { const y = b.get(k); if (y) s += x * y; } return s; };
 // How sources in the library connect: one cites the other (found when a source is analyzed), they share concepts, or they share a tag.
 function related(p) {
   const mine = new Set(p.concepts.map(c => ckey(c.name)));
@@ -1336,12 +1438,21 @@ function findQuote(p, quote) { // -> number of the part containing the quote (it
   const head = q.slice(0, 60), tail = q.slice(-60);
   return p.pages.findIndex((t, i) => { const h = norm(t), h2 = h + norm(p.pages[i + 1]); return h.includes(q.slice(0, 20)) && h2.includes(head) && h2.includes(tail); }) + 1;
 }
-// Spaced repetition (SM-2 style). g: 0 again, 1 good, 2 easy.
-function grade(c, g) {
-  c.ease = Math.max(1.3, (c.ease || 2.5) + [-.2, 0, .15][g]);
-  c.ivl = g === 0 ? 0 : c.ivl ? Math.round(c.ivl * c.ease * (g === 2 ? 1.3 : 1)) : (g === 2 ? 3 : 1);
-  c.due = Date.now() + c.ivl * 864e5;
+// Spaced repetition (SM-2 style) with Anki's four grades. g: 0 again, 1 hard, 2 good, 3 easy. s: this session's memory of the card.
+// Again and Hard keep the card in today's deck; so does Good, once, while the card is new or relearning. Anything else is done until c.due.
+const stays = (c, g, s = {}) => g < 2 || (g === 2 && !c.ivl && !s.passed);
+const nextIvl = (c, g) => c.ivl ? Math.max(c.ivl + 1, Math.round(c.ivl * (c.ease || 2.5) * (g === 3 ? 1.3 : 1))) : g === 3 ? 4 : 1;
+function grade(c, g, s = {}) { // -> true if the card stays in today's deck
+  const keep = stays(c, g, s);
+  if (keep) { if (g === 0) c.ivl = 0; if (g === 2) s.passed = true; c.due = Date.now(); }
+  else { c.ivl = nextIvl(c, g); c.due = Date.now() + c.ivl * 864e5; }
+  c.ease = Math.max(1.3, (c.ease || 2.5) + [-.2, -.15, 0, .15][g]);
+  return keep;
 }
+// Where a card that stays goes among the n cards still to go: Again after the next card, Hard 3 down, Good the middle. Small decks keep that order.
+const slot = (g, n) => g === 0 ? Math.min(1, n) : g === 1 ? Math.min(3, n) : Math.min(n, Math.max(4, Math.ceil(n / 2)));
+const ivlText = d => d < 30 ? d + 'd' : d < 365 ? (d / 30).toFixed(1) + 'mo' : (d / 365).toFixed(1) + 'y';
+const when = (c, g, s) => stays(c, g, s) ? ['<1m', '<6m', '<10m'][g] : ivlText(nextIvl(c, g));
 // A pasted transcript (YouTube's "Show transcript" panel, SRT, VTT or plain text) -> chunks of roughly 40 seconds.
 function parseTranscript(raw) {
   const out = []; let t = null;
@@ -1380,11 +1491,11 @@ const loadWh = () => api('whisper').then(x => { wh = x; return x; });
 const txInner = () => `<h4>Transcribing on this computer</h4><p class="muted">${esc(tx.stage)}</p><div class="row"><progress ${tx.pct == null ? '' : `max="100" value="${tx.pct}"`}></progress>${tx.pct == null ? '' : `<b>${tx.pct}%</b>`}<span class="sp"></span><button data-act="txstop">Stop</button></div>`;
 const bytes = b => b >= 1e9 ? (b / 1e9).toFixed(2) + ' GB' : Math.round(b / 1e6) + ' MB';
 // One line per download: what it is, then a Download button, its progress, or Delete.
-const whRow = (key, title, note, x, size) => {
-  const j = x.job, act = j?.error ? `<span class="warn">Failed: ${esc(j.error)}</span><button data-act="whget" data-v="${key}">Try again</button>`
-    : j ? `<progress max="${j.total || 1}" value="${j.unpacking ? j.total : j.got}"></progress><small class="muted">${j.unpacking ? 'Unpacking…' : j.total ? `${bytes(j.got)} of ${bytes(j.total)} · ${Math.floor(j.got / j.total * 100)}%` : bytes(j.got)}</small>${j.unpacking ? '' : `<button data-act="whdel" data-v="${key}" data-stop="1">Cancel</button>`}`
-    : x.have ? `<span class="okk">✓ Ready</span>` + (x.mine === false ? '<small class="muted">installed on this computer</small>' : `<button data-act="whdel" data-v="${key}">Delete</button>`)
-    : size ? `<button class="pri" data-act="whget" data-v="${key}">Download · ${bytes(size)}</button>` : '';
+const whRow = (key, title, note, x, size, ep = 'whisper') => {
+  const j = x.job, act = j?.error ? `<span class="warn">Failed: ${esc(j.error)}</span><button data-act="whget" data-ep="${ep}" data-v="${key}">Try again</button>`
+    : j ? `<progress max="${j.total || 1}" value="${j.unpacking ? j.total : j.got}"></progress><small class="muted">${j.unpacking ? 'Unpacking…' : j.total ? `${bytes(j.got)} of ${bytes(j.total)} · ${Math.floor(j.got / j.total * 100)}%` : bytes(j.got)}</small>${j.unpacking ? '' : `<button data-act="whdel" data-ep="${ep}" data-v="${key}" data-stop="1">Cancel</button>`}`
+    : x.have ? `<span class="okk">✓ Ready</span>` + (x.mine === false ? '<small class="muted">installed on this computer</small>' : `<button data-act="whdel" data-ep="${ep}" data-v="${key}">Delete</button>`)
+    : size ? `<button class="pri" data-act="whget" data-ep="${ep}" data-v="${key}">Download · ${bytes(size)}</button>` : '';
   return `<div class="whrow"><div><b>${title}</b><small class="muted">${note}</small></div><div class="whact">${act}</div></div>`;
 };
 function whBox() {
@@ -1396,6 +1507,18 @@ function whBox() {
     `<p class="muted" style="margin:12px 0 0">${used ? `Models take ${bytes(used)} in data/whisper. ` : ''}Models come from Hugging Face (ggerganov/whisper.cpp); the program and the helper from their GitHub releases.</p>`;
 }
 let whT;
+// The free embedding model on this computer: llama.cpp's program and Qwen3-Embedding-0.6B, downloaded like Whisper.
+let le = null, leT;
+const loadLe = () => api('localemb').then(x => le = x);
+const leBox = () => {
+  if (!le) return '<p class="muted">Loading…</p>';
+  const W = le.platform === 'win32', ready = le.program.have && le.model.have, using = cfg?.embed?.p === 'local';
+  return whRow('program', 'llama.cpp program', W ? 'About 25 MB. Runs the model on this computer.' : le.program.have ? 'llama.cpp, found on this computer.' : 'Install it once from a terminal: <code>brew install llama.cpp</code>, then reopen Settings.', le.program, W && 25e6, 'localemb') +
+    whRow('model', esc(le.name), `${bytes(le.model.size)} · The best-scoring free embedding model on Hugging Face for a laptop. Reads long passages, in about 100 languages.`, le.model, le.model.size, 'localemb') +
+    (ready ? `<p class="row" style="margin:10px 0 0">${using ? '<span class="okk">✓ In use</span>' : '<button class="pri" data-act="leuse">Use it</button>'}<small class="muted">Free, and nothing leaves this computer. It starts by itself the first time it is needed.</small></p>` : '');
+};
+const paintLe = () => { const b = $('#lebox'); if (b) b.innerHTML = leBox(); clearTimeout(leT); // keep watching while anything downloads
+  if (view === 'settings' && [le?.program, le?.model].some(x => x?.job && !x.job.error)) leT = setTimeout(() => loadLe().then(() => { paintLe(); if (le.program.have && le.model.have && !$('#emb-p option[value=local]')) render(); }).catch(() => {}), 700); };
 const paintWh = () => { const b = $('#whbox'); if (b) b.innerHTML = whBox(); clearTimeout(whT); // keep watching while anything downloads
   if (view === 'settings' && [wh?.program, wh?.ytdlp, ...(wh?.models || [])].some(x => x?.job && !x.job.error)) whT = setTimeout(() => loadWh().then(paintWh).catch(() => {}), 700); };
 const paintTx = () => { const b = $('#txbox'); if (b) b.innerHTML = txInner(); };
@@ -1472,8 +1595,10 @@ const blocksMd = bs => bs.map(({ type, data: d }) =>
 if (location.hash === '#test') { // self-check: open /#test and look at the console
   const mb = mdBlocks('# T\n\ntext **b**\n- a\n- b\n\n> q\n---\n$$x^2$$\n<img src=x onerror=alert(1)>');
   console.assert(mb.map(b => b.type).join() === 'header,paragraph,list,quote,delimiter,math,paragraph' && blocksMd(mb) === '## T\n\ntext **b**\n\n- a\n- b\n\n> q\n\n---\n\n$$x^2$$\n\n<img src=x onerror=alert(1)>', 'notebook Markdown survives the round trip, HTML stays text', blocksMd(mb));
-  const c = {}; grade(c, 1); console.assert(c.ivl === 1, 'first good = 1 day'); grade(c, 1); console.assert(c.ivl === 3, 'second good grows');
-  grade(c, 0); console.assert(c.ivl === 0 && c.due <= Date.now(), 'again = due now');
+  const c = {}, s = {}; console.assert(grade(c, 2, s) && !grade(c, 2, s) && c.ivl === 1, 'a new card: Good once more today, then 1 day');
+  console.assert(!grade(c, 2) && c.ivl === 3, 'Good on a known card grows'); console.assert(grade(c, 0) && c.ivl === 0 && c.due <= Date.now(), 'Again = relearn now');
+  const e = {}; console.assert(!grade(e, 3) && e.ivl === 4, 'Easy on a new card: done, 4 days');
+  console.assert([0, 1, 2].map(g => slot(g, 8)).join() === '1,3,4' && slot(2, 20) === 10 && slot(1, 2) === 2 && slot(0, 0) === 0, 'deck slots keep their order');
   console.assert(md('<b> p.3', { id: 'x', kind: 'pdf' }).includes('&lt;b&gt;') && md('p.3', { id: 'x', kind: 'pdf' }).includes('data-page="3"'), 'md escapes + links');
   console.assert(md('see p.2', { id: 'x', kind: 'video', times: [0, 75] }).includes('>1:15<') && md('p.2', null) === 'p.2', 'citations show timestamps for videos');
   console.assert(md('# T\n- a\n- **b**\n1. c\ntext', null) === '<b class="h">T</b><ul><li>a</li><li><b>b</b></li></ul><ol><li>c</li></ol><span class="pl">text</span>', 'md lists and headings');
@@ -1729,6 +1854,35 @@ async function rezoom(k) {
   await renderPdf(await api('files/' + P.id));
   $(`.page[data-n="${n}"]`)?.scrollIntoView();
 }
+// A citation opens its page and lights up the quoted sentence for a few seconds. A PDF's text layer splits a sentence over many
+// spans and line breaks, so the quote is matched on letters and digits only (norm), as findQuote does, over the page and the next.
+let citeT;
+async function flashQuote(n, quote) {
+  const q = norm(quote); if (!window.Highlight || q.length < 12) return;
+  for (let t = 0; t < 50; t++, await new Promise(ok => setTimeout(ok, 100))) { // a PDF page draws its text only once it is scrolled into view
+    const r = quoteRange(n, q); if (!r) continue;
+    CSS.highlights.set('cite', new Highlight(r)); r.startContainer.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    clearTimeout(citeT); citeT = setTimeout(() => CSS.highlights.delete('cite'), 4500); return;
+  }
+}
+function quoteRange(n, q) {
+  let s = ''; const at = []; // the page's text as letters and digits, and where each one sits
+  for (const k of [n, n + 1]) {
+    const pg = $(`#doc [data-n="${k}"]`); if (!pg) continue;
+    const w = document.createTreeWalker(pg.querySelector('.textLayer') || pg, NodeFilter.SHOW_TEXT);
+    for (let t; (t = w.nextNode());) for (let i = 0; i < t.data.length; i++) for (const ch of norm(t.data[i])) { s += ch; at.push([t, i]); }
+  }
+  let i = s.indexOf(q), len = q.length;
+  if (i < 0) { // the AI changed a word or two: match the quote's first and last 40 characters, or failing that either end alone
+    const h = s.indexOf(q.slice(0, 40)), j = h < 0 ? s.indexOf(q.slice(-40)) : s.indexOf(q.slice(-40), h);
+    if (h >= 0 && j >= 0 && j - h < q.length * 2) i = h, len = j + 40 - h;
+    else if (h >= 0) i = h;
+    else if (j >= 0) i = Math.max(0, j + 40 - q.length);
+    else return null;
+    len = Math.min(len, s.length - i);
+  }
+  const [a, ai] = at[i], [b, bi] = at[i + len - 1], r = new Range(); r.setStart(a, ai); r.setEnd(b, bi + 1); return r;
+}
 function gotoPage(n) {
   document.body.classList.remove('study');
   const el = $(`#doc [data-n="${n}"]`), t = P.parts?.[n - 1]?.t;
@@ -1740,7 +1894,7 @@ async function openItem(id, n) {
   const p = byId(id); if (!p) return;
   try { await text(p); } catch (e) { return toast('Could not open it: ' + e.message); }
   CSS.highlights?.clear(); yt = null;
-  P = p; view = 'read'; tab = p.brief ? 'read' : 'brief'; shown = false;
+  P = p; view = 'read'; tab = p.brief ? 'read' : 'brief';
   findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = ''; askWith.clear();
   p.opened = Date.now(); save(p); enter($('#body'), $('#doc')); await vt(render);
   if (P !== p) return; // something else was opened meanwhile
@@ -1750,26 +1904,88 @@ async function openItem(id, n) {
 }
 function go(v) {
   if (view === 'read') yt?.pauseVideo?.();
-  view = v; shown = false; enter($('#page'));
+  view = v; enter($('#page'));
   vt(() => { document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0; });
   if (v === 'discover') loadNews();
-  if (v === 'settings') api('settings').then(c => { cfg = c; if (view === 'settings') render(); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
+  // Services with a saved key are checked on opening, so each shows whether it works and its models can be searched without a click.
+  if (v === 'settings') api('settings').then(c => { cfg = merged(c); if (view !== 'settings') return; const tests = Promise.all(c.providers.filter(p => p.hasKey && !found[p.id]).map(probe)); render(); tests.then(() => view === 'settings' && soft()); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
   if (v === 'settings') loadWh().then(paintWh).catch(e => toast('Could not check Whisper (' + e.message + ').'));
+  if (v === 'settings') loadLe().then(() => view === 'settings' && soft()).catch(() => {});
 }
 
-// ---------- study panel ----------
-function cardsHTML(ps, all) {
-  const q = due(ps);
-  const anim = fx ? 'fxin' : ''; fx = false; // set by the show and grade actions, so only those two moves animate
-  if (!q.length) {
+// ---------- study deck ----------
+// The deck on screen. Its order lives here, not in c.due, so a card can go back "3 cards down" and come up again today.
+// sess.deck: [{ p, c, k, s, done }], live cards first and done ones under them; k names the card's element.
+// ponytail: every due card is in the DOM; cap the rendered stack if decks of thousands appear.
+function session(ps, key) {
+  if (sess?.key !== key) sess = { key, deck: [], flip: false };
+  const d = sess.deck = sess.deck.filter(x => ps.includes(x.p) && x.p.cards.includes(x.c)), have = new Set(d.map(x => x.c));
+  const add = due(ps).filter(x => !have.has(x.c)).map(x => ({ p: x.p, c: x.c, k: ++seq, s: {} })), at = d.findIndex(x => x.done);
+  d.splice(at < 0 ? d.length : at, 0, ...add);
+  if (d[0]?.k !== sess.top) { sess.flip = false; sess.top = d[0]?.k; } // a deleted top card must not leave the next one showing its answer
+  return d;
+}
+const live = () => sess.deck.filter(x => !x.done);
+const vroot = () => view === 'read' ? $('#body') : $('#page'), sroot = () => vroot().querySelector('.sdeck');
+// Depth spreads over at most 28px, so "3 down", "the middle" and "the bottom" look different in any size of deck.
+const pose = (x, i, n) => { const st = Math.min(5, 28 / Math.max(1, n - 1)); return `z-index:${500 - i};transform:translate(${i * st * .25}px,${i * st}px) rotate(${i ? (x.k * 37 % 7 - 3) * .7 : 0}deg)`; };
+const scard = (x, i, n, all) => `<div class="scard${i === 0 && sess.flip ? ' flip' : ''}" data-k="${x.k}" ${i === 0 ? 'data-act="show"' : ''} style="${pose(x, i, n)}"><div class="sin">
+  <div class="sface">${all ? `<small class="sfrom">${esc(x.p.title)}</small>` : ''}<p class="q">${esc(x.c.q)}</p></div>
+  <div class="sface sback"><div>${md(x.c.a, x.p)}${x.c.src ? `<blockquote>“${esc(x.c.quote)}” ${cite(x.p, x.c.src, x.c.quote)}</blockquote>`
+    : x.c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : ''}</div></div></div></div>`;
+const scount = () => { const l = live(); return `<b class="n" title="New">${l.filter(x => !x.c.ivl && !x.s.learn).length}</b><b class="l" title="Learning">${l.filter(x => x.s.learn).length}</b><b class="r" title="To review">${l.filter(x => x.c.ivl && !x.s.learn).length}</b>`; };
+const sbar = () => sess.flip
+  ? ['Again', 'Hard', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-g="${g}">${l}<small>${when(sess.deck[0].c, g, sess.deck[0].s)}</small></button>`).join('')
+  : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer<kbd>Space</kbd></button>`;
+function cardsHTML(ps, key, all) {
+  const d = session(ps, key);
+  if (!live().length) {
     const next = Math.min(...ps.flatMap(p => p.cards.map(c => c.due))) - Date.now(), h = Math.ceil(next / 36e5);
-    return `<div class="box ${anim}"><b>Nothing due.</b> <span class="muted">${next > 0 && isFinite(next) ? `The next card comes back in ${h < 24 ? h + ' hour' + (h === 1 ? '' : 's') : Math.round(h / 24) + ' day' + (h < 36 ? '' : 's')}, right before you'd forget it.` : 'Cards are written when a source is analyzed, and come back right before you’d forget them.'}</span></div>`;
+    return `<div class="box"><b>Nothing due.</b> <span class="muted">${next > 0 && isFinite(next) ? `The next card comes back in ${h < 24 ? h + ' hour' + (h === 1 ? '' : 's') : Math.round(h / 24) + ' day' + (h < 36 ? '' : 's')}, right before you'd forget it.` : 'Cards are written when a source is analyzed, and come back right before you’d forget them.'}</span></div>`;
   }
-  const { p, c, i } = q[0];
-  return `<div class="box ${shown ? '' : anim}"><small class="muted">${q.length} due${all ? ' · ' + esc(p.title) : ''}</small><p class="q">${esc(c.q)}</p>` +
-    (shown ? `<div class="${anim}"><p>${md(c.a, p)}</p>` + (c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src)}</blockquote>`
-      : c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : '') + `<div class="row">${['Again', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-pid="${esc(p.id)}" data-i="${i}" data-g="${g}">${l}<kbd>${g + 1}</kbd></button>`).join('')}</div></div>`
-      : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer<kbd>Space</kbd></button>`) + `</div>`;
+  return `<div class="study"><div class="srow"><small class="muted sdue">${live().length} due</small><span class="scount">${scount()}</span><button class="ib" popovertarget="keys" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button></div>
+    <div class="sdeck"><div class="swhere" aria-live="polite"></div>${d.map((x, i) => scard(x, i, d.length, all)).join('')}</div><div class="sbar">${sbar()}</div></div>`;
+}
+function layout() {
+  const r = sroot(), n = sess.deck.length; if (!r) return;
+  sess.top = sess.deck[0]?.k;
+  sess.deck.forEach((x, i) => { const el = r.querySelector(`[data-k="${x.k}"]`); if (!el) return; el.setAttribute('style', pose(x, i, n)); i ? el.removeAttribute('data-act') : el.dataset.act = 'show'; });
+}
+function paintDeck() {
+  const w = sroot()?.closest('.study'); if (!w) return;
+  w.querySelector('.sbar').innerHTML = sbar(); w.querySelector('.scount').innerHTML = scount(); w.querySelector('.sdue').textContent = live().length + ' due';
+}
+function say(r, t) { const w = r.querySelector('.swhere'); w.textContent = t; w.classList.add('on'); clearTimeout(say.t); say.t = setTimeout(() => w.classList.remove('on'), 1600); }
+function flipTop() {
+  const r = sroot(), x = sess?.deck[0]; if (busy || !r || !x || x.done || sess.flip) return;
+  sess.flip = true; r.querySelector(`[data-k="${x.k}"]`).classList.add('flip'); paintDeck();
+}
+// The top card slides out (left for Again, right otherwise), turns back to its question, and slides in under exactly the cards it now sits beneath.
+async function gradeTop(g) {
+  const r = sroot(), x = sess?.deck[0]; if (busy || !r || !x || !sess.flip) return;
+  busy = true; sess.flip = false;
+  const d = sess.deck, n = live().length - 1; d.shift();
+  if (grade(x.c, g, x.s)) { x.s.learn = true; const at = slot(g, n); d.splice(at, 0, x); say(r, at === 0 ? 'Right back' : at >= n ? 'Last in this round' : `Back after ${plural(at, 'card')}`); }
+  else { x.done = true; d.push(x); say(r, 'Done · back in ' + ivlText(x.c.ivl)); }
+  log('review', x.p); save(x.p);
+  r.closest('.study').querySelectorAll('.sbar button').forEach(b => b.disabled = true);
+  const el = r.querySelector(`[data-k="${x.k}"]`), dir = g ? 1 : -1, aside = `translate(${dir * 118}%,-26px) rotate(${dir * 9}deg)`, slow = matchMedia('(prefers-reduced-motion:reduce)').matches ? .01 : 1;
+  const out = el.animate([{ transform: el.style.transform }, { transform: `translate(${dir * 30}px,-34px) rotate(${dir * 3}deg) scale(1.03)`, offset: .35 }, { transform: aside }], { duration: 420 * slow, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+  await out.finished.catch(() => {});
+  el.classList.remove('flip'); layout();
+  const back = el.animate([{ transform: aside }, { transform: el.style.transform }], { duration: 600 * slow, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+  out.cancel(); await back.finished.catch(() => {}); back.cancel();
+  busy = false; renderRail();
+  if (!live().length) return render(); // the "nothing due" box, with when the next card comes back
+  paintDeck();
+}
+// A deck's cards to read, add to and delete. In Review it also offers to study just this deck.
+const folders = ps => { const w = ps.filter(p => p.cards.length); return w.length ? `<div class="folders">${w.map(p => { const n = due([p]).length; return `<a href="#" class="folder" data-act="ropen" data-v="${esc(p.id)}"><b>${esc(p.title)}</b><small>${plural(p.cards.length, 'card')}${n ? ` · <span class="due">${n} due</span>` : ''}</small></a>`; }).join('')}</div>` : '<p class="muted">No cards yet. Cards are written when a source is analyzed.</p>'; };
+function deckHTML(p, inReview) {
+  const id = esc(p.id);
+  return `<div class="row" style="margin:10px 0">${inReview ? `<button class="pri" data-act="rdeck" data-v="${id}">Study this deck</button>` : ''}<button data-act="newcard" data-pid="${id}">+ New card</button><button data-act="morecards" data-pid="${id}" ${working || !p.brief ? 'disabled' : ''}>✦ More cards with AI</button></div>` +
+    (adding === p.id ? `<form data-f="newcard" data-pid="${id}" class="box cardform"><textarea name="q" required placeholder="Question: ask why or how, not who or when" aria-label="Question"></textarea><textarea name="a" required placeholder="Answer: one or two short sentences" aria-label="Answer"></textarea><div class="row"><button class="pri">Save card</button><button type="button" data-act="newcard" data-pid="">Cancel</button></div></form>` : '') +
+    (p.cards.map((c, i) => `<div class="box crow"><div class="grow"><b>${esc(c.q)}</b><div class="muted">${md(c.a, p)}</div>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src, c.quote)}</blockquote>` : ''}</div><button data-act="delcard" data-pid="${id}" data-i="${i}">Delete</button></div>`).join('') || '<p class="muted">No cards in this deck.</p>');
 }
 const SKEL = `<div class="tldr"><i class="sk"></i><i class="sk"></i><i class="sk" style="width:55%"></i></div>` +
   ['The problem', 'The core idea', 'How they did it'].map(k => `<div class="fact"><div class="k">${k}</div><i class="sk"></i><i class="sk" style="width:80%"></i></div>`).join('');
@@ -1804,7 +2020,7 @@ const VIEW = {
         <details ${i === next ? 'open' : ''}><summary>Checkpoint</summary><p><b>${md(x.question)}</b></p>
         <textarea data-k="sec" data-i="${i}" placeholder="Answer in your own words, without looking back…">${esc(x.answer)}</textarea>${mathBar}
         <p><button class="pri" data-act="check" data-i="${i}" ${working ? 'disabled' : ''}>Check my understanding</button></p>
-        ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” ${cite(P, x.evPage)}</blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the source. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
+        ${x.feedback ? `<div>${md(x.feedback)}</div><div class="k">A strong answer</div><div>${md(x.model)}</div>` + (x.evPage ? `<blockquote>“${esc(x.evidence)}” ${cite(P, x.evPage, x.evidence)}</blockquote>` : x.evidence !== undefined ? `<p class="warn">⚠ The AI could not point to a matching sentence in the source. Treat this feedback with caution.</p>` : '') : ''}</details></div>`).join('') +
       (next < 0 ? `<p><button class="pri" data-act="tab" data-t="teach">All sections done. Now teach it →</button></p>` : '');
   },
   teach() {
@@ -1816,10 +2032,8 @@ const VIEW = {
         <div class="k">Misconceptions</div>${list(f.misconceptions)}<div class="k">Do this next</div><div>${md(f.next)}</div></div>` : '');
   },
   cards() {
-    return cardsHTML([P]) + `<details><summary>All ${P.cards.length} cards</summary>` +
-      `<p class="muted">Answers stay hidden. Tap a question to reveal its answer.</p>` +
-      P.cards.map((c, i) => `<details class="cardrow box"><summary>${esc(c.q)}</summary><p>${md(c.a)}</p>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(P, c.src)}</blockquote>` : ''}<button data-act="delcard" data-i="${i}">Delete card</button></details>`).join('') + `</details>
-      <p class="muted">To write your own card, select text in the source and choose “Card”.</p>`;
+    return cardsHTML([P], 'tab:' + P.id) + `<div class="sec"><h3>All ${plural(P.cards.length, 'card')}</h3></div>` + deckHTML(P) +
+      `<p class="muted">You can also select text in the source and choose “Card”.</p>`;
   },
   map() {
     return `<div id="cy"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>
@@ -1831,7 +2045,7 @@ const VIEW = {
       (pages.length ? `<p class="muted">Notebook pages working with this source: ${pages.map(n => `<a href="#" data-act="nbgo" data-id="${esc(n.id)}">${esc(n.title || 'Untitled page')}</a>`).join(' · ')}</p>` : '<p></p>') +
       (P.notes.length ? '' : '<p class="muted">Select text in the source and tap “Note” or a highlight colour to capture it here.</p>') +
       P.notes.map((n, i) => `<div class="box note ${n.ul ? 'ul' : n.quote ? 'c' + (n.c || 1) : ''}"><button class="x" style="float:right" data-act="delnote" data-i="${i}" aria-label="Delete note">${ic('x', 14)}</button>
-        ${n.quote || n.page ? `<blockquote>${esc(n.quote)} ${cite(P, n.page)}</blockquote>` : ''}
+        ${n.quote || n.page ? `<blockquote>${esc(n.quote)} ${cite(P, n.page, n.quote)}</blockquote>` : ''}
         <textarea data-k="note" data-i="${i}" style="min-height:60px" placeholder="Your thought…">${esc(n.note)}</textarea></div>`).join('');
   },
   ask() {
@@ -1965,30 +2179,37 @@ const PAGE = {
     return `<div class="wrap narrow"><h1>Settings</h1>${lookPicker()}<div class="sec"><h3>AI services</h3></div><p class="muted lead">Add each service you have a key for (Claude, OpenAI, OpenRouter, a model on this computer), then pick the models and put them in the order Marrow should try them. If one fails, the next one answers. Any service that speaks the OpenAI chat format works.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
       <form data-f="cfg" class="box set">
         <div class="row" style="margin:0 0 8px"><h4 class="grow" style="margin:0">Providers</h4><button type="button" data-act="cfgall">Save &amp; test all</button></div>
-        ${c.providers.map((p, i) => `<div class="box flat" style="margin:0 0 10px">
-          <p class="row" style="margin:0"><b class="grow" style="font-size:16px">${esc(p.name)}</b>${p.clearKey || !(p.hasKey || p.key) ? '<span class="tag">No key</span>' : '<span class="tag ok">Key ready</span>'}${c.providers.length > 1 ? `<button type="button" data-act="cfgrmp" data-i="${i}" style="min-width:0;width:auto">Remove</button>` : ''}</p>
+        ${c.providers.map((p, i) => { const s = stat[p.id], has = p.hasKey && !p.clearKey;
+          // One line per service once its key is saved: name, state, Test. The key and address fold away until needed.
+          return `<div class="box flat prov">
+          <div class="phead"><b>${esc(p.name)}</b>${s ? `<span role="status" class="pst ${s.ok === null ? 'busy' : s.ok ? 'okc' : 'bad'}">${esc(s.msg)}</span>` : p.key ? '<span class="tag">New key, not saved</span>' : has ? `<span class="tag ok">Key ··${esc(p.hint)}</span>` : '<span class="tag">No key</span>'}
+            <button type="button" data-act="cfgfind" data-i="${i}" title="Save, then check the key and load this service's models" ${s?.ok === null ? 'disabled' : ''}>Save &amp; test</button><button type="button" class="ib" data-act="cfgrmp" data-i="${i}" title="Remove this service" aria-label="Remove ${esc(p.name)}">${ic('x', 16)}</button></div>
+          <details ${has && p.url && !p.replace ? '' : 'open'}><summary class="muted">Key and address</summary>
           <label for="pk${i}">API key</label>${p.hasKey && !p.clearKey && !p.replace
             ? `<p class="row" style="margin:0"><code class="grow" style="letter-spacing:.12em">••••••••••••${esc(p.hint)}</code><button type="button" data-act="cfgrep" data-i="${i}" style="min-width:0;width:auto">Replace</button><button type="button" data-act="cfgdel" data-i="${i}" style="min-width:0;width:auto">Remove key</button></p>`
             : `<input id="pk${i}" data-cf="key" data-i="${i}" type="password" autocomplete="off" placeholder="${p.clearKey ? 'No key' : 'Paste your key'}">`}
           <small class="muted">${p.clearKey ? 'The saved key is removed when you save. <a href="#" data-act="cfgundo" data-i="${i}">Undo</a>' : p.replace ? 'The new key replaces the saved one when you save. <a href="#" data-act="cfgundo" data-i="${i}">Keep the saved key</a>' : p.hasKey ? '' : 'Ollama on this computer needs no key.'} Keys are stored encrypted on the server and never reach the browser.</small>
-          <p class="row" style="margin:10px 0 0"><button type="button" data-act="cfgfind" data-i="${i}" class="pri">Save &amp; test connection</button>${stat[p.id] ? `<span role="status" style="font-weight:600;color:var(${stat[p.id].ok === null ? '--muted' : stat[p.id].ok ? '--ok' : '--vid'})">● ${esc(stat[p.id].msg)}</span>` : '<small class="muted" style="margin:0">Saves your key, then checks it</small>'}</p>
-          ${foundHTML(p, i)}
-          <details style="margin-top:10px" ${p.url ? '' : 'open'}><summary class="muted" style="cursor:pointer">Name and API address</summary>
             <label for="pn${i}">Name</label><input id="pn${i}" data-cf="name" data-i="${i}" value="${esc(p.name)}" autocomplete="off">
             <label for="pu${i}">API address</label><input id="pu${i}" data-cf="url" data-i="${i}" required value="${esc(p.url)}" autocomplete="off" placeholder="https://…/v1"></details>
-        </div>`).join('')}
-        <p class="row" style="margin:0"><select id="newp" aria-label="Service to add">${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
-        ${chainHTML('chain', 'Models, tried from the top until one answers')}
-        ${chainHTML('vision', 'Models for explaining figures (they must accept images)')}
+        </div>`; }).join('')}
+        ${c.providers.length ? '' : '<p class="muted" style="margin:0 0 10px">No AI service yet. Choose the one you have a key for, add it, and paste the key.</p>'}<p class="row" style="margin:0"><select id="newp" aria-label="Service to add"><option value="" selected disabled>Choose a service…</option>${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
+        ${chainHTML('models', 'Models, tried from the top until one answers')}
         ${embedHTML()}
-        <label class="row" style="margin-top:14px"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow OpenRouter models that cost money. Without this, only models ending in “:free” are used there. Other providers are always asked, so choose their models with care.</label>
+        <p class="muted" style="margin:14px 0 0;font-size:13px">On OpenRouter, free models are always asked before paid ones, and a test uses a free model first. Models marked <span class="tag">paid</span> cost money when they answer.</p>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
-        <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600"></p>
-      </form>`) + `<h2 style="margin-top:1.6em">Transcription</h2><p class="muted lead">Videos use YouTube's own captions when they have them. For anything else, Whisper, OpenAI's open-source speech model, writes the transcript on this computer; nothing is uploaded anywhere. Download the YouTube helper for captions, and the program plus one model for Whisper. Bigger models are more accurate and slower.</p>
+        <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600;white-space:pre-line"></p>
+      </form>`) + `<h2 style="margin-top:1.6em">Library folder</h2><p class="muted lead">Your library, your PDFs and a Markdown copy of every source and notebook page live in this folder, in a folder per project. Back it up to back up everything.</p>
+      <form data-f="libdir" class="box set"><label for="libdir">Folder</label>${ST.fixed ? `<p><code>${esc(ST.dir)}</code></p><small class="muted">Set by DATA_DIR when the server starts, so it can't be changed here.</small>`
+        : `<input id="libdir" name="dir" value="${esc(ST.dir || '')}" autocomplete="off" spellcheck="false"><small class="muted">To move the library, give the full path of an empty folder (or one that doesn't exist yet). Everything is copied there and checked, then Marrow switches over; the old folder is left as it was.</small>
+        <p class="row" style="margin:12px 0 0"><button class="pri">Move library here</button></p>`}</form>` + `<h2 style="margin-top:1.6em">Transcription</h2><p class="muted lead">Videos use YouTube's own captions when they have them. For anything else, Whisper, OpenAI's open-source speech model, writes the transcript on this computer; nothing is uploaded anywhere. Download the YouTube helper for captions, and the program plus one model for Whisper. Bigger models are more accurate and slower.</p>
       <div id="whbox" class="box set">${whBox()}</div></div>`;
   },
   review() {
-    return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(inScope(), true)}
+    const ps = inScope(), dk = rdeck && byId(rdeck), op = ropen && byId(ropen);
+    const body = rtab === 'decks' ? (op ? `<p><a href="#" data-act="ropen" data-v="">← All decks</a></p><h2>${esc(op.title)}</h2>` + deckHTML(op, true) : `<p class="muted">One deck per source. Open one to read, add or delete its cards.</p>` + folders(ps))
+      : (dk ? `<p class="muted">Studying <b>${esc(dk.title)}</b> · <a href="#" data-act="rdeck" data-v="">study all decks</a></p>` : '') + cardsHTML(dk ? [dk] : ps, 'rv:' + (dk ? dk.id : 'all:' + F.project), !dk);
+    return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>
+      <div class="row" style="margin-bottom:14px">${[['study', 'Study'], ['decks', 'Decks']].map(([v, l]) => `<button class="chip ${rtab === v ? 'on' : ''}" data-act="rtab" data-v="${v}">${l}</button>`).join('')}</div>${body}
       <div class="sec"><h3>Study activity</h3><small class="muted">${plural(streak(), 'day')} streak</small></div>${heat()}</div>`;
   },
   matrix() {
@@ -2020,7 +2241,7 @@ const PAGE = {
   },
   map() {
     const on = lib.filter(p => p.concepts.length).length, shared = M.shared ?? on > 6;
-    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Squares are sources, circles are concepts, diamonds are your own notebook pages. Read along a line: every link is a sentence. Click anything to see everything you know about it; double-click the background to bring the whole map back.</p>` +
+    return `<div class="wrap wide"><h1>Concept map</h1><p class="muted">Squares are sources, circles are concepts, diamonds are your own notebook pages. Read along a line: every solid link is a sentence; dotted lines join concepts that mean similar things. A dashed ring marks a concept none of your highlights, cards or pages mention yet. Click anything to see everything you know about it; double-click the background to bring the whole map back.</p>` +
       (on ? `${filterBar(false)}<div class="cols"><span class="muted">Show</span><button class="chip ${shared ? 'on' : ''}" data-act="mapshared" data-v="1">Shared concepts only</button><button class="chip ${shared ? '' : 'on'}" data-act="mapshared" data-v="">Every concept</button>
         <span class="muted" style="margin-left:10px">Arrange</span><button class="chip ${M.by === 'cluster' ? 'on' : ''}" data-act="mapby" data-v="cluster">By topic</button><button class="chip ${M.by === 'year' ? 'on' : ''}" data-act="mapby" data-v="year">By year</button>
         <button class="chip" data-act="mapfit">Fit to screen</button><span class="sp"></span><span id="mapn" class="muted"></span></div>
@@ -2045,11 +2266,11 @@ async function ftSearch() {
 
 const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }, { left: '$', right: '$', display: false }] };
 function renderRail() {
-  const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
+  const d = due(inScope()).length, dark = document.documentElement.dataset.theme === 'dark'; // the same cards the Review page shows: the chosen project's
   $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}${v === 'discover' && news ? ((c) => c ? `<span class="n">${c}</span>` : '')(news.filter(x => !seen.has(x.link)).length) : ''}</button>`).join('');
-  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : ''; $('#outBtn').innerHTML = ic('out', 20) + 'Log out';
+  $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : '';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
-  $('#status').textContent = working;
+  paintStatus();
   try { history.replaceState(null, '', view === 'read' && P ? `#/read/${P.id}/${tab}` : `#/${view}${view === 'notebook' && N ? '/' + N : ''}`); } catch {} // the screen lives in the URL so a reload comes back to it
 }
 function render() {
@@ -2087,7 +2308,7 @@ function mxTable() {
   const bar = mxSel.size ? `<div class="row pickbar"><b>${mxSel.size} selected</b><span class="muted">Export, synthesis, the Notebook and AI fill now use only these.</span><span class="sp"></span><button data-act="mxonly">${mxOnly ? 'Show all rows' : 'Show only these'}</button><button data-act="mxclear">Clear selection</button></div>` : '';
   box.innerHTML = ps.length ? `${bar}<div class="mxwrap"><table class="mx"><tr><th><input type="checkbox" data-act="mxall" ${ps.every(p => mxSel.has(p.id)) ? 'checked' : ''} aria-label="Select every row shown"> Source <small>${ps.length}</small></th>${cols.map(c => `<th data-act="mxsolo" data-v="${esc(c.key)}" title="Show only this column">${esc(c.label)}${c.custom ? `<button data-act="mxfill" data-v="${esc(c.custom)}" title="Fill the empty cells of the rows shown, from each source's text">${filling === c.custom ? 'Stop' : 'Fill with AI'}</button><button data-act="mxdrop" data-v="${esc(c.custom)}" aria-label="Remove this column">${ic('x', 14)}</button>` : ''}</th>`).join('')}</tr>` +
     ps.map(p => `<tr><td><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:10px"><input type="checkbox" data-act="mxsel" data-id="${esc(p.id)}" ${mxSel.has(p.id) ? 'checked' : ''} aria-label="Select ${esc(p.title)}"><div><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a><small class="muted clamp" style="-webkit-line-clamp:2;margin-top:4px">${esc(byline(p))}</small></div></div></td>` + cols.map(c => `<td>` + (c.custom || c.key === 'take'
-      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p[CQ()]?.[c.custom] ? `<small>${cite(p, p[CQ()][c.custom])}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
+      ? `<textarea data-k="${c.custom ? 'col' : 'take'}" data-id="${esc(p.id)}" data-c="${esc(c.custom || '')}" placeholder="${c.custom ? 'Empty' : 'What do you make of it?'}" aria-label="${esc(c.label)}">${esc(mxVal(p, c))}</textarea>${c.custom && p[CQ()]?.[c.custom] ? `<small>${cite(p, p[CQ()][c.custom].n ?? p[CQ()][c.custom], p[CQ()][c.custom].q)}</small>` : c.custom && !mxVal(p, c).trim() ? `<button class="add" data-act="mxfill1" data-id="${esc(p.id)}" data-v="${esc(c.custom)}">Fill this cell with AI</button>` : ''}`
       : `<div class="cell" data-act="mxrow">${md(mxVal(p, c), p)}</div>`) + `</td>`).join('') + `</tr>`).join('') + `</table></div>` +
       (all.length > ps.length ? `<p class="muted">${all.length - ps.length} more ${all.length - ps.length === 1 ? 'source is' : 'sources are'} not analyzed yet and not shown.</p>` : '')
     : `<p class="box">${all.length ? 'These sources are not analyzed yet. Open one and its row appears here once the briefing is ready.' : lib.length ? 'No sources match these filters. Clear a filter to see more.' : 'Nothing here yet. Add a source and its row appears once its briefing is ready.'}</p>`;
@@ -2116,7 +2337,32 @@ function drawMap(ps, all) {
     n.many = all && !solo && n.in.length > 1 ? 1 : 0;
     if (all && !solo) for (const id of n.in) edges.push({ source: 'src:' + id, target: n.id });
   }
-  for (const p of ps) for (const l of p.links) { const a = ckey(l.from), b = ckey(l.to); if (a !== b && nodes.has(a) && nodes.has(b)) edges.push({ source: a, target: b, label: l.label, rel: 1 }); }
+  for (const p of ps) for (const l of p.links) { const a = ckey(l.from), b = ckey(l.to); if (a !== b && nodes.has(a) && nodes.has(b)) edges.push({ source: a, target: b, label: l.label, rel: 1, src: p.id }); }
+  // Concepts that mean similar things sit closer, even when no source links them.
+  // Only in the many-source force layout: the one-source tree and By year place nodes from real links alone.
+  const cNodes = [...nodes.values()].filter(n => !n.src && !n.page);
+  if (all && !solo && M.by !== 'year' && cNodes.length > 2) {
+    // Model: a link within a source needs the 88th percentile of similarity, across sources the 98th. Local TF-IDF can't tell
+    // meaning apart across sources (half its cross links joined unrelated fields), so it links within a source only.
+    const E = conceptNear(), vs = !E && conceptVecs(cNodes), seen = new Set();
+    for (let i = 0; i < cNodes.length; i++) {
+      const n = cNodes[i], near = E ? (E.near.get(n.id) || []).map(([k, s]) => [nodes.get(k), s]).filter(([m]) => m && !m.src)
+        : cNodes.map((m, j) => [m, vecCos(vs[i], vs[j])]).filter(([m]) => m !== n).sort((a, b) => b[1] - a[1]);
+      for (const [m, sim] of near.slice(0, 3)) {
+        const same = n.in.some(id => m.in.includes(id));
+        if (E ? sim < (same ? E.same : E.cross) : !same || sim < 0.08) continue;
+        const [a, b] = [n.id, m.id].sort(), k = a + '\n' + b; // each concept keeps its own top 3; a pair both picked is drawn once
+        if (!seen.has(k)) seen.add(k), edges.push({ source: a, target: b, sem: +sim.toFixed(3) });
+      }
+    }
+  }
+  // What's left to work on: a dashed ring on concepts none of your highlights, cards or pages mention yet. Only once you have started, or every concept would wear one.
+  if (all) {
+    const mine = [...ps.flatMap(p => [...(p.notes || []).map(n => (n.quote || '') + ' ' + (n.note || '')), ...(p.cards || []).map(c => (c.q || '') + ' ' + (c.a || ''))]),
+      ...notes.filter(pg => !F.project || pg.project === F.project).map(pg => pg.title + ' ' + pageText(pg))].join('\n').toLowerCase();
+    const todo = cNodes.filter(n => !mine.includes(n.label.toLowerCase()));
+    if (todo.length < cNodes.length) for (const n of todo) n.gap = 1;
+  }
   const deg = {}; for (const e of edges) if (e.rel) deg[e.source] = (deg[e.source] || 0) + 1, deg[e.target] = (deg[e.target] || 0) + 1;
   for (const n of nodes.values()) if (!n.src) n.w = all && !solo ? Math.min(46, 10 + 8 * n.in.length) : (n.many = +(deg[n.id] >= 3), Math.min(40, 14 + 4 * (deg[n.id] || 0))); // many sources: size by use; one source: by how much hangs off it
   // Your own notebook pages join the map wherever they mention a concept: the map holds your thinking, not only what the AI pulled out of sources.
@@ -2137,7 +2383,14 @@ function drawMap(ps, all) {
       : shown.map(p => `<button class="chip" data-act="mapsel" data-v="src:${esc(p.id)}" title="${esc(p.title)}">${ic(KIND[p.kind][1], 13)}${esc(p.title.length > 42 ? p.title.slice(0, 40) + '…' : p.title)}</button>`).join('')) : '';
   }
   // "By year" lays sources out left to right in time, one column per year, with each concept hanging between the sources that use it.
-  const box = $in('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 12)); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
+  const box = $in('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 12));
+  // The key: what each mark means, only for marks this map actually shows.
+  const nv = [...nodes.values()], many = all && !solo, key = `<div class="mlegend" aria-label="Map key"><span><i class="k-dot"></i>Concept (bigger: ${many ? 'used by more sources' : 'more links'})</span>` +
+    (nv.some(n => n.many) ? `<span><i class="k-dot acc"></i>${many ? 'In more than one source' : 'Key idea (3 or more links)'}</span>` : '') +
+    (nv.some(n => n.gap) ? '<span><i class="k-dot gap"></i>Not studied yet: none of your highlights, cards or pages mention it</span>' : '') +
+    (edges.some(e => e.rel) ? '<span><i class="k-arrow"></i>A link the source states; click a concept to read its links</span>' : '') +
+    (edges.some(e => e.sem) ? '<span><i class="k-dots"></i>Similar meaning</span>' : '') + (many ? '<span><i class="k-src"></i>Source</span>' : '') + (nv.some(n => n.page) ? '<span><i class="k-page"></i>Your page</span>' : '') + '</div>';
+  const at = box.closest('.mapgrid') || box; at.previousElementSibling?.classList.contains('mlegend') ? at.previousElementSibling.outerHTML = key : at.insertAdjacentHTML('beforebegin', key); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
   let layout = { name: 'cose', animate: nodes.size < 150 ? 'end' : false, animationDuration: 450, nodeRepulsion: () => 40000, idealEdgeLength: () => 220, nodeOverlap: 20, padding: 30, nodeDimensionsIncludeLabels: true,
     boundingBox: { x1: 0, y1: 0, w: box.clientWidth * big, h: box.clientHeight * big } };
   if (all && M.by === 'year') {
@@ -2162,6 +2415,7 @@ function drawMap(ps, all) {
     style: [
       { selector: 'node', style: { label: 'data(label)', 'font-family': css('--f-body'), 'font-size': 11, color: css('--ink'), 'background-color': css('--muted'), width: 'data(w)', height: 'data(w)', 'text-wrap': 'wrap', 'text-max-width': 110, 'text-margin-y': -5, 'min-zoomed-font-size': 6, ...label } },
       { selector: 'node[many > 0]', style: { 'background-color': css('--acc'), 'font-weight': 600 } },
+      { selector: 'node[gap]', style: { 'border-width': 2, 'border-style': 'dashed', 'border-color': css('--ink') } },
       { selector: 'node[src]', style: { shape: 'round-rectangle', 'background-color': css('--ok'), 'font-weight': 700, 'font-size': 12, 'text-max-width': 160 } },
       { selector: 'node[solo]', style: { display: 'none' } },
       { selector: 'node[page]', style: { shape: 'diamond', 'background-color': css('--ink'), 'font-style': 'italic', 'font-weight': 600 } },
@@ -2171,12 +2425,13 @@ function drawMap(ps, all) {
       { selector: 'edge[rel]', style: { width: 1.3, 'line-color': css('--muted'), 'target-arrow-shape': 'triangle', 'target-arrow-color': css('--muted'), 'arrow-scale': .7,
         label: 'data(label)', 'font-size': 9, color: css('--muted'), 'text-wrap': 'wrap', 'text-max-width': 100, 'min-zoomed-font-size': 7, ...label, 'text-opacity': 0, 'text-background-opacity': 0 } }, // a link's wording shows only when you hover or pick one of its ends, or the map turns to text soup
       { selector: 'edge[mine]', style: { 'line-style': 'dashed', 'line-color': css('--ink'), opacity: .45 } },
+      { selector: 'edge[sem]', style: { width: .6, 'line-style': 'dotted', 'line-color': css('--muted'), opacity: .3, 'curve-style': 'straight' } },
       { selector: '.dim', style: { opacity: .1 } },
       { selector: 'edge.hl', style: { 'text-opacity': 1, 'text-background-opacity': .95, width: 2, color: css('--ink'), 'line-color': css('--acc'), 'target-arrow-color': css('--acc'), opacity: 1, 'z-index': 9 } },
     ],
   });
   // Once the first layout settles, cola keeps simulating live (infinite), so dragging a node tugs its neighbours like Obsidian's graph view.
-  if (layout.name === 'cose' && window.cola && nodes.size <= 400) { const c = cy; cy.one('layoutstop', () => !c.destroyed() && c.elements(':visible').layout({ name: 'cola', infinite: true, fit: false, animate: true, randomize: false, avoidOverlap: true, nodeSpacing: () => 45, edgeLength: 230, handleDisconnected: true }).run()); }
+  if (layout.name === 'cose' && window.cola && nodes.size <= 400) { const c = cy; cy.one('layoutstop', () => !c.destroyed() && c.elements(':visible').layout({ name: 'cola', infinite: true, fit: false, animate: true, randomize: false, avoidOverlap: true, nodeSpacing: () => 45, edgeLength: e => e.data('sem') ? Math.round(200 - 140 * e.data('sem')) : 230, handleDisconnected: true }).run()); }
   mapLayout(layout === 'tree' ? cy.elements().not('[solo]') : null, layout);
   smoothZoom(cy, box);
   let picked = null;
@@ -2235,39 +2490,54 @@ function mapLayout(eles, layout, root) {
 // ponytail: substring match on each block's JSON data; a concept called "text" or "items" would match the field names. Use the editor's plain text if that bites.
 const pageText = pg => docOf(pg).blocks.map(b => JSON.stringify(b.data || '')).join(' ').replace(/<[^>]+>/g, ' ');
 // A concept's page: every place it turns up, in the sources and in your own work.
+const explained = {}; // concept id -> the AI's explanation of its links, kept until the page is reloaded
 function conceptPanel(node, all) {
   const d = node.data(), k = d.label.toLowerCase(), has = s => String(s || '').toLowerCase().includes(k);
   const defs = d.in.map(id => [byId(id), byId(id)?.concepts.find(c => ckey(c.name) === d.id)?.def]).filter(([p, def]) => p && def);
   const pill = n => `<button class="chip" data-act="mapsel" data-v="${esc(n.id())}">${esc(n.data('label'))}</button>`;
-  const rels = node.connectedEdges('[rel]').map(e => { const out = e.source().same(node); return `<p class="rel">${out ? `<b>${esc(d.label)}</b>` : pill(e.source())} ${esc(e.data('label'))} ${out ? pill(e.target()) : `<b>${esc(d.label)}</b>`}</p>`; });
+  // Each link as a sentence, with what the other concept means, whether you have studied it, and which source states the link.
+  const rels = node.connectedEdges('[rel]').map(e => { const out = e.source().same(node), o = out ? e.target() : e.source(), od = o.data(), from = all && byId(e.data('src'));
+    return `<div class="rel"><p>${out ? `<b>${esc(d.label)}</b>` : pill(o)} <i>${esc(e.data('label'))}</i> ${out ? pill(o) : `<b>${esc(d.label)}</b>`}</p>` +
+      (od.def ? `<small>${esc(od.label)}: ${esc(od.def)}</small>` : '') + (od.gap || from ? `<small class="muted">${[od.gap ? '◌ Not studied yet' : '', from ? 'From ' + esc(short(from)) : ''].filter(Boolean).join(' · ')}</small>` : '') + '</div>'; });
+  const todo = node.connectedEdges('[rel]').connectedNodes().not(node).filter('[gap]').length;
+  // Similar ideas anywhere in the library, from the embedding model: other words for the same idea, and the same idea in other sources.
+  const E = conceptNear(), mine = new Set(d.in), srcOf = kk => lib.filter(p => (p.concepts || []).some(c => ckey(c.name) === kk));
+  const sims = E ? (E.near.get(d.id) || []).map(([kk, s]) => { const ps = srcOf(kk); return { kk, s, ps, cross: !ps.some(p => mine.has(p.id)) }; }).filter(x => x.ps.length && x.s >= (x.cross ? E.cross : E.same)).slice(0, 6) : [];
+  const simHTML = !E ? `<p class="muted">${CN.failed ? 'The embedding model did not answer, so similar ideas are not shown. Check it in Settings.' : CN.none ? 'Choose an embedding model in <a href="#" data-view="settings">Settings → Map links and long sources</a> to see ideas like this one, including in your other sources and under other names.' : 'Looking for similar ideas…'}</p>`
+    : sims.length ? sims.map(x => { const nm = x.ps[0].concepts.find(c => ckey(c.name) === x.kk).name; return `<p>${cy.$id(x.kk).length ? `<button class="chip" data-act="mapsel" data-v="${esc(x.kk)}">${esc(nm)}</button>` : `<b>${esc(nm)}</b>`} <small class="muted">${x.cross ? 'another source: ' : ''}${x.ps.slice(0, 2).map(p => `<a href="#" data-open="${esc(p.id)}">${esc(short(p))}</a>`).join(', ')}</small></p>`; }).join('')
+    : '<p class="muted">Nothing in your library is close enough in meaning.</p>';
   const pool = all ? scoped() : d.in.map(byId).filter(Boolean);
   const hls = pool.flatMap(p => (p.notes || []).filter(n => has(n.quote) || has(n.note)).map(n => [p, n])).slice(0, 6);
   const cards = pool.flatMap(p => (p.cards || []).filter(c => has(c.q) || has(c.a)).map(c => [p, c])).slice(0, 6);
   const pages = notes.filter(pg => (!F.project || pg.project === F.project) && (has(pg.title) || has(pageText(pg))));
   const near = node.closedNeighborhood().closedNeighborhood().nodes().not('[solo]').length;
   return `<div class="k" style="margin-top:0">Concept</div><h3>${esc(d.label)}</h3>` +
+    `<p class="muted mstat">${[rels.length ? 'Linked to ' + plural(rels.length, 'concept') : '', d.in.length ? 'in ' + plural(d.in.length, 'source') : '', todo ? `${todo} linked ${todo === 1 ? 'concept' : 'concepts'} not studied yet` : ''].filter(Boolean).join(' · ')}</p>` +
     (defs.length > 1 ? defs.map(([p, def]) => `<p>${md(def, p)} <small class="muted">— <a href="#" data-open="${esc(p.id)}">${esc(p.title)}</a></small></p>`).join('') : `<p>${md(d.def, null)}</p>`) +
     `<div class="acts"><button data-act="mappage" data-v="${esc(d.label)}" data-s="${esc(d.in.join(','))}">Start a page on this</button>${near < cy.nodes(':visible').length ? `<button data-act="mapfocus" data-v="${esc(d.id)}">Show only what's around it</button>` : ''}${cy.nodes(':hidden').not('[solo]').length ? `<button data-act="mapall">Show the whole map</button>` : ''}</div>` +
-    (rels.length ? `<div class="k">How it connects</div>${rels.join('')}` : '') +
+    (rels.length ? `<div class="k">How it connects</div>` + (explained[d.id] || `<p class="row"><button data-act="mapexplain" data-v="${esc(d.id)}" ${working ? 'disabled' : ''}>${ic('bulb', 16)}Explain these connections</button><small class="muted">The AI says why each link holds, quoting the source.</small></p>`) + rels.join('') : '') +
+    `<div class="k">Similar ideas</div>${simHTML}` +
     (all && d.in.length ? `<div class="k">In ${d.in.length} source${d.in.length === 1 ? '' : 's'}</div>` + d.in.map(id => `<p><a href="#" data-open="${esc(id)}">${esc(byId(id)?.title)}</a></p>`).join('') : '') +
-    `<div class="k">Your highlights</div>` + (hls.length ? hls.map(([p, n]) => `<blockquote>${n.quote ? `“${esc(n.quote)}”` : ''}${n.note ? `<br><b>${esc(n.note)}</b>` : ''} <small>${n.page ? cite(p, n.page) : ''}</small></blockquote>`).join('') : '<p class="muted">None mention it yet.</p>') +
+    `<div class="k">Your highlights</div>` + (hls.length ? hls.map(([p, n]) => `<blockquote>${n.quote ? `“${esc(n.quote)}”` : ''}${n.note ? `<br><b>${esc(n.note)}</b>` : ''} <small>${n.page ? cite(p, n.page, n.quote) : ''}</small></blockquote>`).join('') : '<p class="muted">None mention it yet.</p>') +
     `<div class="k">Your cards</div>` + (cards.length ? cards.map(([, c]) => `<p>${esc(c.q)}</p>`).join('') : '<p class="muted">None yet.</p>') +
     `<div class="k">Your pages</div>` + (pages.length ? pages.map(pg => `<p><a href="#" data-act="nbgo" data-id="${esc(pg.id)}">${esc(pg.title || 'Untitled page')}</a></p>`).join('') : '<p class="muted">No page mentions it yet.</p>');
 }
 const drawBig = () => $('#cy') && drawMap(scoped(), true);
 
 // ---------- export, backup, migration ----------
-function exportMd() {
-  const b = P.brief || {}, L = [`# ${P.title}`, '', P.url ? `<${P.url}>` : '', '', `> ${b.tldr || ''}`, ''];
+// A source as Markdown: what Export downloads, and the copy kept in the library folder (sent with every save).
+const srcMd = p => {
+  const b = p.brief || {}, L = [`# ${p.title}`, '', p.url ? `<${p.url}>` : '', '', `> ${b.tldr || ''}`, ''];
   for (const [k, v] of [['Problem', b.problem], ['Core idea', b.idea], ['Method', b.method], ['Results', b.results], ['Limitations', b.limitations]]) if (v) L.push(`## ${k}`, v, '');
-  L.push('## Reading map'); for (const s of P.sections) L.push(`### ${s.title} (${loc(P, s.page)})`, `**Q:** ${s.question}`, s.answer ? `**My answer:** ${s.answer}` : '', s.model ? `**Strong answer:** ${s.model}` : '', '');
-  if (P.feynman?.text) L.push('## My explanation', P.feynman.text, '');
-  if (P.take) L.push('## My take', P.take, '');
-  L.push('## Notes'); for (const n of P.notes) L.push(n.quote ? `> ${n.quote} (${loc(P, n.page)})` : '', n.note || '', '');
-  L.push('## Concepts'); for (const c of P.concepts) L.push(`- [[${c.name}]] — ${c.def}`);
-  L.push('', '## Flashcards'); for (const c of P.cards) L.push(`${c.q} :: ${c.a}`);
-  dl(fname(P.title) + '.md', L.join('\n'), 'text/markdown');
-}
+  L.push('## Reading map'); for (const s of p.sections || []) L.push(`### ${s.title} (${loc(p, s.page)})`, `**Q:** ${s.question}`, s.answer ? `**My answer:** ${s.answer}` : '', s.model ? `**Strong answer:** ${s.model}` : '', '');
+  if (p.feynman?.text) L.push('## My explanation', p.feynman.text, '');
+  if (p.take) L.push('## My take', p.take, '');
+  L.push('## Notes'); for (const n of p.notes || []) L.push(n.quote ? `> ${n.quote} (${loc(p, n.page)})` : '', n.note || '', '');
+  L.push('## Concepts'); for (const c of p.concepts || []) L.push(`- [[${c.name}]] — ${c.def}`);
+  L.push('', '## Flashcards'); for (const c of p.cards || []) L.push(`${c.q} :: ${c.a}`);
+  return L.join('\n');
+};
+function exportMd() { dl(fname(P.title) + '.md', srcMd(P), 'text/markdown'); }
 const bib = p => {
   const a = p.meta?.authors || [], y = p.meta?.year || '';
   const k = norm((a[0] || 'source').split(' ').pop() + y + (p.title.match(/[A-Za-z]{4,}/) || [''])[0]);
@@ -2544,7 +2814,7 @@ const curNote = () => notes.find(x => x.id === N);
 async function fillCell(p, c) { // one matrix cell, answered from the source's own text and tied to a sentence in it
   await text(p);
   const j = await aiJSON(`You fill one cell of a literature-review table. The column is "${c}". From the source below, give what belongs in that column for this source. JSON: {"answer":"at most 40 words, or 'Not stated' if the source does not say","quote":"one sentence copied VERBATIM from the source that supports the answer, or ''"}. Plain text. Never guess.`, fullText(p));
-  (p[CS()] ||= {})[c] = String(j.answer || 'Not stated'); (p[CQ()] ||= {})[c] = findQuote(p, j.quote); save(p);
+  (p[CS()] ||= {})[c] = String(j.answer || 'Not stated'); const at = findQuote(p, j.quote); (p[CQ()] ||= {})[c] = at ? { n: at, q: String(j.quote) } : 0; save(p);
 }
 async function discover(q) {
   disc.q = q; disc.busy = true; render();
@@ -2584,23 +2854,33 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && t.classList?.contains('ttl')) { e.preventDefault(); return ed?.focus(); } // from the title straight into the page
   if (e.ctrlKey || e.metaKey || e.altKey || $('#pal').open || $('#peek').open || /INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
   if (e.key === '/') { e.preventDefault(); return ACT.palette(); }
+  if (e.key === '?') { e.preventDefault(); return $('#keys').togglePopover(); }
   if (e.key === 'Enter' && t.matches('[tabindex][data-open],[tabindex][data-act]')) return t.click();
   const root = view === 'read' ? $('#body') : $('#page');
   const b = e.key === ' ' && t.tagName !== 'BUTTON' ? root.querySelector('[data-act=show]') : root.querySelectorAll('[data-act=grade]')[+e.key - 1];
   if (b) { e.preventDefault(); b.click(); }
 });
 const ACT = {
-  tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
+  tab: el => { tab = el.dataset.t; enter($('#body')); render(); },
   look: el => { const v = el.dataset.v; try { localStorage.look = v; } catch {} vt(() => { v ? document.documentElement.dataset.look = v : delete document.documentElement.dataset.look; render(); }); },
-  logout: async () => { await fetch('/api/logout', { method: 'POST' }).catch(() => {}); location.reload(); },
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
   palette: () => { palPick = null; $('#palq').value = ''; $('#palq').placeholder = 'Jump to a source, a note or a page. Or paste a link to add it.'; palI = 0; palette(); $('#pal').showModal(); },
   sample: async el => { el.disabled = true; toast('Fetching that link…'); try { await addLink(el.dataset.v); } catch (e) { toast(e.message); el.disabled = false; } },
   find: el => { go('discover'); discover(el.dataset.v); },
-  show: () => { shown = fx = true; render(); },
-  grade: el => { const p = byId(el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; fx = true; log('review', p); save(p); render(); },
-  delcard: el => { P.cards.splice(+el.dataset.i, 1); save(P); render(); },
+  show: () => flipTop(),
+  grade: el => gradeTop(+el.dataset.g),
+  delcard: el => { const p = byId(el.dataset.pid); p.cards.splice(+el.dataset.i, 1); save(p); render(); },
+  newcard: el => { adding = el.dataset.pid || null; render(); vroot().querySelector('form[data-f=newcard] textarea')?.focus(); },
+  morecards: el => run('Writing more cards…', async p => {
+    await text(p);
+    const j = await aiJSON(SYS_CARDS + '\n\nThe deck already has these questions. Write new ones that test other ideas:\n' + p.cards.map(c => '- ' + c.q).join('\n'), await sourceText(p, 'the core argument, the method, the evidence and the assumptions'));
+    const add = (j.cards || []).filter(c => c.q && c.a).map(c => ({ q: c.q, a: c.a, quote: c.quote || '', src: findQuote(p, c.quote) }));
+    p.cards.push(...add); toast(add.length ? `Added ${plural(add.length, 'card')}.` : 'No new cards: the AI found nothing the deck does not already test.');
+  }, byId(el.dataset.pid)),
+  rtab: el => { rtab = el.dataset.v; render(); },
+  rdeck: el => { rdeck = el.dataset.v || null; rtab = 'study'; render(); },
+  ropen: el => { ropen = el.dataset.v || null; adding = null; render(); },
   delnote: el => { P.notes.splice(+el.dataset.i, 1); save(P); render(); paintAll(); },
   bib: () => navigator.clipboard.writeText(bib(P)).then(() => toast('BibTeX copied.'), () => toast(bib(P))),
   addnote: () => { P.notes.unshift({ note: '' }); save(P); render(); $('#body textarea')?.focus(); },
@@ -2662,21 +2942,25 @@ const ACT = {
   cfgdel: el => { const p = cfg.providers[+el.dataset.i]; p.clearKey = true; p.replace = false; p.key = ''; render(); }, // takes effect on Save
   cfgrep: el => { cfg.providers[+el.dataset.i].replace = true; render(); },
   cfgundo: el => { const p = cfg.providers[+el.dataset.i]; p.clearKey = p.replace = false; p.key = ''; render(); },
-  cfgfind: async el => { const id = cfg.providers[+el.dataset.i].id; if (await saveCfg()) await probe(cfg.providers.find(p => p.id === id)); render(); }, // saves, then tests and loads the models
-  cfgall: async () => { if (await saveCfg()) await Promise.all(cfg.providers.map(probe)); render(); },
-  cfgpick: el => { const p = cfg.providers[+el.dataset.i]; if (!cfg.chain.some(e => e.p === p.id && e.m === el.dataset.id)) cfg.chain.push({ p: p.id, m: el.dataset.id }); persist(); },
-  cfgadd: el => { const k = el.dataset.k, m = $('#add-' + k + '-m').value.trim(), p = $('#add-' + k + '-p').value; if (m && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push({ p, m }); persist(); },
+  // Saves, then tests and loads the models. The panel shows a spinner and the button waits until the answer is in.
+  cfgfind: async el => { const id = cfg.providers[+el.dataset.i].id; stat[id] = { ok: null, msg: 'Saving and testing…' }; render(); if (await saveCfg()) await probe(cfg.providers.find(p => p.id === id)); else delete stat[id]; render(); },
+  cfgall: async () => { for (const p of cfg.providers) stat[p.id] = { ok: null, msg: 'Saving and testing…' }; render(); if (await saveCfg()) await Promise.all(cfg.providers.map(probe)); else stat = {}; render(); },
+  cfgpick: el => { const k = el.dataset.k, p = pickP(k); if (!cfg[k].some(e => e.p === p && e.m === el.dataset.id)) cfg[k].push(fresh(p, el.dataset.id)); pick[k].q = ''; persist(); },
+  cfgadd: el => { const k = el.dataset.k, m = pick[k].q.trim(), p = pickP(k); if (m && p && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push(fresh(p, m)); pick[k].q = ''; persist(); },
   cfgtm: async el => { // asks this one model for a one-word reply (saves first: the server tests what is saved)
     const k = el.dataset.k, e = cfg[k][+el.dataset.i], key = k + '|' + e.p + '|' + e.m, t = Date.now();
     mstat[key] = { ok: null, msg: 'Testing…' }; render();
     if (await saveCfg()) { try { await send('POST', 'settings/test', { p: e.p, m: e.m }); mstat[key] = { ok: true, msg: `Works · ${((Date.now() - t) / 1000).toFixed(1)} s` }; } catch (x) { mstat[key] = { ok: false, msg: x.message.replace(/^.*?\/ [^:]+: /, '') }; } } else delete mstat[key];
     render();
   },
+  cfgflag: el => { const e = cfg.models[+el.dataset.i]; e[el.dataset.f] = !e[el.dataset.f]; persist(); },
+  cfgclose: el => closePick(el.dataset.k),
   cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); persist(); },
-  cfgemb: () => { const p = $('#emb-p').value, m = $('#emb-m').value.trim(); cfg.embed = p && m ? { p, m } : null; persist(); },
+  leuse: () => { cfg.embed = { p: 'local', m: le.name }; persist(); toast(`The map and Ask now use ${le.name} on this computer. Press “Index my library” to prepare sources you saved before.`); },
+  cfgemb: () => { const p = $('#emb-p').value, m = p === 'local' ? le?.name : $('#emb-m').value.trim(); cfg.embed = p && m ? { p, m } : null; persist(); },
   cfgidx: async () => { toast('Indexing your library. This can take a while…'); try { await send('POST', 'embed', { all: true }); toast('Your library is indexed.'); } catch (e) { toast('Could not index: ' + e.message); } },
-  cfgaddp: () => { const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
-  cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); for (const k of ['chain', 'vision']) cfg[k] = cfg[k].filter(e => e.p !== p.id); render(); },
+  cfgaddp: () => { if (!$('#newp').value) return toast('Choose a service first.'); const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
+  cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); cfg.models = cfg.models.filter(e => e.p !== p.id); render(); },
   cfgtest: async () => { // asks the saved models, in order, for a one-word reply and says, in place, whether it worked
     const say = (msg, color) => { const el = $('#cfgstate'); if (el) { el.textContent = msg; el.style.color = color; } }, t = Date.now();
     say('Checking: asking the first model that answers for a one-word reply…', 'var(--muted)');
@@ -2694,8 +2978,15 @@ const ACT = {
   mapshared: el => { M.shared = !!el.dataset.v; render(); },
   mapby: el => { M.by = el.dataset.v; render(); },
   mapfit: () => cy?.animate({ fit: { padding: 30 } }, { duration: 300 }),
-  whget: async el => { try { wh = await api('whisper?what=' + encodeURIComponent(el.dataset.v), { method: 'POST' }); } catch (e) { toast('Could not start the download: ' + e.message); } paintWh(); },
+  whget: async el => { if (el.dataset.ep === 'localemb') { try { le = await api('localemb?what=' + el.dataset.v, { method: 'POST' }); } catch (e) { toast('Could not start the download: ' + e.message); } return paintLe(); }
+    try { wh = await api('whisper?what=' + encodeURIComponent(el.dataset.v), { method: 'POST' }); } catch (e) { toast('Could not start the download: ' + e.message); } paintWh(); },
   whdel: async el => {
+    if (el.dataset.ep === 'localemb') { // deleting what is in use turns the map's and Ask's embedding model off (the server clears it)
+      const k = el.dataset.v, name = k === 'model' ? le.name : 'the llama.cpp program', size = k === 'model' ? le.model.size : 25e6;
+      if (!el.dataset.stop && !(await sure(`Delete ${name}?`, `It frees ${bytes(size)}.${cfg?.embed?.p === 'local' ? ' The map and Ask stop using it until you download it again or choose another model.' : ''} You can download it again any time.`))) return;
+      try { le = await api('localemb?what=' + k, { method: 'DELETE' }); cfg = merged(await api('settings')); CN = { key: '' }; } catch (e) { toast('Could not delete it: ' + e.message); }
+      return view === 'settings' ? render() : paintLe();
+    }
     const k = el.dataset.v, m = wh.models.find(x => 'model:' + x.id === k), name = m?.name || (k === 'program' ? 'the Whisper program' : 'the YouTube helper');
     if (!el.dataset.stop && !(await sure(`Delete ${name}?`, `It frees ${bytes(m?.size || (k === 'program' ? 9e6 : 24e6))}. Transcripts you already have stay. You can download it again any time.`))) return;
     try { wh = await api('whisper?what=' + encodeURIComponent(k), { method: 'DELETE' }); } catch (e) { toast('Could not delete it: ' + e.message); } paintWh();
@@ -2704,6 +2995,23 @@ const ACT = {
   txyt: () => transcribeIt(P),
   txfile: () => { const p = P, i = Object.assign(document.createElement('input'), { type: 'file', accept: 'audio/*,video/*' }); i.onchange = () => i.files[0] && transcribeIt(p, i.files[0]); i.click(); },
   txstop: () => { const id = tx?.id; tx = null; api('transcribe?id=' + id, { method: 'DELETE' }).catch(() => {}); render(); },
+  // Not run(): that re-renders the page, which would redraw the map and lose the picked concept. Same pill, same busy flag.
+  mapexplain: async el => {
+    const id = el.dataset.v, n = cy?.$id(id); if (!n?.length) return;
+    if (working) return toast('Still working on the last request. Try again when it finishes.');
+    const d = n.data(), label = `Explaining how “${d.label}” connects…`; jobs++; working = label; renderRail(); el.disabled = true;
+    try {
+      const ps = d.in.map(byId).filter(Boolean).slice(0, 3); for (const p of ps) await text(p);
+      const links = n.connectedEdges('[rel]').map(e => `${e.source().data('label')} ${e.data('label')} ${e.target().data('label')}`), share = Math.floor(150000 / Math.max(1, ps.length));
+      const ctx = (await Promise.all(ps.map(async (p, i) => `=== S${i + 1}: "${p.title}" ===\n` + (await sourceText(p, d.label + ': ' + links.join('; '))).slice(0, share)))).join('\n\n');
+      const j = await aiJSON(`You explain one concept on a researcher's concept map, using only the sources below ("=== S1 ===" starts a source; markers like [p.N] number its parts). Concept: "${d.label}"${d.def ? ` (${d.def})` : ''}. Its links on the map:\n${links.map(l => '- ' + l).join('\n')}\nJSON: {"summary":"2 plain sentences: what this concept does in the source and why it matters","links":[{"link":"the link exactly as listed","why":"1-2 short plain sentences: why the link holds and what it tells the reader","src":"S1","quote":"one sentence copied VERBATIM from that source that supports it"}]}. Leave out any link the sources do not support. Plain text, no LaTeX.`, ctx);
+      // Quotes are checked against the source text; one that is not found is flagged, not hidden.
+      explained[id] = `<div class="explain"><p>${esc(j.summary || '')}</p>` + (j.links || []).map(l => { const p = ps[(+String(l.src || '').replace(/\D/g, '') || 1) - 1] || ps[0], at = p && l.quote ? findQuote(p, l.quote) : 0;
+        return `<div class="rel"><p><b>${esc(l.link)}</b></p><p>${esc(l.why)}</p>${l.quote ? `<blockquote>“${esc(l.quote)}” <small>${at ? cite(p, at, l.quote) : '<span class="bad">Not found in the source</span>'}</small></blockquote>` : ''}</div>`; }).join('') + '</div>';
+    } catch (e) { toast(e.message); }
+    if (!--jobs) working = ''; renderRail();
+    if (cy?.$id(id).length) cy.$id(id).emit('tap'); // redraw the panel with the explanation
+  },
   mapsel: el => { const n = cy?.$id(el.dataset.v); if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
   mapjump: el => { const n = el.value && cy?.$id('src:' + el.value); el.value = ''; if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
   mapfocus: el => { const n = cy.$id(el.dataset.v), keep = n.closedNeighborhood().closedNeighborhood().not('[solo]'); cy.elements().not(keep).style('display', 'none'); mapLayout(keep, 'tree', n); n.emit('tap'); },
@@ -2812,7 +3120,7 @@ const ACT = {
   nbicon: () => { const el = $('#icons'); el.innerHTML = el.innerHTML ? '' : `<div class="icons">${ICONS.map(x => `<button data-act="nbseticon" data-v="${x}" aria-label="${x}" title="${x}">${ic(x, 20)}</button>`).join('')}<button data-act="nbseticon" data-v="">Remove icon</button></div>`; },
   nbseticon: async el => { const n = curNote(); if (edDirty) await keepEd(); docOf(n).icon = el.dataset.v; putDoc(n); dropEd(); render(); }, // the page is redrawn with its new icon, after the editor's text is saved
   tocgo: el => [...document.querySelectorAll('#ed h2,#ed h3,#ed h4')].filter(h => h.textContent.trim())[+el.dataset.i]?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-  nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`, 'text/markdown'); },
+  nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', pageMd(n), 'text/markdown'); },
   nbaddsrc: () => pickSource('Choose the sources to work with on this page', id => { const s = docOf(curNote()).sources, i = s.indexOf(id); i < 0 ? s.push(id) : s.splice(i, 1); putDoc(curNote()); nbSrc(); nbSide(); }, id => docOf(curNote()).sources.includes(id)),
   nbunsrc: el => { const n = curNote(), s = docOf(n).sources; s.splice(s.indexOf(el.dataset.id), 1); putDoc(n); nbSrc(); nbSide(); },
   work: el => work(el.dataset.q),
@@ -2844,6 +3152,7 @@ const SET = {
   nbfolder: v => { const n = curNote(); docOf(n).folder = v.trim(); n.note = JSON.stringify(docOf(n)); nbSide(); }, // the folder lives in the page's saved text, so it is stored with the page
 };
 const FORM = {
+  newcard: f => { const p = byId(f.dataset.pid); p.cards.push({ q: f.q.value.trim(), a: f.a.value.trim() }); adding = null; save(p); render(); toast('Card added.'); },
   ask: f => ask(f.q.value),
   add: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); if (!v) return;
@@ -2863,6 +3172,17 @@ const FORM = {
     PJ = [...new Set(PJ.map(x => x === old ? v : x).concat(v))]; saveProjects();
     if (!merged && mxAll[old]) mxAll[v] = mxAll[old]; delete mxAll[old]; mxKeep();
     ACT.setproject({ dataset: { v } }); toast(merged ? `Merged “${old}” into the existing project “${v}”.` : `Renamed to “${v}”.`);
+  },
+  firstrun: async f => { // the first launch's folder; a later move is libdir below
+    const b = f.querySelector('button'); b.disabled = true; $('#frerr').textContent = '';
+    try { await send('POST', 'store', { dir: f.dir.value.trim() }); location.reload(); } catch (e) { $('#frerr').textContent = e.message; b.disabled = false; }
+  },
+  libdir: async f => {
+    const dir = f.dir.value.trim(), b = f.querySelector('button'); if (!dir || dir === ST.dir) return;
+    b.disabled = true; b.textContent = 'Moving…';
+    try { ST = await send('POST', 'store', { dir }); toast('Your library now lives in ' + ST.dir + '. The old folder is left as it was; delete it when you are happy.'); }
+    catch (e) { toast('Could not move the library: ' + e.message); }
+    render();
   },
   newproj: f => { const v = f.p.value.trim(); if (!v) return; PJ = [...new Set([...PJ, v])]; saveProjects(); ACT.setproject({ dataset: { v } }); toast(`Project “${v}” created. Sources you add now are filed in it.`); },
   follow: async f => {
@@ -2891,8 +3211,9 @@ function onClick(e) {
   e.preventDefault();
   if (d.view) return go(d.view);
   if (d.open) return openItem(d.open, +d.n || 0);
-  if (view !== 'read' || (d.pid && d.pid !== P.id)) return openItem(d.pid || P.id, +d.page);
-  gotoPage(+d.page);
+  const q = d.q, n = +d.page;
+  if (view !== 'read' || (d.pid && d.pid !== P.id)) return openItem(d.pid || P.id, n).then(() => q && flashQuote(n, q));
+  gotoPage(n); if (q) flashQuote(n, q);
 }
 // Drag a page in the sidebar onto a folder (files it there), or onto a project's name (moves it there, out of any folder).
 let dragPg = null;
@@ -2919,14 +3240,15 @@ document.addEventListener('dragend', () => { dragFrom = null; });
 document.addEventListener('change', e => {
   const d = e.target.dataset;
   if (d.act) return onClick(e);
+  if (d.pk) { pick[d.pk].p = e.target.value; return render(); }
+  if (e.target.id === 'emb-p') { $('#emb-list').innerHTML = embOpts(e.target.value); if (e.target.value === 'local') $('#emb-m').value = le?.name || ''; return; }
   if (d.k === 'take' || d.k === 'col') save(byId(d.id));
   else if (d.k?.startsWith('nb')) { clearTimeout(nbT); saveNote(curNote()); renderRail(); }
   else if (d.k && P) { save(P); renderRail(); }
 });
 document.addEventListener('input', e => {
   const t = e.target, v = t.value;
-  if (t.name === 'paid' && cfg) cfg.paid = t.checked;
-  if (t.dataset?.ff) { const i = +t.dataset.ff, p = cfg.providers[i]; ffilter[p.id] = v; $('#fl' + i).innerHTML = foundRows(p, i); $('#fc' + i).textContent = ''; return; }
+  if (t.dataset?.pq) { const k = t.dataset.pq; pick[k].q = v; pick[k].open = true; $('#ml-' + k).innerHTML = pickRows(k); return; }
   if (t.dataset?.cf) { const p = cfg.providers[+t.dataset.i]; p[t.dataset.cf] = v; if (t.dataset.cf === 'key' && v) p.clearKey = false; return; } // Settings: providers are edited in cfg and sent on Save
   if (t.id === 'q') { F.q = v; libRows(); clearTimeout(ftT); ftT = setTimeout(ftSearch, 300); return; }
   if (t.id === 'nbq') return nbSide();
@@ -2935,6 +3257,10 @@ document.addEventListener('input', e => {
   SET[t.dataset.k]?.(v, t.dataset);
   if (t.dataset.k?.startsWith('nb')) { curNote().updated = Date.now(); clearTimeout(nbT); nbT = setTimeout(() => saveNote(curNote()), 1500); }
 });
+document.addEventListener('keydown', e => { const k = e.target.dataset?.pq; if (!k) return; // Enter adds the top match, else the name as typed; Esc closes the list
+  if (e.key === 'Enter') { e.preventDefault(); ($('#ml-' + k + ' [data-act=cfgpick]') || e.target.nextElementSibling).click(); }
+  if (e.key === 'Escape' && pick[k].open) { e.preventDefault(); closePick(k); } });
+document.addEventListener('click', e => { for (const k in pick) if (pick[k].open && !e.target.closest?.('.madd, .mlist')) closePick(k); });
 document.addEventListener('submit', e => { const f = e.target.dataset.f; if (f) { e.preventDefault(); FORM[f](e.target); } });
 $('#resFile').onchange = e => e.target.files[0] && restore(e.target.files[0]).catch(err => toast('Not a valid Marrow backup: ' + err.message));
 $('#file').onchange = e => addFiles(e.target.files);
@@ -3016,14 +3342,28 @@ $('#sel').onclick = e => {
   if (k === 'note') mark({ c: 1 }, true);
   if (k === 'explain') ask(`Explain this passage from p.${at.page} in plain language, with the intuition behind it:\n"${quote}"`);
   if (k === 'card') run('Writing a flashcard…', async p => {
-    const j = await aiJSON('Turn the passage into one flashcard that tests the underlying idea. JSON: {"q":"","a":"short answer"}', quote);
+    const j = await aiJSON('Turn the passage into one flashcard that tests the idea behind it. ' + CARD_RULES + ' JSON: {"q":"","a":""}', quote);
     p.cards.push({ q: j.q, a: j.a }); toast('Card added: ' + j.q);
   });
 };
 
 // ---------- boot ----------
+// First launch: nothing loads until the reader says where the library lives. A browser can't open a folder picker that answers with a path on the server, so it is typed.
+let ST = await api('store').catch(() => ({}));
+if (ST.dir === null) await new Promise(() => {
+  document.body.insertAdjacentHTML('beforeend', `<div id="firstrun" style="position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;padding:16px;overflow:auto">
+    <form data-f="firstrun" class="box" style="width:min(560px,100%)"><h2 style="margin-top:0">Where should Marrow keep your library?</h2>
+      <p class="muted">Everything goes in one folder: the library (<code>marrow.db</code>), your PDFs and a Markdown copy of every source and notebook page, in a folder per project. You can move it later in Settings.</p>
+      ${ST.legacy ? `<p>Your library is in <code style="word-break:break-all">${esc(ST.legacy)}</code>. Keep that folder, or give another and it is copied there (the old folder is left as it is).</p>` : ''}
+      <label for="frdir">Folder (full path)</label><input id="frdir" name="dir" required value="${esc(ST.suggest || '')}" autocomplete="off" spellcheck="false">
+      <p id="frerr" role="alert" style="color:var(--vid);min-height:1.4em;margin:8px 0 0"></p><button class="pri">Use this folder</button></form></div>`);
+  $('#frdir').focus();
+}); // waits forever: choosing the folder reloads the page
 try {
-  ({ items: lib, notes, activity, feeds = [], projects: PJ = [] } = await api('library'));
+  const L0 = await api('library');
+  ({ items: lib, notes, activity, feeds = [], projects: PJ = [] } = L0);
+  // Sources and pages from before the library folder have no Markdown copy yet: saving each once writes it.
+  for (const id of L0.unmirrored || []) { const p = byId(id); if (p) save(p); else saveNote(notes.find(n => n.id === id)); }
   const old = lsGet('projects', []).filter(x => !PJ.includes(x)); // project names this browser kept before they moved into the database
   if (old.length) { PJ = [...PJ, ...old]; await saveProjects(); } try { delete localStorage.projects; } catch {}
   F.project = lsGet('project', ''); if (!projects().includes(F.project)) F.project = '';

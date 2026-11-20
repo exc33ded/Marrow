@@ -1,28 +1,20 @@
 ---
-covers: [server.js]
+covers: [server.js, local.js]
 ---
 
-# Sessions, keys and the AI proxy
+# Keys and the AI proxy
 
-## Talking to Supabase
+## No sessions
 
-`sb(path, opts)` calls Supabase with the publishable key and, when given one, the user's access token. `db()`, `rpc()` and `upsert()` go through PostgREST *as the user*. No query in `server.js` filters by user; row-level security in the database does that (see [schema](../database/schema.md)).
-
-## Sessions
-
-- **Accounts.** There is no sign-up route. Accounts are created in the Supabase dashboard.
-- **Login.** `POST /api/login` exchanges email and password with Supabase Auth (`grant_type=password`). It stores the access and refresh tokens in `HttpOnly; SameSite=Lax` cookies, `mw_at` and `mw_rt`, which last 30 days and get `Secure` behind HTTPS. Page scripts never see the tokens.
-- **Checking a token.** `whoIs(token)` checks it with `/auth/v1/user` and caches the result for 5 minutes, up to 500 entries.
-- **Expired tokens.** `session()` refreshes from `mw_rt`. Concurrent requests share one refresh (`refreshing` map), because a refresh token works only once.
-- **Logout.** `POST /api/logout` clears the cookies and tells Supabase.
+Marrow is a single-user local server: there are no accounts, no login and no cookies. `server.js` still checks the host, the `Origin` header and `Sec-Fetch-Site` on every request, so another website cannot call the API from your browser.
 
 ## AI keys
 
-Each user brings their own keys; the server has none.
+You bring your own keys; the server has none.
 
-- **Encryption.** `seal()` encrypts a key with AES-256-GCM using `APP_SECRET`, stored as `enc1:<iv>.<tag>.<ciphertext>`. `unseal()` decrypts it only to call the provider. A wrong `APP_SECRET` gives an empty key, so the user has to enter it again.
+- **Encryption.** `seal()` encrypts a key with AES-256-GCM using `APP_SECRET`, stored as `enc1:<iv>.<tag>.<ciphertext>`. `unseal()` decrypts it only to call the provider. A wrong `APP_SECRET` gives an empty key, so you have to enter it again.
 - **What the browser gets.** `GET /api/settings` never returns a key, only `hasKey` and the last four characters (`hint`).
-- **Saving.** `PUT /api/settings` keeps the stored, already-encrypted key unless a new key is sent or `clearKey` is set. Provider addresses must be `http(s)`, and at least one provider and one model are required. Saving also clears that user's cooled-down models.
+- **Saving.** `PUT /api/settings` keeps the stored, already-encrypted key unless a new key is sent or `clearKey` is set. Provider addresses must be `http(s)`. The lists may be empty, so a key can be saved and tested before any model is picked. Saving clears the cooled-down models.
 
 Settings are rows in the `settings` table:
 
@@ -30,23 +22,32 @@ Settings are rows in the `settings` table:
 |---|---|
 | `providers` | `[{ id, name, url, key }]` |
 | `chain` | the ordered `[{ p, m }]` list for text |
-| `vchain` | the ordered list for images |
-| `paid` | `'1'` allows paid OpenRouter models |
+| `vchain` | the ordered list for images; empty means the text list is used |
+| `embed` | `{ p, m }` for embeddings |
 | `whisper` | the chosen Whisper model |
 | `projects` | the project names |
 
-`conf(S)` turns those rows into the working configuration. Without saved settings it uses one OpenRouter provider and the `MODELS` / `VISION_MODELS` lists.
+`conf(S)` turns those rows into the working configuration. There are no defaults: without saved settings there are no providers and no models, and `ai()` answers `502` asking you to set one up in Settings.
 
-## The AI proxy: `ai(uid, conf, messages)`
+## The AI proxy: `ai(conf, messages, rid)`
 
-1. It uses the vision chain if any message carries an image, otherwise the text chain.
-2. It skips models that failed in the last 10 minutes (the `cooling` map, keyed by user, provider and model), unless every model is cooling.
-3. On OpenRouter it skips non-`:free` models unless `paid` is set. It never spends money unless told to.
-4. It posts to `{provider url}/chat/completions` with `temperature: 0.3` and a 90 s timeout. Anthropic addresses also get `x-api-key` and `anthropic-version`.
-5. It returns the first reply that has text, as `{ text, model, provider }`. A `401`/`403` skips the rest of that provider's models. If nothing answers, it returns `502` with every model's error joined together.
+1. It uses the vision chain if any message carries an image and that chain is not empty, otherwise the text chain. (Saving no longer copies the text chain into an empty vision chain.)
+2. It skips models that failed in the last 10 minutes (the `cooling` map, keyed by provider and model), unless every model is cooling.
+3. `freeFirst()` reorders OpenRouter's rows so its free models (`:free`, or `openrouter/free`) come before its paid ones; other providers keep their places. A paid OpenRouter model is used only if it is in the list, and only after every free one has failed. A connection test (`POST /api/settings/test`) goes through the same order.
+4. It posts to `{provider url}/chat/completions` with `temperature: 0.3` and a timeout per model of 90 s plus 1 s per 1000 characters sent, at most 240 s (`secs`): a whole paper took Nemotron 54 s on NVIDIA, so a flat 90 s dropped long analyses, while short jobs still give up on a stuck model quickly. Anthropic addresses also get `x-api-key` and `anthropic-version`.
+5. It returns the first reply that has text, as `{ text, model, provider, failed }`, where `failed` lists the models that failed before it. A `401`/`403` skips the rest of that provider's models. If nothing answers, it returns `502` with every model's error, one per line.
+6. Each error uses the service's own words where it gives any: a `429` says `rate limited (…)` with the service's message (OpenRouter names a used-up daily free quota there). A `200` with no text says whether the model ran out of room (`finish_reason: length`) or only returned its reasoning.
 
-`offered(p)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker. `POST /api/settings/models` calls it with the address and key as typed in the form, falling back to the saved key of that provider id, so a provider can be tested before it is saved.
+While it works, `progress` (an in-memory map keyed by the request id `rid` the browser sends) holds which model is being asked (`n` of `of`), and the errors so far. `GET /api/ai/progress?id=` reads it; the entry is removed when the request ends.
 
-**Embeddings.** The `embed` setting (`{ p, m }`) names a provider and model. `embed(c, texts)` posts to `{url}/embeddings` with `dimensions: 1024` (`DIM`; parts are cut at 6000 characters) and rejects any other vector size. `embedItem()` embeds a source's parts that have no vector, 64 at a time, through `set_emb`; `PUT /api/items/:id` runs it in the background when parts were saved, so a failure never blocks the save. `POST /api/embed` does one source (`item`) or all (`all`). `POST /api/retrieve` embeds the question and calls `match_parts` for the 12 best parts.
+`offered(p)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker, as `{ id, free, img }` (the Settings search tags OpenRouter models that are not free as “paid”); `img` is true when the service lists `image` in `architecture.input_modalities` (OpenRouter does). `POST /api/settings/models` calls it with the address and key as typed in the form, falling back to the saved key of that provider id, so a provider can be tested before it is saved. OpenRouter lists its models to anyone, so for OpenRouter `offered()` first checks the key with `GET {url}/key` and fails on a missing key or a `401`/`403`.
+
+**Embeddings.** The `embed` setting (`{ p, m }`) names a provider and model. `embed(c, texts)` posts to `{url}/embeddings` with `dimensions: 1024` (`DIM`; parts are cut at 6000 characters) and rejects any other vector size. `embedItem()` embeds a source's parts that have no vector, 64 at a time, through `local.setEmb()`; `PUT /api/items/:id` runs it in the background when parts were saved, so a failure never blocks the save. `POST /api/embed` does one source (`item`) or all (`all`). `POST /api/retrieve` embeds the question and calls `local.matchParts()` for the 12 best parts.
+
+**The local embedding model.** `embed.p` may be `'local'` (`LOCAL`): then `embed()` calls `localEmbed()`, which starts llama.cpp's `llama-server` once (`-m Qwen3-Embedding-0.6B-Q8_0.gguf --embedding --pooling last -c 8192 -b 8192 -ub 8192 -np 1`, on a free port on 127.0.0.1, waiting up to 2 minutes for `/health`) and keeps it in `lsrv`; `stopLocal()` ends it on exit or delete. Local calls get a 10-minute timeout and 16 passages per batch. A question sent to `/api/retrieve` gets Qwen3's `Instruct: … Query:` prefix; passages and concepts do not. `GET /api/localemb` reports the program (`llamaServer()`: `data/embed/bin`, or `llama-server` on PATH), the model file and their downloads; `POST` / `DELETE ?what=program|model` download (`getLlama()` takes the newest `llama-b*-bin-win-cpu-x64.zip` from GitHub; the model comes from `Qwen/Qwen3-Embedding-0.6B-GGUF` on Hugging Face) or delete them. Deleting stops the server and, if `embed.p` was `'local'`, clears `embed`.
+
+**Switching models.** `local.partsWithoutEmb(id, model)` returns passages with no vector or one made by another model, so indexing after a switch redoes them; `matchParts()` only searches vectors of the model in use.
+
+`conceptNear(c, texts)` serves the concept map. It embeds texts with no cached vector (64 per call) and stores them with `local.saveConceptEmbs()`. Then it compares every pair, which takes about a second at 1000 concepts, and returns each concept's top 10 neighbours. It also returns two cut-offs taken as percentiles of all pair similarities: the 88th (`same`, for concepts sharing a source) and the 98th (`cross`). Percentiles are used instead of fixed numbers because cosine ranges differ between models; the tiers were measured on three models (see `auto-research/logs.md`, exp-17).
 
 `POST /api/settings/test` asks for a one-word reply. With `{ p, m }` in the body it tests only that model; without a body it tests the saved list in order.

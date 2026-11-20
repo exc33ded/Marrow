@@ -1,59 +1,59 @@
 ---
-covers: [schema.sql]
+covers: [schema.sql, local.js]
 ---
 
-# Database (Supabase)
+# Database (local SQLite)
 
-`schema.sql` is run once in Supabase's SQL editor. It is safe to run again. It sets up Postgres tables, row-level security, a storage bucket and three functions.
+`schema.sql` is the schema of record, but you never paste it anywhere: `local.js` reads it and creates the tables on first run. It is safe to run again. It lives in the library folder (see below).
+
+There is one reader, so no table has a `user_id` and no row-level security is needed. Every query in `local.js` addresses the single library.
 
 ## Tables
 
-Every table has `user_id uuid`, which defaults to `auth.uid()` and is deleted along with the user.
-
 | Table | Holds |
 |---|---|
-| `items` | sources: `id`, `kind` (`pdf`/`web`/`video`), `title`, `url`, `project`, `done`, `added`, `opened`, and `data jsonb` for everything else (brief, sections, concepts, tags, chat…) |
-| `parts` | a source's text, one row per page/block/chunk: `n`, `t` (seconds, for videos), `body`, `html`, a generated `fts tsvector` (English), and `emb halfvec(1024)` with `emb_model` (the vector and the model that made it; `put_item` clears them when the text changes) |
-| `cards` | flashcards: `q`, `a`, `quote`, `src` (part number), `ease`, `ivl`, `due` |
-| `notes` | with `item_id`: a highlight or note on a source (`page`, `a`, `b`, `eb`, `c`, `ul`). With `item_id` null: a notebook page (`title`, `project`, `note` holds the page document) |
-| `activity` | study events: `ts`, `kind` (`review`, `check`, `teach`), `item_id` |
-| `feeds` | followed feeds, keyed by `(user_id, url)` |
-| `settings` | key/value per user, keyed by `(user_id, k)` (keys listed in [auth-and-ai](../backend/auth-and-ai.md)) |
+| `items` | sources: kind, title, URL, project, done, timestamps, and `data` (all other fields as JSON) |
+| `parts` | the numbered text of a source, its HTML, timestamp and embedding vector |
+| `cards` | flashcards, ordered by `pos` |
+| `notes` | highlights when `item_id` is set, notebook pages when it is null |
+| `activity` | study events by timestamp |
+| `feeds` | followed RSS/Atom addresses |
+| `paths` | where each file in the library folder is: a source's PDF and Markdown copy, a page's Markdown copy |
+| `concept_emb` | the concept map's vectors, one per concept text ("name: definition") and model |
+| `settings` | AI providers, model lists, project names, Whisper choice |
 
-Deleting an item deletes its parts, cards and notes too.
+Parts, cards and item-level notes cascade when their source is deleted.
 
-## Row-level security
+## Full-text search
 
-Every table gets a single policy, `own`, for the `authenticated` role: `user_id = auth.uid()` for both reading and writing. The server always calls Supabase with the user's own token, so a user can never read or overwrite another user's rows.
+`parts_fts` is an FTS5 virtual table over `parts.body` with external content and three triggers to keep it in step with inserts, deletes and updates. `searchParts()` builds a safe query from the words in the search box: words joined with `AND`, or one quoted phrase. `snippet()` marks matches with `\x01` and `\x02`, which the browser turns into highlights. A phrase must appear in order, so `search?phrase=1&q=is all attention` does not match "Attention is all you need".
 
-## Storage
+## Vectors
 
-There is one private bucket, `files`. PDFs are stored at `<user id>/<item id>.pdf`, and the `own_files` policy only allows a user into their own folder. The server adds a unique `?t=` when downloading, so Supabase's CDN can't serve a PDF that was just replaced or deleted.
+Embeddings are 1024-dimension Float64 blobs on `parts.emb`, with the model name in `emb_model`. A library made before vector search lacks both columns; `open()` adds them before running the schema, since `create table if not exists` never adds columns. `local.js` registers a `cosine()` SQL function so ranking can happen in the database. `matchParts()` merges the vector ranking with the FTS ranking by reciprocal rank fusion, the same shape as the old `match_parts` database function. Rewriting a source's text deletes its parts and therefore its vectors; the server embeds them again in the background.
 
-## Functions
+Concept vectors live in `concept_emb`, keyed by text and model, so a concept is embedded once per model and a renamed or redefined concept gets a new row. `conceptEmbs()` reads the cached vectors (null where none) and `saveConceptEmbs()` writes new ones. Rows are not removed when a source is deleted; they are small and are reused if the concept comes back.
 
-All run as the calling user (`security invoker`), so row-level security still applies.
+## Library folder
 
-- **`put_item(p_id, p jsonb)`** saves one source in a single transaction:
-  - it upserts the item (`kind` never changes after creation);
-  - it rewrites the item's cards and notes;
-  - it replaces the parts only when `p.parts` is an array, so a save without text keeps the text.
+Everything lives in one folder the reader picks on first launch: `DATA_DIR` if set (it fixes the folder), else the `dir` saved in `~/.marrow.json` (`MARROW_CONFIG`). With neither, `open()` fails with 409 and the browser shows the first-run screen (`GET`/`POST /api/store`). `store()` reports the folder and suggests the old `./data` (`MARROW_LEGACY`) when it holds a library, else `Documents/Marrow`.
 
-  > ponytail note in `server.js`: cards and notes are rewritten on every save. Diff them if items grow to thousands of cards.
-- **`library()`** returns everything the app needs at start as one JSON object:
-  - `items` (with their cards and notes);
-  - notebook pages (`notes` with no `item_id`);
-  - `activity` from the last 400 days;
-  - `feeds` and `projects`.
+```
+<library>/README.md            written once, explains the folder
+<library>/marrow.db
+<library>/<Project>/papers/    PDFs              (Unfiled/ when there is no project)
+<library>/<Project>/sources/   one .md per source
+<library>/<Project>/pages/     one .md per notebook page
+```
 
-  Empty fields are left out.
-- **`search_parts(q, phrase)`** does full-text search with `plainto_tsquery`, or `phraseto_tsquery` plus a regex check so the words really are adjacent and in order. It returns up to 40 `{ item_id, n, s }` rows, ranked, where `s` is a snippet with matches wrapped in `\x01`…`\x02`.
-
-- **`set_emb(p, m)`** stores a batch of vectors (`security invoker`, so RLS applies).
-- **`match_parts(qe, q, m, k, only_item)`** merges the nearest vectors (`<=>`, only rows made by model `m`) with the full-text rank by reciprocal rank fusion and returns the top `k` parts. `only_item` null searches the whole library. There is no HNSW index on purpose; add one past about 100,000 chunks.
-
-The `vector` extension is created at the top of that block.
-
-## Known issue
-
-The storage bucket, `put_item` and `library` blocks appear twice in `schema.sql` (lines 58–104 are repeated at 106–152). It is harmless, because every statement is idempotent, but the second copy can be deleted.
+- **`paths` table.** Records where each file is (`pdf:<id>`, `src:<id>`, `pg:<id>`), so a file can be found, moved and removed. `relOf()` builds the name: `safe()` keeps Unicode, drops reserved characters and device names, and caps at 80 characters. A name already taken, in any letter case, gets the id's first 6 characters.
+- **`place()`.** Moves a file from its old path and writes the new body. The row changes only once the file exists. `unplace()` deletes it, and `prune()` removes folders left empty, up to the library folder.
+- **Markdown.** The browser renders it and sends it as `md` with each save (`srcMd()`, `pageMd()`). `putItem()` keeps `md` out of `items.data` and calls `mirrorItem()` after the commit, which also moves the PDF when the title or project changed. `saveNote()` does the same for pages.
+  - These copies go through `quietly()`: a file problem, such as a PDF open in a viewer on Windows, is logged and retried on the next save, and never fails the save.
+  - `library()` lists `unmirrored` sources and pages, and the browser saves each once to write its copy.
+- **PDFs.** `putFile()` checks the id against `[\w-]{1,64}` (the server has already checked the `%PDF-` magic bytes), then writes the PDF to `<Project>/papers/`. A PDF uploaded before its source is saved waits in `Unfiled/papers/` and moves on the first save. A failed write does fail the upload, because the PDF is the only copy. `getFile()` answers 404 with the expected path when the file has gone.
+- **Older libraries.** On open, PDFs under `files/<id>.pdf` move into their project folders once.
+- **Moving.** `choose(dir)` needs a full path.
+  - On first launch, it opens a library already in `dir`, or copies the old `./data` there.
+  - Later, `copyLibrary()` checkpoints the database, closes it and copies everything except `whisper/` into an empty folder, with no overwrites. It then checks `integrity_check`, the row count of every table and the file count. If any check fails, it removes the copy and changes nothing.
+  - On success it switches to the new folder and saves the choice. The old folder is left for the reader to delete.

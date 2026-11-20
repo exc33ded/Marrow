@@ -1,69 +1,22 @@
-// Marrow server: serves the app and proxies AI calls, page fetches and paper search. Accounts, the library and PDFs live in Supabase
-// (Auth, Postgres with row-level security, Storage); the server only ever talks to Supabase as the logged-in user.
+// Marrow server: serves the app, keeps the library and PDFs in local SQLite, and proxies AI calls, page fetches and paper search.
 // Run: node --env-file=.env server.js
 const http = require('http'), fs = require('fs'), path = require('path'), net = require('net'), dns = require('dns').promises;
 const { randomBytes, createCipheriv, createDecipheriv } = require('crypto');
+const local = require('./local');
 
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || '127.0.0.1'; // local only; set HOST=0.0.0.0 to reach it from other devices or a host's proxy
-const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // only Whisper's downloads live here now
-// Free models only, tried in order until one answers. Override with MODELS=a,b,c in .env.
-const MODELS = (process.env.MODELS ||
-  'baidu/ernie-5.5-flash-preview:free,nvidia/nemotron-3-ultra-550b-a55b:free,google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,openrouter/free'
-).split(',');
-// Used when a message carries an image (figure/equation snips).
-const VISION = (process.env.VISION_MODELS ||
-  'nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,openrouter/free'
-).split(',');
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // Whisper's downloads live here; the library itself is wherever the reader chose (local.js)
 
-// ---------- Supabase ----------
-const SB = (process.env.SUPABASE_URL || '').replace(/\/+$/, ''), PK = process.env.SUPABASE_PUBLISHABLE_KEY, APP_KEY = Buffer.from(process.env.APP_SECRET || '', 'hex');
-if (!SB || !PK || APP_KEY.length !== 32) {
-  console.error('Set SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and APP_SECRET (64 hex characters) in .env.\nNew secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+// ---------- local store ----------
+const APP_KEY = Buffer.from(process.env.APP_SECRET || '', 'hex');
+if (APP_KEY.length !== 32) {
+  console.error('Set APP_SECRET (64 hex characters) in .env.\nNew secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
   process.exit(1);
 }
-const sb = (p, { token, method = 'GET', body, headers } = {}) => fetch(SB + p, {
-  method, signal: AbortSignal.timeout(120000), body: body === undefined || Buffer.isBuffer(body) ? body : JSON.stringify(body),
-  headers: { apikey: PK, ...(token && { Authorization: 'Bearer ' + token }), ...(body !== undefined && !Buffer.isBuffer(body) && { 'Content-Type': 'application/json' }), ...headers } });
-// Postgres through PostgREST, as the user: row-level security does the isolation, so no query here filters by user.
-async function db(ctx, p, o) {
-  const r = await sb('/rest/v1/' + p, { token: ctx.token, ...o }), t = await r.text();
-  if (!r.ok) { let m; try { m = JSON.parse(t).message; } catch {} throw fail(r.status >= 500 ? 502 : [401, 403].includes(r.status) ? r.status : 400, m || 'the database refused that'); }
-  return t ? JSON.parse(t) : null;
-}
-const rpc = (ctx, fn, args = {}) => db(ctx, 'rpc/' + fn, { method: 'POST', body: args });
-const upsert = (ctx, table, rows, on) => db(ctx, `${table}?on_conflict=${on}`, { method: 'POST', body: rows, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } });
-const settingsOf = async ctx => Object.fromEntries((await db(ctx, 'settings?select=k,v')).map(r => [r.k, r.v]));
+const S = () => local.settingsOf();
 
-// Sessions: Supabase's access and refresh tokens live in HttpOnly cookies, so page scripts never see them.
-// A verified token is remembered for 5 minutes so each request doesn't call Supabase Auth; an expired one is refreshed from the refresh cookie.
-const cookies = req => Object.fromEntries((req.headers.cookie || '').split(/;\s*/).filter(c => c.includes('=')).map(c => { const i = c.indexOf('='); return [c.slice(0, i), decodeURIComponent(c.slice(i + 1))]; }));
-function setSession(req, res, t) {
-  const secure = req.headers['x-forwarded-proto'] === 'https' || req.socket.encrypted ? '; Secure' : '';
-  const c = (k, v, age) => `${k}=${encodeURIComponent(v)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure}`;
-  res.setHeader('Set-Cookie', t ? [c('mw_at', t.access_token, 2592000), c('mw_rt', t.refresh_token, 2592000)] : [c('mw_at', '', 0), c('mw_rt', '', 0)]);
-}
-const verified = new Map(), refreshing = new Map();
-async function whoIs(token) {
-  const hit = verified.get(token); if (hit && hit.until > Date.now()) return hit;
-  const r = await sb('/auth/v1/user', { token }); if (!r.ok) return null;
-  const u = await r.json(), v = { token, uid: u.id, email: u.email, until: Date.now() + 5 * 60e3 };
-  verified.set(token, v); if (verified.size > 500) verified.delete(verified.keys().next().value);
-  return v;
-}
-async function session(req, res) {
-  const { mw_at, mw_rt } = cookies(req);
-  let v = mw_at && await whoIs(mw_at);
-  if (!v && mw_rt) { // concurrent requests share one refresh: the refresh token is single-use
-    if (!refreshing.has(mw_rt)) refreshing.set(mw_rt, sb('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: mw_rt } }).then(r => r.ok ? r.json() : null).catch(() => null).finally(() => setTimeout(() => refreshing.delete(mw_rt), 15000)));
-    const t = await refreshing.get(mw_rt);
-    if (t) { setSession(req, res, t); v = await whoIs(t.access_token); }
-  }
-  if (!v) throw fail(401, 'log in');
-  return v;
-}
-
-// Each reader's AI keys are stored encrypted with APP_SECRET, so reading the database (or a backup) does not reveal them. They are decrypted only here, to call the provider.
+// AI keys are stored encrypted with APP_SECRET, so reading the database (or a backup) does not reveal them. They are decrypted only here, to call the provider.
 const seal = s => {
   if (!s) return '';
   const iv = randomBytes(12), c = createCipheriv('aes-256-gcm', APP_KEY, iv), ct = Buffer.concat([c.update(s, 'utf8'), c.final()]);
@@ -75,23 +28,18 @@ const unseal = s => {
   catch { return ''; } // wrong APP_SECRET: the reader has to enter the key again
 };
 
-// AI settings of one reader (S = their settings rows). The server supplies no key of its own: each reader brings their own.
+// AI settings (S = the settings rows). The server supplies no key of its own.
 // Providers each have their own address and key; "chain" and "vision" are ordered lists of { p: provider id, m: model } tried top to bottom.
 const isOR = url => /(^|\.)openrouter\.ai$/.test(new URL(url).hostname);
 const conf = S => {
   const jsonOf = k => { try { return JSON.parse(S[k]); } catch {} };
-  const providers = (jsonOf('providers') || [{ id: 'main', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '' }]).map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), key: unseal(p.key) }));
-  const first = providers[0].id, chainOf = (k, def) => jsonOf(k) || def.map(m => ({ p: first, m }));
-  return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: S.paid === '1', embed: jsonOf('embed') };
+  // No provider or model by default: the reader adds the services they have keys for in Settings.
+  const providers = (jsonOf('providers') || []).map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), key: unseal(p.key) }));
+  return { providers, chain: jsonOf('chain') || [], vision: jsonOf('vchain') || [], embed: jsonOf('embed') };
 };
 
-// ponytail: an item is saved whole, so its cards and notes are rewritten each time (inside the put_item function). Diff them if items grow to thousands of cards.
-const putItem = (ctx, id, { cards = [], notes = [], parts, kind, title, url, project, done, added, opened, id: _, ...data }) =>
-  rpc(ctx, 'put_item', { p_id: id, p: { kind, title: String(title || 'Untitled'), url, project: String(project || ''), done: done ? 1 : 0, added: +added || Date.now(), opened, data, cards, notes,
-    parts: Array.isArray(parts) ? parts.map(p => ({ t: p.t, html: p.html, body: String(p.body ?? '') })) : null } });
-const drop = r => { for (const k in r) if (r[k] === null) delete r[k]; return { ...r }; }; // NULL columns become absent fields
-// Full-text search over the reader's library. \x01 and \x02 mark the matched words (the client escapes, then styles them).
-const search = (ctx, q, phrase) => (q.match(/[\p{L}\p{N}]+/gu) || []).length ? rpc(ctx, 'search_parts', { q, phrase: !!phrase }) : [];
+const putItem = (id, b) => local.putItem(id, b);
+const search = (q, phrase) => local.searchParts(q, phrase);
 
 
 // ---------- http helpers ----------
@@ -127,50 +75,77 @@ async function fetchPublic(link) {
 }
 
 // A model that just failed is skipped for 10 minutes, so one flaky provider doesn't slow every request.
-const cooling = new Map(); // keyed by reader, provider and model
+const cooling = new Map(); // keyed by provider and model
 const headers = p => ({ 'Content-Type': 'application/json', 'X-Title': 'Marrow', ...(p.key && { Authorization: `Bearer ${p.key}`, ...(/anthropic\.com$/.test(new URL(p.url).hostname) && { 'x-api-key': p.key, 'anthropic-version': '2023-06-01' }) }) });
-async function ai(uid, c, messages) {
-  const errs = [], badKey = new Set(), ck = (p, m) => uid + '|' + p + '|' + m;
-  const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.chain;
-  const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now()));
-  for (const { p: pid, m: model } of open.length ? open : all) {
+// What each AI request is doing right now, so the waiting reader sees which model is answering and which already failed.
+// ponytail: an in-memory map, fine for one reader on one server.
+const progress = new Map(); // request id -> { n, of, model, provider, failed }
+// OpenRouter's free models are asked before its paid ones, so a test or a retry never spends money while a free model can answer.
+// They swap places only among OpenRouter's own rows; other providers keep their place in the order.
+const isFree = m => m.endsWith(':free') || m === 'openrouter/free';
+function freeFirst(c, list) {
+  const onOR = e => { const p = c.providers.find(x => x.id === e.p); return p && isOR(p.url); };
+  const ors = list.filter(onOR), slots = [...ors.filter(e => isFree(e.m)), ...ors.filter(e => !isFree(e.m))];
+  return list.map(e => onOR(e) ? slots.shift() : e);
+}
+async function ai(c, messages, rid) {
+  try { return await tryModels(c, messages, rid); } finally { progress.delete(rid); }
+}
+async function tryModels(c, messages, rid) {
+  const errs = [], badKey = new Set(), ck = (p, m) => p + '|' + m;
+  const all = messages.some(m => Array.isArray(m.content)) && c.vision.length ? c.vision : c.chain; // no model marked for images: the text models are asked
+  const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now())), list = freeFirst(c, open.length ? open : all);
+  // A whole paper takes a big model about a minute to answer (Nemotron: 54 s for 21k tokens); a question, seconds. So each model gets
+  // 90 s plus 1 s per 1000 characters sent, at most 4 minutes: long analyses stop timing out, and a stuck model on a short job is still dropped fast.
+  const secs = Math.min(240, 90 + Math.round(JSON.stringify(messages).length / 1000));
+  for (const [i, { p: pid, m: model }] of list.entries()) {
     const p = c.providers.find(x => x.id === pid);
     if (!p || badKey.has(pid)) continue;
-    if (isOR(p.url) && !c.paid && !model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money unless told to
     if (!p.key && isOR(p.url)) { badKey.add(pid); errs.push(`${p.name}: no API key yet. Add one in Settings`); continue; }
+    if (rid) progress.set(rid, { n: i + 1, of: list.length, model, provider: p.name, failed: [...errs] });
     let err;
     try {
-      const r = await fetch(p.url + '/chat/completions', { method: 'POST', headers: headers(p), body: JSON.stringify({ model, messages, temperature: 0.3 }), signal: AbortSignal.timeout(90000) });
+      const r = await fetch(p.url + '/chat/completions', { method: 'POST', headers: headers(p), body: JSON.stringify({ model, messages, temperature: 0.3 }), signal: AbortSignal.timeout(secs * 1000) });
       const j = await r.json().catch(() => ({})); // an error page is not JSON
       const text = j.choices?.[0]?.message?.content;
-      if (text) return { text, model, provider: p.name };
+      if (text) return { text, model, provider: p.name, failed: errs };
       // A rejected key fails every model of that provider the same way, so skip the rest of its models.
       if (r.status === 401 || r.status === 403) { badKey.add(pid); errs.push(`${p.name}: the service rejected the API key`); continue; }
-      err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' : j.error?.message || `answered ${r.status} with no text`;
-    } catch (e) { err = e.name === 'TimeoutError' ? 'no answer within 90 s' : e.message === 'fetch failed' ? `could not reach ${p.url}` : e.message; }
+      // Say why, in the service's own words where it gives any: "rate limited" alone hides a used-up daily quota.
+      const c0 = j.choices?.[0], why = String(j.error?.message || c0?.error?.message || '').slice(0, 200);
+      err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' + (why ? ` (${why})` : '') : why ||
+        (c0?.finish_reason === 'length' ? 'ran out of room before writing an answer' : c0?.message?.reasoning ? 'only thought, wrote no answer' : `answered ${r.status} with no text${c0?.finish_reason ? ` (stopped: ${c0.finish_reason})` : ''}`);
+    } catch (e) { err = e.name === 'TimeoutError' ? `no answer within ${secs} s` : e.message === 'fetch failed' ? `could not reach ${p.url}` : e.message; }
     errs.push(`${p.name} / ${model}: ${err}`);
     cooling.set(ck(pid, model), Date.now() + 10 * 60e3);
     console.warn('model failed ->', errs.at(-1));
   }
-  throw fail(502, errs.length ? errs.join('; ') : 'no model is allowed to answer. Add one in Settings (on OpenRouter only free models are used unless you allow paid ones)');
+  throw fail(502, errs.length ? errs.join('\n') : 'no AI model is set up yet. In Settings, add a provider with your key and pick a model');
 }
 
 // The models a provider offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
 async function offered(p) { // p is the provider as typed in Settings, so a new one can be tried before it is saved
+  // OpenRouter lists its models to anyone, so the list proves nothing about the key: ask about the key itself.
+  if (isOR(p.url)) {
+    if (!p.key) throw fail(401, `${p.name}: no API key yet. Paste your key, then test again`);
+    const k = await fetch(p.url + '/key', { headers: headers(p), signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${p.url}`); });
+    if (k.status === 401 || k.status === 403) throw fail(401, `${p.name} rejected the API key`);
+  }
   const r = await fetch(p.url + '/models', { headers: headers(p), signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${p.url}`); });
   if (r.status === 401 || r.status === 403) throw fail(401, `${p.name} rejected the API key`);
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !Array.isArray(j.data)) throw fail(502, `${p.name} did not return a model list (${r.status}). Type the model name instead`);
-  return j.data.map(m => m.id).filter(Boolean).sort().map(id => ({ id, free: id.endsWith(':free') }));
+  // img: the service says the model reads images (OpenRouter lists input_modalities; most others say nothing, so it stays false)
+  return j.data.filter(m => m.id).sort((a, b) => a.id < b.id ? -1 : 1).map(m => ({ id: m.id, free: isFree(m.id), img: !!m.architecture?.input_modalities?.includes('image') }));
 }
 
 // Meaning-based search. Embeddings go through the same providers as chat: POST {url}/embeddings (OpenAI format; OpenAI, Gemini, OpenRouter and Ollama have it, Anthropic does not).
 // ponytail: fixed 1024 dimensions (the column size), so the model must support a `dimensions` option or be 1024 natively. A part is cut at 6000 characters.
 const DIM = 1024;
 async function embed(c, texts) {
-  const e = c.embed, p = c.providers.find(x => x.id === e?.p);
+  const e = c.embed, p = e?.p === LOCAL ? { name: 'This computer', url: await localEmbed(), key: '' } : c.providers.find(x => x.id === e?.p);
   if (!p) throw fail(400, 'pick an embedding model in Settings');
-  const r = await fetch(p.url + '/embeddings', { method: 'POST', headers: headers(p), signal: AbortSignal.timeout(60000), body: JSON.stringify({ model: e.m, input: texts.map(t => t.slice(0, 6000)), dimensions: DIM }) })
+  const r = await fetch(p.url + '/embeddings', { method: 'POST', headers: headers(p), signal: AbortSignal.timeout(e.p === LOCAL ? 600000 : 60000), body: JSON.stringify({ model: e.m, input: texts.map(t => t.slice(0, 6000)), dimensions: DIM }) })
     .catch(() => { throw fail(502, `could not reach ${p.url}`); });
   const j = await r.json().catch(() => ({}));
   const v = Array.isArray(j.data) && j.data.sort((a, b) => a.index - b.index).map(d => d.embedding);
@@ -178,12 +153,33 @@ async function embed(c, texts) {
   return v;
 }
 // Embed the parts of one source that have no vector yet.
-async function embedItem(ctx, c, id) {
-  const rows = await db(ctx, `parts?item_id=eq.${id}&emb=is.null&select=id,body&order=n`);
-  for (let i = 0; i < rows.length; i += 64) {
-    const b = rows.slice(i, i + 64), v = await embed(c, b.map(r => r.body));
-    await rpc(ctx, 'set_emb', { p: b.map((r, k) => ({ id: r.id, v: v[k] })), m: c.embed.m });
+async function embedItem(c, id) {
+  const rows = local.partsWithoutEmb(id, c.embed.m), step = c.embed.p === LOCAL ? 16 : 64; // the computer's own model is slower: smaller batches
+  for (let i = 0; i < rows.length; i += step) {
+    const b = rows.slice(i, i + step), v = await embed(c, b.map(r => r.body));
+    local.setEmb(b.map((r, k) => ({ id: r.id, v: v[k] })), c.embed.m);
   }
+}
+
+// The concept map's "similar meaning" links: each concept's nearest neighbours by embedding, plus two cut-offs
+// taken as percentiles of all pair similarities (88th within a source, 98th across sources), so they suit any model.
+// Measured on three models in auto-research/logs.md (exp-17). Vectors are cached per text and model, so only new concepts cost a call.
+// ponytail: all pairs in memory, O(n² · 1024); about a second at 1000 concepts. Precompute on save if libraries grow far past that.
+async function conceptNear(c, texts) {
+  const V = local.conceptEmbs(texts, c.embed.m), miss = texts.map((_, i) => i).filter(i => !V[i]);
+  for (let i = 0; i < miss.length; i += 64) {
+    const b = miss.slice(i, i + 64), v = await embed(c, b.map(k => texts[k]));
+    local.saveConceptEmbs(b.map((k, x) => ({ t: texts[k], v: v[x] })), c.embed.m); b.forEach((k, x) => V[k] = v[x]);
+  }
+  const U = V.map(v => { const n = Math.hypot(...v) || 1; return Float64Array.from(v, x => x / n); }), n = U.length;
+  const all = new Float32Array(n * (n - 1) / 2), near = []; let at = 0;
+  for (let i = 0; i < n; i++) {
+    const row = [];
+    for (let j = 0; j < n; j++) if (j !== i) { let s = 0; for (let d = 0; d < DIM; d++) s += U[i][d] * U[j][d]; row.push([j, s]); if (j > i) all[at++] = s; }
+    near.push(row.sort((a, b) => b[1] - a[1]).slice(0, 10).map(([j, s]) => [j, +s.toFixed(4)]));
+  }
+  all.sort(); const pct = p => +all[Math.min(all.length - 1, Math.floor(p * all.length))].toFixed(4);
+  return { near, same: pct(.88), cross: pct(.98) };
 }
 
 async function discover(q) {
@@ -265,6 +261,55 @@ const whisperState = S => ({
   program: { have: !!whisperCli(), mine: !!within(BIN, WIN ? 'whisper-cli.exe' : 'whisper-cli'), job: pub(jobs.program) },
   ytdlp: { have: !!ytDlp(), mine: fs.existsSync(YTDLP), job: pub(jobs.ytdlp) },
 });
+// ---------- embeddings on this computer: llama.cpp's llama-server running Qwen3-Embedding-0.6B ----------
+// Chosen from Hugging Face (2026-11): the best-scoring open-license embedding model that runs on a laptop (MTEB multilingual 64.3),
+// 1024 numbers per vector like every other model Marrow uses, 32k tokens of context. Apache 2.0.
+const LOCAL = 'local', LBIN = path.join(DATA, 'embed', 'bin');
+const LE = { name: 'Qwen3-Embedding-0.6B', size: 639150592, file: path.join(DATA, 'embed', 'Qwen3-Embedding-0.6B-Q8_0.gguf'), url: 'https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf' };
+fs.mkdirSync(LBIN, { recursive: true });
+const llamaServer = () => within(LBIN, WIN ? 'llama-server.exe' : 'llama-server') || onPath('llama-server');
+async function getLlama() { // llama.cpp's CPU build for Windows, from its newest numbered release
+  const rels = await (await fetch('https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=10', { headers: { 'User-Agent': 'Marrow' } })).json();
+  const a = (Array.isArray(rels) ? rels : []).flatMap(r => r.assets || []).find(a => /^llama-b\d+-bin-win-cpu-x64\.zip$/.test(a.name));
+  if (!a) throw new Error('could not find the llama.cpp download on GitHub');
+  const zip = path.join(DATA, 'embed', 'llama.zip');
+  await download('le:program', a.browser_download_url, zip);
+  jobs['le:program'] = { got: a.size, total: a.size, unpacking: true };
+  stopLocal(); fs.rmSync(LBIN, { recursive: true, force: true }); fs.mkdirSync(LBIN);
+  try { await run(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', LBIN]); } finally { fs.rmSync(zip, { force: true }); }
+  if (!llamaServer()) throw new Error('the download did not contain llama-server');
+  delete jobs['le:program'];
+}
+// Started the first time a vector is needed and kept running; one process serves the map, Ask and indexing.
+// ponytail: one shared process on a free local port; it stops with Marrow or when the program or model is deleted.
+let lsrv = null;
+const stopLocal = () => { lsrv?.proc.kill(); lsrv = null; };
+process.on('exit', stopLocal);
+function localEmbed() {
+  if (lsrv) return lsrv.ready;
+  const bin = llamaServer();
+  if (!bin || !fs.existsSync(LE.file)) throw fail(400, 'the free model is not downloaded yet: Settings → Map links and long sources');
+  const me = lsrv = {};
+  me.ready = (async () => {
+    const port = await new Promise(ok => { const s = net.createServer().listen(0, '127.0.0.1', () => { const n = s.address().port; s.close(() => ok(n)); }); });
+    // --pooling last and one slot with an 8k batch: Qwen3's card; a passage (at most 6000 characters) always fits in one go.
+    me.proc = spawn(bin, ['-m', LE.file, '--embedding', '--pooling', 'last', '--host', '127.0.0.1', '--port', String(port), '-c', '8192', '-b', '8192', '-ub', '8192', '-np', '1'], { stdio: 'ignore', windowsHide: true });
+    let gone = null; me.proc.on('exit', code => { gone = code; if (lsrv === me) lsrv = null; });
+    const url = `http://127.0.0.1:${port}`;
+    for (let t = Date.now(); Date.now() - t < 120000; await new Promise(ok => setTimeout(ok, 500))) {
+      if (gone !== null) throw fail(502, `the local embedding program stopped (code ${gone})`);
+      if ((await fetch(url + '/health').catch(() => null))?.ok) return url + '/v1';
+    }
+    stopLocal(); throw fail(502, 'the local embedding program did not start within 2 minutes');
+  })();
+  me.ready.catch(() => { if (lsrv === me) stopLocal(); });
+  return me.ready;
+}
+const localState = () => ({
+  platform: process.platform, name: LE.name, running: !!lsrv,
+  program: { have: !!llamaServer(), mine: !!within(LBIN, WIN ? 'llama-server.exe' : 'llama-server'), job: pub(jobs['le:program']) },
+  model: { have: fs.existsSync(LE.file), size: LE.size, job: pub(jobs['le:model']) },
+});
 // whisper-cli -oj writes { transcription: [{ offsets: { from: ms }, text }] }.
 const segsOf = j => (j.transcription || []).map(s => ({ t: s.offsets.from / 1000, body: s.text.trim() })).filter(s => s.body);
 async function transcribe(id, req, S, key) {
@@ -297,8 +342,9 @@ async function youtubeAudio(vid, res) {
   const out = path.join(WH, 'yt-' + vid), pre = path.basename(out) + '.';
   for (const f of fs.readdirSync(WH)) if (f.startsWith(pre)) fs.rmSync(path.join(WH, f), { force: true }); // a leftover from an earlier try
   await run(exe, ['-f', 'bestaudio[ext=m4a]/bestaudio', '--no-playlist', '--quiet', '--no-progress', '-o', out + '.%(ext)s', 'https://www.youtube.com/watch?v=' + vid]).catch(e => { throw fail(502, e.message); });
-  const file = fs.readdirSync(WH).map(f => path.join(WH, f)).find(f => f.startsWith(pre));
-  if (!file) throw fail(502, 'YouTube sent no audio');
+  const name = fs.readdirSync(WH).find(f => f.startsWith(pre));
+  if (!name) throw fail(502, 'YouTube sent no audio');
+  const file = path.join(WH, name);
   res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': fs.statSync(file).size });
   await pipeline(fs.createReadStream(file), res).catch(() => res.destroy()).finally(() => fs.rmSync(file, { force: true }));
 }
@@ -357,7 +403,6 @@ async function youtubeCaptions(vid) {
 // ---------- routes ----------
 // Names this server may be reached by, besides localhost and plain IP addresses: ALLOWED_HOSTS=marrow.example.com,...
 const HOSTS = (process.env.ALLOWED_HOSTS || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
-const store = (uid, id) => `/storage/v1/object/files/${uid}/${id}.pdf`;
 http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://x'), M = req.method, p = url.pathname, q = k => url.searchParams.get(k) || '';
@@ -368,56 +413,51 @@ http.createServer(async (req, res) => {
     // Browsers leave Origin off plain GETs (an <img> or <script>), so also refuse pages from another site.
     if (p.startsWith('/api/') && /^(cross-site|same-site)$/.test(req.headers['sec-fetch-site'] || '')) throw fail(403, 'cross-site request refused');
 
-    if (M === 'GET' && (p === '/' || p === '/index.html')) return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8');
-    // Accounts are made by the admin in the Supabase dashboard; there is no sign-up route. Every other /api route needs a logged-in reader.
-    if (p === '/api/login' && M === 'POST') {
-      const { email, password } = await json(req, 1e4);
-      const r = await sb('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: String(email || '').trim(), password: String(password || '') } });
-      if (r.status === 429) throw fail(429, 'too many attempts: wait a minute and try again');
-      if (r.status >= 500) throw fail(502, 'the login service is not answering');
-      const t = await r.json().catch(() => ({}));
-      if (!r.ok || !t.access_token) throw fail(401, 'wrong email or password');
-      setSession(req, res, t); return send(res, 200, { email: t.user?.email });
+    if (M === 'GET' && (p === '/' || p === '/index.html')) { res.setHeader('Cache-Control', 'no-cache'); return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8'); } // no-cache: a reload always gets the current app
+    if (M === 'GET' && p === '/api/store') return send(res, 200, local.store()); // where the library lives; dir is null until the reader picks one
+    if (M === 'POST' && p === '/api/store') { // pick the folder on first launch, or move the library later
+      // It writes wherever it is told, so only a reader on this machine may use it: behind a proxy (ALLOWED_HOSTS) requests also come from 127.0.0.1.
+      if (!/^(127\.|::1$|localhost$)/.test(HOST) || process.env.ALLOWED_HOSTS) throw fail(403, "this server's library folder is set with DATA_DIR");
+      const b = await json(req, 1e4); return send(res, 200, local.choose(b.dir));
     }
-    if (p === '/api/logout' && M === 'POST') {
-      const { mw_at } = cookies(req); if (mw_at) { verified.delete(mw_at); sb('/auth/v1/logout', { method: 'POST', token: mw_at }).catch(() => {}); }
-      setSession(req, res, null); return send(res, 200, {});
-    }
-    const ctx = await session(req, res), S = () => settingsOf(ctx);
-    if (p === '/api/me') return send(res, 200, { email: ctx.email });
-
-    if (M === 'GET' && p === '/api/library') return send(res, 200, await rpc(ctx, 'library'));
+    if (M === 'GET' && p === '/api/library') return send(res, 200, local.library());
     if (M === 'PUT' && p === '/api/projects') { // project names, so a project with nothing in it yet is kept too
       const b = await json(req, 1e5); if (!Array.isArray(b.list)) throw fail(400, 'list must be an array');
-      await upsert(ctx, 'settings', [{ k: 'projects', v: JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean)) }], 'user_id,k'); return send(res, 200, {});
+      local.saveSettings([{ k: 'projects', v: JSON.stringify(b.list.map(x => String(x).trim()).filter(Boolean)) }]); return send(res, 200, {});
     }
-    if (M === 'GET' && p === '/api/search') return send(res, 200, await search(ctx, q('q'), q('phrase')));
+    if (M === 'GET' && p === '/api/search') return send(res, 200, search(q('q'), q('phrase')));
     if (M === 'POST' && p === '/api/retrieve') { // the passages that best answer a question; item omitted = the whole library
-      const b = await json(req, 1e5), c = conf(await S()), query = String(b.q || '').trim();
+      const b = await json(req, 1e5), c = conf(S()), query = String(b.q || '').trim();
       if (!query) throw fail(400, 'q required');
-      const [e] = await embed(c, [query]);
-      return send(res, 200, await rpc(ctx, 'match_parts', { qe: e, q: query, m: c.embed.m, k: 12, only_item: b.item ? String(b.item) : null }));
+      const [e] = await embed(c, [c.embed?.p === LOCAL ? 'Instruct: Given a question, find the passages of a source that answer it\nQuery: ' + query : query]);
+      return send(res, 200, local.matchParts({ qe: e, q: query, m: c.embed.m, k: 12, only_item: b.item ? String(b.item) : null }));
     }
     if (M === 'POST' && p === '/api/embed') { // embed what has no vector yet: one source, or the whole library
-      const b = await json(req, 1e4), c = conf(await S());
+      const b = await json(req, 1e4), c = conf(S());
       if (!c.embed) throw fail(400, 'pick an embedding model in Settings');
-      const ids = b.all ? (await db(ctx, 'items?select=id')).map(r => r.id) : [String(b.item || '')];
-      for (const id of ids) if (/^[\w-]{1,64}$/.test(id)) await embedItem(ctx, c, id);
+      const ids = b.all ? local.allItemIds() : [String(b.item || '')];
+      for (const id of ids) if (/^[\w-]{1,64}$/.test(id)) await embedItem(c, id);
       return send(res, 200, { items: ids.length });
+    }
+    if (M === 'POST' && p === '/api/concept-near') { // texts: every concept in the library as "name: definition"
+      const b = await json(req, 4e6), texts = Array.isArray(b.texts) ? b.texts.map(t => String(t).slice(0, 600)) : [];
+      if (texts.length < 3 || texts.length > 3000) throw fail(400, 'between 3 and 3000 concepts');
+      const c = conf(S()); return send(res, 200, c.embed ? await conceptNear(c, texts) : {}); // no model chosen: the map keeps its local links
     }
     if (M === 'GET' && p === '/api/discover') return send(res, 200, await discover(q('q')));
     if (M === 'POST' && p === '/api/ai') {
-      const { messages } = await json(req, 6e6); // source text plus one cropped image
+      const { messages, rid } = await json(req, 6e6); // source text plus one cropped image
       if (!Array.isArray(messages)) throw fail(400, 'messages required');
-      return send(res, 200, await ai(ctx.uid, conf(await S()), messages));
+      return send(res, 200, await ai(conf(S()), messages, rid && String(rid)));
     }
+    if (M === 'GET' && p === '/api/ai/progress') return send(res, 200, progress.get(q('id')) || {});
     if (p === '/api/settings' && M === 'GET') { // keys never leave the server: only whether there is one, and its last four characters
-      const c = conf(await S());
-      return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, embed: c.embed, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
+      const c = conf(S());
+      return send(res, 200, { chain: c.chain, vision: c.vision, embed: c.embed, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
     }
     if (p === '/api/settings' && M === 'PUT') {
-      const b = await json(req, 1e5); let have = []; try { have = JSON.parse((await S()).providers) || []; } catch {}
-      if (!Array.isArray(b.providers) || !b.providers.length) throw fail(400, 'add at least one provider');
+      const b = await json(req, 1e5); let have = []; try { have = JSON.parse(S().providers) || []; } catch {}
+      if (!Array.isArray(b.providers)) throw fail(400, 'providers must be a list');
       const ids = new Set(), providers = b.providers.map(x => {
         const id = String(x.id || ''), url = String(x.url || '').trim(), name = String(x.name || '').trim() || url;
         try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw fail(400, `${name}: the API address must start with http:// or https://`); }
@@ -426,21 +466,36 @@ http.createServer(async (req, res) => {
         return { id, name, url, key: typeof x.key === 'string' && x.key.trim() ? seal(x.key.trim()) : x.clearKey ? '' : prev?.key || '' };
       });
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
-      const chain = clean(b.chain); if (!chain.length) throw fail(400, 'pick at least one model');
+      const chain = clean(b.chain); // may be empty while a provider is being set up: the key is saved and tested before models are picked
       const vision = clean(b.vision);
-      await upsert(ctx, 'settings', [{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }], 'user_id,k');
-      for (const k of cooling.keys()) if (k.startsWith(ctx.uid + '|')) cooling.delete(k);
+      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision) }, { k: 'embed', v: JSON.stringify(b.embed && (ids.has(b.embed.p) || b.embed.p === LOCAL) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
+      cooling.clear();
       return send(res, 200, {});
     }
     if (p === '/api/settings/models' && M === 'POST') { // the key comes from the form if typed, else the saved one for that provider
-      const b = await json(req, 1e5), url = String(b.url || '').trim().replace(/\/+$/, '');
+      const b = await json(req, 1e5), url = String(b.url || '').trim().replace(/\/+$/, ''), typed = String(b.key || '').trim();
       try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw fail(400, 'the API address must start with http:// or https://'); }
-      const saved = conf(await S()).providers.find(x => x.id === b.id);
-      return send(res, 200, await offered({ name: String(b.name || '').trim() || url, url, key: String(b.key || '').trim() || (b.clearKey ? '' : saved?.key || '') }));
+      const saved = conf(S()).providers.find(x => x.id === b.id);
+      const reuse = !typed && !b.clearKey && saved?.key, target = reuse && saved.url ? saved.url : url;
+      return send(res, 200, await offered({ name: String(b.name || '').trim() || target, url: target, key: typed || (b.clearKey ? '' : saved?.key || '') }));
     }
-    if (p === '/api/settings/test' && M === 'POST') { const b = await json(req, 1e4), c = conf(await S()); if (b.p && b.m) c.chain = [{ p: String(b.p), m: String(b.m) }]; /* one model, or the whole saved list */ const r = await ai(ctx.uid, c, [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
-    // ponytail: Whisper and yt-dlp run on this server's computer and are shared by every reader. Fine on your own machine; a small free host can't run them.
-    if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState(await S()));
+    if (p === '/api/settings/test' && M === 'POST') { const b = await json(req, 1e4), c = conf(S()); if (b.p && b.m) c.chain = [{ p: String(b.p), m: String(b.m) }]; /* one model, or the whole saved list */ const r = await ai(c, [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
+    // ponytail: Whisper and yt-dlp run on this computer. Fine on your own machine; a small free host can't run them.
+    if (p === '/api/localemb' && M === 'GET') return send(res, 200, localState());
+    if (p === '/api/localemb' && (M === 'POST' || M === 'DELETE')) { // what = program | model
+      const what = q('what'); if (!['program', 'model'].includes(what)) throw fail(400, 'unknown download');
+      const key = 'le:' + what;
+      if (M === 'POST') {
+        if (what === 'program' && !WIN) throw fail(400, 'on this system install it yourself: brew install llama.cpp');
+        start(key, what === 'model' ? () => download(key, LE.url, LE.file).then(() => delete jobs[key]) : getLlama);
+      } else { // delete it, or stop it downloading; if it was in use, the map and Ask go back to having no embedding model
+        jobs[key]?.ac?.abort(); delete jobs[key]; stopLocal();
+        fs.rmSync(what === 'model' ? LE.file : LBIN, { recursive: true, force: true });
+        if (conf(S()).embed?.p === LOCAL) local.saveSettings([{ k: 'embed', v: 'null' }]);
+      }
+      return send(res, 200, localState());
+    }
+    if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState(S()));
     if (p === '/api/whisper' && (M === 'POST' || M === 'DELETE')) { // what = model:<id> | program | ytdlp
       const what = q('what'), id = what.startsWith('model:') && what.slice(6);
       if (id ? !WMODELS.some(m => m[0] === id) : !['program', 'ytdlp'].includes(what)) throw fail(400, 'unknown download');
@@ -452,16 +507,16 @@ http.createServer(async (req, res) => {
         jobs[what]?.ac?.abort(); delete jobs[what];
         fs.rmSync(id ? modelFile(id) : what === 'program' ? BIN : YTDLP, { recursive: true, force: true });
       }
-      return send(res, 200, whisperState(await S()));
+      return send(res, 200, whisperState(S()));
     }
     if (p === '/api/whisper/use' && M === 'PUT') {
       if (!haveModels().includes(q('id'))) throw fail(400, 'download that model first');
-      await upsert(ctx, 'settings', [{ k: 'whisper', v: q('id') }], 'user_id,k'); return send(res, 200, whisperState(await S()));
+      local.saveSettings([{ k: 'whisper', v: q('id') }]); return send(res, 200, whisperState(S()));
     }
     if (p === '/api/transcribe') {
-      const id = q('id'), key = 'tx:' + ctx.uid + ':' + id, j = jobs[key];
+      const id = q('id'), key = 'tx:' + id, j = jobs[key];
       if (!/^[\w-]{1,64}$/.test(id)) throw fail(400, 'which source?');
-      if (M === 'POST') { await transcribe(id, req, await S(), key); return send(res, 200, {}); }
+      if (M === 'POST') { await transcribe(id, req, S(), key); return send(res, 200, {}); }
       if (M === 'DELETE') { j?.ch?.kill(); delete jobs[key]; return send(res, 200, {}); }
       if (M === 'GET') { if (!j) throw fail(404, 'nothing is being transcribed'); if (j.segs || j.error) delete jobs[key]; return send(res, 200, { pct: j.pct, segs: j.segs, error: j.error }); }
     }
@@ -475,16 +530,16 @@ http.createServer(async (req, res) => {
     }
     if (M === 'POST' && p === '/api/activity') {
       const { kind, item_id } = await json(req, 1e4);
-      await db(ctx, 'activity', { method: 'POST', body: { ts: Date.now(), kind: String(kind), item_id: item_id ?? null }, headers: { Prefer: 'return=minimal' } });
+      local.addActivity(kind, item_id);
       return send(res, 200, {});
     }
     if (M === 'PUT' && p === '/api/feeds') {
       const f = await json(req, 1e4);
       if (!/^https?:\/\//.test(f.url)) throw fail(400, 'feed address required');
-      await upsert(ctx, 'feeds', [{ url: f.url, title: String(f.title || f.url), added: Date.now() }], 'user_id,url');
+      local.saveFeed(f);
       return send(res, 200, {});
     }
-    if (M === 'DELETE' && p === '/api/feeds') { await db(ctx, 'feeds?url=eq.' + encodeURIComponent(q('url')), { method: 'DELETE' }); return send(res, 200, {}); }
+    if (M === 'DELETE' && p === '/api/feeds') { local.deleteFeed(q('url')); return send(res, 200, {}); }
     if (M === 'GET' && p === '/api/fetch') {
       const { r, url: final } = await fetchPublic(q('url'));
       if (!r.ok) throw fail(502, `the site answered ${r.status}`);
@@ -498,26 +553,24 @@ http.createServer(async (req, res) => {
     const m = p.match(/^\/api\/(items|files|notes)\/([\w-]{1,64})(\/parts)?$/);
     if (m) {
       const [, what, id, parts] = m;
-      if (what === 'items' && parts && M === 'GET') return send(res, 200, (await db(ctx, `parts?item_id=eq.${id}&select=n,t,body,html&order=n`)).map(drop));
+      if (what === 'items' && parts && M === 'GET') return send(res, 200, local.getParts(id));
       if (what === 'items' && M === 'PUT') {
-        const b = await json(req), c = conf(await S()); await putItem(ctx, id, b);
-        if (Array.isArray(b.parts) && c.embed) embedItem(ctx, c, id).catch(e => console.warn('embed failed ->', e.message)); // in the background: a failure never blocks the save
+        const b = await json(req), c = conf(S()); putItem(id, b);
+        if (Array.isArray(b.parts) && c.embed) embedItem(c, id).catch(e => console.warn('embed failed ->', e.message)); // in the background: a failure never blocks the save
         return send(res, 200, {});
       }
-      if (what === 'items' && M === 'DELETE') { await db(ctx, 'items?id=eq.' + id, { method: 'DELETE' }); await sb(store(ctx.uid, id), { method: 'DELETE', token: ctx.token }).catch(() => {}); return send(res, 200, {}); }
-      if (what === 'notes' && M === 'PUT') { const n = await json(req, 5e6); await upsert(ctx, 'notes', [{ id, title: n.title, project: n.project, note: n.note, updated: Date.now() }], 'id'); return send(res, 200, {}); }
-      if (what === 'notes' && M === 'DELETE') { await db(ctx, `notes?id=eq.${id}&item_id=is.null`, { method: 'DELETE' }); return send(res, 200, {}); }
+      if (what === 'items' && M === 'DELETE') { local.deleteItem(id); return send(res, 200, {}); }
+      if (what === 'notes' && M === 'PUT') { const n = await json(req, 5e6); local.saveNote(id, n); return send(res, 200, {}); }
+      if (what === 'notes' && M === 'DELETE') { local.deleteNote(id); return send(res, 200, {}); }
       if (what === 'files' && M === 'PUT') {
         const buf = await slurp(req, 150e6);
         if (!buf.subarray(0, 1024).includes('%PDF-')) throw fail(415, 'not a PDF');
-        const r = await sb(store(ctx.uid, id), { method: 'POST', token: ctx.token, body: buf, headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'true' } });
-        if (!r.ok) { const e = await r.json().catch(() => ({})); throw fail(r.status === 413 ? 413 : r.status >= 500 ? 502 : 400, e.message || `the file store refused the PDF (${r.status})`); }
+        local.putFile(id, buf);
         return send(res, 200, {});
       }
       if (what === 'files' && M === 'GET') {
-        // the unique ?t= keeps Supabase's CDN from serving a PDF that was just deleted or replaced
-        const r = await sb(store(ctx.uid, id).replace('/object/', '/object/authenticated/') + '?t=' + Date.now(), { token: ctx.token });
-        return r.ok ? send(res, 200, Buffer.from(await r.arrayBuffer()), 'application/pdf') : send(res, 404, { error: 'the PDF file is missing' });
+        const buf = local.getFile(id);
+        return buf ? send(res, 200, buf, 'application/pdf') : send(res, 404, { error: 'the PDF file is missing' });
       }
     }
     send(res, 404, { error: 'not found' });

@@ -12,17 +12,17 @@ Pick one of seven looks: Studio (the default), Lab notebook (the original), Conc
 
 ## AI services
 
-Marrow has no AI key of its own; you bring yours.
+Marrow has no AI key of its own, and no service is set up when you start: you add the one you have a key for.
 
-1. **Add providers.** Pick a service from the list (OpenRouter, OpenAI, Claude, Gemini, NVIDIA, Groq, DeepSeek, Mistral, xAI, Together AI, Fireworks, Hugging Face, Cerebras, SambaNova, a local Ollama) or choose Other and type its address. Anything that uses the OpenAI chat format works. Each provider is its own panel with its own key; the address is under "Name and API address".
-2. **Save and test.** Paste the key and press **Save & test connection**. Marrow saves, asks the service for its model list, and shows "Connected · N models" in green or the service's error in red. "Save & test all" does every panel at once.
-3. **Pick models.** After a successful test the panel lists the models on offer. Filter and click one to add it; models already chosen are not offered again. You can also type a model name.
+1. **Add providers.** Pick a service from the list (OpenRouter, OpenAI, Claude, Gemini, NVIDIA, Groq, DeepSeek, Mistral, xAI, Together AI, Fireworks, Hugging Face, Cerebras, SambaNova, a local Ollama) or choose Other and type its address. Anything that uses the OpenAI chat format works. Each provider is its own panel with its own key. Once a key is saved the panel folds to one line; the key and address are under "Key and address".
+2. **Save and test.** Paste the key and press **Save & test**. Services with a saved key are also tested each time you open Settings. Marrow saves, asks the service for its model list, and shows "Connected · N models" in green or the service's error in red. On OpenRouter, whose model list is public, it also checks the key itself, so a missing or wrong key shows an error instead of "Connected". "Save & test all" does every panel at once.
+3. **Pick models.** Under the model list, choose the service and type in the search box: the models it offers that match are listed, with free ones marked. Click one (or press Enter for the top one) to add it; models already chosen are not offered again. A name the service does not list is added as typed. Close the list with ×, Esc or a click anywhere else.
 4. **Order them.** Drag a model by its ⠿ handle to set the order they are tried in. If one fails or is rate-limited, the next one answers, and the models can come from different providers. Picks, removals and reordering are saved at once.
-5. **Test one model.** Each model has a Test button that asks only that model for a reply.
-6. **Figures** have their own list, because the model has to accept images.
+5. **Test one model.** Point at a model to show its Test (▷) and Remove (×) buttons. Test asks only that model for a reply and shows the result next to it.
+6. **Text and Images.** Each model has two switches. **Text** models write answers, briefs and cards; **Images** models explain a figure you snip, so they must read images. A model can do both. When you add a model that OpenRouter says reads images, Images is switched on for you. With no model on Images, figures go to the Text models.
 7. **Test the connection** at the bottom checks which model answers first.
 
-Keys are stored encrypted on the server and are never sent back to the browser. A saved key is shown as dots plus its last four characters, with Replace and Remove key. On OpenRouter only free models are used, unless you allow paid ones. Other providers are always asked, so choose their models with care.
+Keys are stored encrypted on the server and are never sent back to the browser. A saved key is shown as dots plus its last four characters, with Replace and Remove key. On OpenRouter, free models are always asked before paid ones (a test too), and paid models are marked “paid”, so add one only if you mean to pay for it. Other providers are always asked, so choose their models with care.
 
 ## Transcription
 
@@ -31,10 +31,23 @@ Keys are stored encrypted on the server and are never sent back to the browser. 
 
 Everything downloaded here can be removed again from the same screen.
 
-## Embedding model
+## Map links and long sources (embedding model)
 
-Optional. Pick a provider and an embedding model so Ask can handle sources too long to send whole (books, theses, long lectures): the passages that best match the question are found by meaning and sent instead. "Index my library" prepares sources you saved earlier; new ones are indexed when saved.
+Optional. An embedding model lets the Map join concepts that mean the same thing, across your sources and under different names, and lets Ask handle sources too long to send whole (books, theses, long lectures): the passages that best match the question are found by meaning and sent instead. "Index my library" prepares sources you saved earlier; new ones are indexed when saved.
 
-## Log out
+**Free, on this computer.** Download two things, like Whisper: the llama.cpp program (about 25 MB; on a Mac or Linux install it with `brew install llama.cpp`) and Qwen3-Embedding-0.6B (639 MB), the best-scoring free embedding model on Hugging Face for a laptop. Then press **Use it**. Nothing leaves your computer and there is no key. It starts by itself the first time it is needed. Indexing a long paper takes a minute or two.
 
-The arrow button at the bottom of the rail logs you out.
+**Or a service.** Pick a provider and its embedding model in the list below. It must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model), and the text of your sources is sent to it.
+
+**Switching and deleting.** Change the choice any time. Concept vectors are kept per model, so switching back costs nothing; passages are redone for the model in use when you index. Delete either download to free the space; if it was in use, the Map and Ask stop using an embedding model until you choose one again.
+
+## Library folder
+
+The first time Marrow starts, it asks where to keep your library. Everything goes in that one folder, so backing it up backs up everything:
+- the library itself (`marrow.db`);
+- a README;
+- a folder per project with its PDFs (`papers`), a Markdown copy of each source (`sources`) and of each notebook page (`pages`).
+
+Things not in a project go in `Unfiled`. The Markdown copies open in Obsidian, VS Code or any editor, and Marrow rewrites them whenever you change something, so make your changes in Marrow. Don't move or rename the PDFs, or Marrow can't open them.
+
+To move the library, type an empty folder's full path under "Library folder" and choose "Move library here". Marrow copies everything, checks the copy, then switches to it. The old folder is left as it was, for you to delete once you're happy.

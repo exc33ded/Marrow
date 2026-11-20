@@ -4,7 +4,7 @@ covers: [server.js]
 
 # Transcription: Whisper and yt-dlp
 
-Both run on the server's own computer, from files under `DATA_DIR/whisper/` (`WH`).
+Both run on the server's own computer, from files under `./data/whisper/`, or `DATA_DIR/whisper/` when that is set (`WH`). They stay with the app, not in the library folder, so moving the library does not copy them.
 
 > ponytail note in the code: Whisper and yt-dlp are shared by every user of the server. Fine on your own machine; a small free host can't run them.
 
