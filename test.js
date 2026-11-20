@@ -2,6 +2,8 @@
 // Starts the server on a spare port with a throwaway DATA_DIR, so it never touches your library.
 const { spawn } = require('child_process'), fs = require('fs'), os = require('os'), path = require('path'), assert = require('assert');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'marrow-test-')), PORT = 5981, base = `http://localhost:${PORT}/api/`;
+// Start from a library made before vector search (parts without emb columns): the server must upgrade it, not fail on every request.
+new (require('node:sqlite').DatabaseSync)(path.join(dir, 'marrow.db')).exec('create table parts(id integer primary key, item_id text not null references items(id) on delete cascade, n integer not null, t real, body text not null, html text)');
 const srv = spawn(process.execPath, [path.join(__dirname, 'server.js')], { env: { ...process.env, APP_SECRET: process.env.APP_SECRET || '0'.repeat(64), PORT, DATA_DIR: dir, HOST: '127.0.0.1' }, stdio: ['ignore', 'pipe', 'inherit'] });
 const raw = async (p, method = 'GET', body, headers = {}) => {
   const r = await fetch(base + p, { method, body: body && !Buffer.isBuffer(body) ? JSON.stringify(body) : body, headers });

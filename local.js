@@ -29,6 +29,9 @@ function open() {
   fs.mkdirSync(FILES, { recursive: true });
   db = new DatabaseSync(path.join(DATA, 'marrow.db'));
   db.exec('pragma journal_mode=wal; pragma foreign_keys=on');
+  // A library made before vector search has parts without emb columns, and "create table if not exists" never adds columns.
+  const cols = db.prepare("select name from pragma_table_info('parts')").all().map(r => r.name);
+  if (cols.length && !cols.includes('emb')) db.exec('alter table parts add column emb blob; alter table parts add column emb_model text');
   db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
   db.function('cosine', cosine);
   return db;
