@@ -12,10 +12,10 @@ Pick one of seven looks: Studio (the default), Lab notebook (the original), Conc
 
 ## AI services
 
-Marrow has no AI key of its own; you bring yours.
+Marrow has no AI key of its own, and no service is set up when you start: you add the one you have a key for.
 
 1. **Add providers.** Pick a service from the list (OpenRouter, OpenAI, Claude, Gemini, NVIDIA, Groq, DeepSeek, Mistral, xAI, Together AI, Fireworks, Hugging Face, Cerebras, SambaNova, a local Ollama) or choose Other and type its address. Anything that uses the OpenAI chat format works. Each provider is its own panel with its own key; the address is under "Name and API address".
-2. **Save and test.** Paste the key and press **Save & test connection**. Marrow saves, asks the service for its model list, and shows "Connected · N models" in green or the service's error in red. "Save & test all" does every panel at once.
+2. **Save and test.** Paste the key and press **Save & test connection**. Marrow saves, asks the service for its model list, and shows "Connected · N models" in green or the service's error in red. On OpenRouter, whose model list is public, it also checks the key itself, so a missing or wrong key shows an error instead of "Connected". "Save & test all" does every panel at once.
 3. **Pick models.** After a successful test the panel lists the models on offer. Filter and click one to add it; models already chosen are not offered again. You can also type a model name.
 4. **Order them.** Drag a model by its ⠿ handle to set the order they are tried in. If one fails or is rate-limited, the next one answers, and the models can come from different providers. Picks, removals and reordering are saved at once.
 5. **Test one model.** Each model has a Test button that asks only that model for a reply.

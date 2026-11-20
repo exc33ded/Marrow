@@ -19,7 +19,7 @@ Starts the server on port 5981 with a temporary `DATA_DIR`, so it never touches 
 - PDFs are stored, served and deleted, with no path traversal;
 - activity, projects, feeds and notebook pages round-trip;
 - the link-fetching rules hold, and other sites cannot call the API;
-- AI settings never return a key.
+- AI settings never return a key. A new library has no provider or model, and a key can be saved before any model is picked.
 
 It also checks meaning-based search against a fake embedding service on port 5982: no model chosen gives 400, the model is saved, `/api/embed` indexes a source, and `/api/retrieve` returns the dictionary-learning passage first. `/api/concept-near` pairs each concept with the one about the same thing, reuses cached vectors without calling the service again, and answers `{}` once the model is removed.
 

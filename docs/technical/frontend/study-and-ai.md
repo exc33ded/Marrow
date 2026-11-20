@@ -20,7 +20,7 @@ covers: [index.html]
 - `meta`: title, authors, year, venue;
 - `sections`, each with a checkpoint question;
 - `concepts` and `links` for the map;
-- `cards`, each with a verbatim `quote`;
+- `cards` (8-12), each with a verbatim `quote`. The card rules are `CARD_RULES`, shared with the AI card button (`SYS_CARDS`) and the select-text "Card" action: questions test understanding of the argument, not recall, and answers follow the ASD-STE100 writing rules (short sentences, active voice, present tense) while keeping the source's own terms;
 - `references`.
 
 Concept names already in the library are passed in (up to 150), so the same concept keeps the same name across sources. Only the four checkpoint fields are kept from each section, so a model can't pre-fill the reader's answer box. References are kept only if their title actually appears in the source. Citation links are found both ways: library titles that appear in this text, and this title found in the library through phrase search.
@@ -43,8 +43,16 @@ The AI must quote the source. `findQuote(p, quote)` finds the part that contains
 
 ## Spaced repetition
 
-`grade(c, g)` is SM-2 style, with `g` = 0 (again), 1 (good) or 2 (easy). It updates `ease` (never below 1.3), `ivl` in days, and `due`. `due(ps)` lists the cards due now, oldest first. Each review, checkpoint and teach-back is logged with `log()` and feeds the streak and the activity grid (`streak()`, `heat()`).
+`grade(c, g, s)` is SM-2 style with Anki's four grades: `g` = 0 (again), 1 (hard), 2 (good), 3 (easy). `s` is the session's memory of the card. It returns `true` when the card stays in today's deck (`stays()`): Again and Hard always do, and Good does once while the card is new or relearning (`ivl` 0). A card that stays is due now (Again also resets `ivl` to 0); anything else gets `ivl = nextIvl(c, g)` days and `due` that far ahead. `ease` changes by -0.2 / -0.15 / 0 / +0.15 and never drops below 1.3. `when(c, g, s)` is the label on each button. `due(ps)` lists the cards due now, oldest first. Each review, checkpoint and teach-back is logged with `log()` and feeds the streak and the activity grid (`streak()`, `heat()`).
 
 ## Study panel
 
-`VIEW` has one function per tab: brief, read, teach, cards (`cardsHTML()`), map (`drawMap([P])`), notes, ask. Ask can include other sources from the library (`askWith`).
+`VIEW` has one function per tab: brief, read, teach, cards (`cardsHTML()` plus `deckHTML(P)`), map (`drawMap([P])`), notes, ask. Ask can include other sources from the library (`askWith`).
+
+## Study deck
+
+`sess` holds the deck on screen, so a card can go back "3 cards down" and come up again in the same session, which `due` alone can't express. `session(ps, key)` builds it: live cards first and done cards under them, each entry `{ p, c, k, s, done }`, where `k` names the card's element. It keeps the order across renders, drops deleted cards, and adds cards that came due. `key` is the scope (`rv:all:<project>`, `rv:<source id>` or `tab:<source id>`); a new key starts a new deck.
+
+`cardsHTML(ps, key, all)` draws the stack. `pose()` gives each card its depth, spread over at most 28 px so positions look different in any size of deck. `flipTop()` turns the top card. `gradeTop(g)` grades it, moves it to `slot(g, n)` among the `n` live cards (Again 1, Hard 3, Good the middle, at least 4), or to the bottom when it is done. It then animates it with the Web Animations API: out to the side, then back in under exactly the cards above its new place. `layout()` and `paintDeck()` update the stack and the buttons without a full render, so the animation is never interrupted. When no live cards are left it renders the "Nothing due" box. `.study` clips sideways overflow, so the card flying out never adds a scrollbar.
+
+Review has two tabs (`rtab`): Study, optionally limited to one source (`rdeck`), and Decks, a folder per source (`folders()`), with one deck open at a time (`ropen`). `deckHTML(p, inReview)` lists a deck's cards with **+ New card** (the `newcard` form; `adding` is the deck whose form is open), **Delete** (`delcard`), and **More cards with AI** (`morecards`). That last one sends the source text and the existing questions with `SYS_CARDS`, and checks each new card's quote with `findQuote()`. The `#keys` popover lists the shortcuts; `?` toggles it.

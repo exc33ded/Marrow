@@ -14,7 +14,7 @@ You bring your own keys; the server has none.
 
 - **Encryption.** `seal()` encrypts a key with AES-256-GCM using `APP_SECRET`, stored as `enc1:<iv>.<tag>.<ciphertext>`. `unseal()` decrypts it only to call the provider. A wrong `APP_SECRET` gives an empty key, so you have to enter it again.
 - **What the browser gets.** `GET /api/settings` never returns a key, only `hasKey` and the last four characters (`hint`).
-- **Saving.** `PUT /api/settings` keeps the stored, already-encrypted key unless a new key is sent or `clearKey` is set. Provider addresses must be `http(s)`, and at least one provider and one model are required. Saving clears the cooled-down models.
+- **Saving.** `PUT /api/settings` keeps the stored, already-encrypted key unless a new key is sent or `clearKey` is set. Provider addresses must be `http(s)`. The lists may be empty, so a key can be saved and tested before any model is picked. Saving clears the cooled-down models.
 
 Settings are rows in the `settings` table:
 
@@ -28,7 +28,7 @@ Settings are rows in the `settings` table:
 | `whisper` | the chosen Whisper model |
 | `projects` | the project names |
 
-`conf(S)` turns those rows into the working configuration. Without saved settings it uses one OpenRouter provider and the `MODELS` / `VISION_MODELS` lists.
+`conf(S)` turns those rows into the working configuration. There are no defaults: without saved settings there are no providers and no models, and `ai()` answers `502` asking you to set one up in Settings.
 
 ## The AI proxy: `ai(conf, messages)`
 
@@ -38,7 +38,7 @@ Settings are rows in the `settings` table:
 4. It posts to `{provider url}/chat/completions` with `temperature: 0.3` and a 90 s timeout. Anthropic addresses also get `x-api-key` and `anthropic-version`.
 5. It returns the first reply that has text, as `{ text, model, provider }`. A `401`/`403` skips the rest of that provider's models. If nothing answers, it returns `502` with every model's error joined together.
 
-`offered(p)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker. `POST /api/settings/models` calls it with the address and key as typed in the form, falling back to the saved key of that provider id, so a provider can be tested before it is saved.
+`offered(p)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker. `POST /api/settings/models` calls it with the address and key as typed in the form, falling back to the saved key of that provider id, so a provider can be tested before it is saved. OpenRouter lists its models to anyone, so for OpenRouter `offered()` first checks the key with `GET {url}/key` and fails on a missing key or a `401`/`403`.
 
 **Embeddings.** The `embed` setting (`{ p, m }`) names a provider and model. `embed(c, texts)` posts to `{url}/embeddings` with `dimensions: 1024` (`DIM`; parts are cut at 6000 characters) and rejects any other vector size. `embedItem()` embeds a source's parts that have no vector, 64 at a time, through `local.setEmb()`; `PUT /api/items/:id` runs it in the background when parts were saved, so a failure never blocks the save. `POST /api/embed` does one source (`item`) or all (`all`). `POST /api/retrieve` embeds the question and calls `local.matchParts()` for the 12 best parts.
 

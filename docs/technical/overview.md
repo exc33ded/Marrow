@@ -37,7 +37,6 @@ npm start                 # node --env-file=.env server.js  ->  http://localhost
 | `ALLOWED_HOSTS` | none | Extra host names the server answers to, besides `localhost` and IP addresses. |
 | `DATA_DIR` | none: chosen on first launch, kept in `~/.marrow.json` | Fixes the library folder (Settings can no longer move it). Whisper and yt-dlp downloads live in `DATA_DIR/whisper`, or `./data/whisper` without it. |
 | `MARROW_CONFIG`, `MARROW_LEGACY` | `~/.marrow.json`, `./data` | Where the chosen folder is remembered, and where an older library is looked for. Tests point both at temp folders. |
-| `MODELS`, `VISION_MODELS` | built-in free OpenRouter list | Default model order before you set one. |
 
 ## Data flow for one source
 
