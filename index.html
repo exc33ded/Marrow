@@ -70,7 +70,7 @@ ul,ol{padding-left:1.3em;margin:.4em 0} li{margin:.25em 0} hr{border:0;border-to
 @keyframes grow{from{transform:scaleX(0)}}
 @keyframes shim{from{background-position:100% 0}to{background-position:0 0}}
 @keyframes vtout{to{opacity:0}} @keyframes vtin{from{opacity:0}}
-.in>.wrap>*,#body.in>*,#doc.in>article,#doc.in>.vid,.in :is(.grid,.rows,.tiles)>*,.fxin{animation:rise .45s var(--e) backwards}
+.in>.wrap>*,#body.in>*,#doc.in>article,#doc.in>.vid,.in :is(.grid,.rows,.tiles)>*{animation:rise .45s var(--e) backwards}
 .in :is(.wrap,.grid,.rows,.tiles)>:nth-child(2),#body.in>:nth-child(2){animation-delay:35ms}
 .in :is(.wrap,.grid,.rows,.tiles)>:nth-child(3),#body.in>:nth-child(3){animation-delay:70ms}
 .in :is(.wrap,.grid,.rows,.tiles)>:nth-child(4),#body.in>:nth-child(4){animation-delay:105ms}
@@ -112,9 +112,9 @@ kbd{font:600 11px var(--f-body);border:1px solid currentColor;border-radius:5px;
 .addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px;box-shadow:var(--sh);margin:0 0 22px}
 .addbar input{border:0;background:none;font-size:15.5px;min-width:0} .addbar input:focus-visible{outline:0} .addbar:focus-within{border-color:var(--acc)}
 .heatwrap{padding-bottom:6px;--cs:14px}
-.heat{display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:5px;width:100%;font-size:11px;color:var(--muted)}
-.hm{grid-column:2;display:grid;grid-template-columns:repeat(53,1fr);column-gap:3px;height:14px} .hm span{white-space:nowrap}
-.hd{display:grid;grid-template-rows:repeat(7,1fr);row-gap:3px;align-items:center;line-height:1} .hd span:nth-child(1){grid-row:2} .hd span:nth-child(2){grid-row:4} .hd span:nth-child(3){grid-row:6}
+.heat{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:5px;width:100%;font-size:11px;color:var(--muted)}
+.hm{grid-column:2;display:grid;grid-template-columns:repeat(53,minmax(0,1fr));column-gap:3px;height:14px} .hm span{white-space:nowrap}
+.hd{display:grid;grid-template-rows:repeat(7,minmax(0,1fr));row-gap:3px;align-items:center;line-height:1;height:0;min-height:100%} /* the labels take the cells' height; sized by the labels, the square cells grew wider than the column */ .hd span:nth-child(1){grid-row:2} .hd span:nth-child(2){grid-row:4} .hd span:nth-child(3){grid-row:6}
 .hg{display:grid;grid-template-rows:repeat(7,auto);grid-auto-flow:column;grid-auto-columns:1fr;gap:3px} .hg i{aspect-ratio:1}
 .heat i,.hleg i{display:block;border-radius:2px;background:var(--h0)} .hleg i{width:var(--cs);height:var(--cs)}
 i[data-l="1"]{background:var(--h1)} i[data-l="2"]{background:var(--h2)} i[data-l="3"]{background:var(--h3)} i[data-l="4"]{background:var(--h4)}
@@ -284,6 +284,29 @@ article pre{overflow:auto;background:var(--bg);padding:12px;border-radius:8px;fo
 .k{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;background:var(--acc-bg);border-radius:var(--r2);padding:2px 8px;margin:1.3em 0 .4em}
 .badge{font:700 12px var(--f-body);color:var(--ok);float:right}
 .q{font:600 19px/1.4 var(--f-display)}
+/* study deck: flashcards stacked like a deck; grading slides the top card back in at its new depth. Only theme tokens, so every look restyles it. */
+.study{overflow-x:clip;overflow-clip-margin:0} /* the card flying out never adds a sideways scrollbar */
+.srow{display:flex;align-items:center;gap:12px} .scount{display:flex;gap:12px;font-weight:700;font-variant-numeric:tabular-nums;margin-left:auto}
+.scount .n{color:var(--web)} .scount .l{color:var(--acc)} .scount .r{color:var(--ok)}
+.sdeck{position:relative;aspect-ratio:5/3;max-width:560px;margin:30px auto 0;perspective:1600px;isolation:isolate}
+.scard{position:absolute;inset:0;transition:transform .45s cubic-bezier(.2,.8,.2,1)} .scard[data-act]{cursor:pointer}
+.sin{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,1.25,.5,1)} .scard.flip .sin{transform:rotateY(180deg)}
+.sface{position:absolute;inset:0;backface-visibility:hidden;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:calc(var(--r) * 3);box-shadow:0 1px 2px #0000002e,0 14px 28px -18px #00000080;display:grid;place-items:center;padding:34px 40px;text-align:center;overflow:auto}
+.sface::before{content:"";position:absolute;inset:9px;border:1px solid color-mix(in srgb,var(--acc) 22%,var(--line));border-radius:calc(var(--r) * 2);pointer-events:none}
+.scard:not([data-act]) .sface{box-shadow:0 1px 2px #00000024} /* only the top card casts the deep shadow, or a big deck turns into a smear */
+.sback{transform:rotateY(180deg);background:color-mix(in srgb,var(--acc-bg) 35%,var(--panel))} .sback blockquote{font-size:13px;text-align:left;margin:.6em 0 0}
+.sface .q{margin:0;font-size:21px} .sfrom{position:absolute;top:16px;left:0;right:0;padding:0 40px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swhere{position:absolute;left:50%;top:-14px;z-index:900;transform:translate(-50%,-6px);background:var(--acc);color:var(--on-pri,#fff);font-size:13px;font-weight:700;padding:5px 14px;border-radius:99px;box-shadow:0 4px 14px #0004;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+.swhere.on{opacity:1;transform:translate(-50%,0)}
+.sbar{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:58px auto 18px;max-width:460px;min-height:58px}
+.sbar button[data-g]{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px} .sbar small{font-weight:500;color:var(--muted);font-size:12px} .sbar p{flex-basis:100%;text-align:center;margin:0}
+.folders{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.folder{box-sizing:border-box;position:relative;display:block;color:var(--ink);text-decoration:none;background:var(--panel);border:1px solid var(--line);border-radius:var(--r2) calc(var(--r2) + 4px) calc(var(--r2) + 4px);padding:16px 14px 14px;margin-top:11px}
+.folder::before{content:"";position:absolute;left:-1px;top:-11px;width:44%;height:12px;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:calc(var(--r2) + 3px) calc(var(--r2) + 3px) 0 0}
+.folder:hover,.folder:focus-visible,.folder:hover::before,.folder:focus-visible::before{border-color:var(--acc)}
+.folder b{display:block;font:600 15px/1.3 var(--f-display);margin-bottom:6px} .folder small{color:var(--muted)} .folder .due{color:var(--acc);font-weight:700}
+.crow{display:flex;gap:12px;align-items:flex-start} .crow .muted p{margin:.2em 0 0} .cardform{display:grid;gap:8px}
+#keys{border:1px solid var(--line);border-radius:var(--r2);background:var(--panel);color:var(--ink);padding:18px 22px;box-shadow:var(--pop)} #keys h3{margin:0 0 8px} #keys td{padding:4px 14px 4px 0}
 .msg{margin:0 0 12px;padding:10px 12px;border-radius:var(--r);background:var(--panel);border:1px solid var(--line)}
 .msg.user{background:var(--acc-bg);border-color:transparent;margin-left:15%}
 .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc-bg);color:var(--acc);font:700 12px var(--f-body);margin-right:6px;vertical-align:2px}
@@ -301,7 +324,6 @@ progress{width:100%;height:6px;accent-color:var(--ok)}
 .mbar button{min-height:30px;padding:.1em .55em;margin:4px 4px 0 0}
 .mprev:not(:empty){border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin:6px 0}
 .mprev:not(:empty)::before{content:"Preview";display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-details.cardrow summary{cursor:pointer;font-weight:600;list-style-position:outside;margin-left:1em}
 body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer-events:none} body.snip #snipBtn{background:var(--acc);color:#fff}
 #snipbox{position:absolute;border:2px dashed var(--acc);background:color-mix(in srgb,var(--acc) 13%,transparent);pointer-events:none;z-index:5}
 #sel{position:fixed;z-index:20;display:none;background:#221f1a;border-radius:var(--r);padding:4px;gap:2px;box-shadow:0 4px 16px #0005;animation:pop .16s var(--e)}
@@ -1048,6 +1070,10 @@ html[data-theme] #palBtn::after{content:"Ctrl K";margin-left:auto;font:500 11px/
 <datalist id="projects"></datalist>
 <dialog id="pal" aria-label="Jump to anything"><input id="palq" autocomplete="off" placeholder="Jump to a source, a note or a page. Or paste a link to add it." aria-label="Search everything"><div id="pall"></div></dialog>
 <dialog id="peek" aria-label="Reading a matrix cell"></dialog>
+<div id="keys" popover><h3>Keyboard</h3><table>
+  <tr><td><kbd>Space</kbd></td><td>Show the answer</td></tr><tr><td><kbd>1</kbd></td><td>Again: back after the next card</td></tr>
+  <tr><td><kbd>2</kbd></td><td>Hard: back in 3 cards</td></tr><tr><td><kbd>3</kbd></td><td>Good: back in the middle, or done if you knew it already</td></tr>
+  <tr><td><kbd>4</kbd></td><td>Easy: to the bottom, done for today</td></tr><tr><td><kbd>/</kbd> or <kbd>Ctrl K</kbd></td><td>Jump to anything</td></tr><tr><td><kbd>?</kbd></td><td>Show or hide this list</td></tr></table></div>
 <dialog id="sure"></dialog>
 <div id="status" role="status"></div>
 <div id="toast" role="status"></div>
@@ -1178,6 +1204,9 @@ async function sourceText(p, q) {
   return fullText(p);
 }
 
+// What makes a card worth keeping: understanding the source's argument, not recall of facts about it. Answers follow the ASD-STE100 writing rules, without its word list.
+const CARD_RULES = `The reader wants to understand the source's argument well enough to explain it, judge it and use it, not to recite facts about it. Across the cards, cover at least once each: why the problem is hard or why earlier approaches fall short; how the key step of the method works and what it buys; what evidence supports the main claim and how strong it is (ask what a number means, never the number alone); which assumption the result depends on and what breaks without it; how it differs from the closest alternative. Never ask for authors, year, venue, dataset or benchmark names, section titles, or a bare figure. Each card tests one idea, has one clear answer, does not give the answer away in its question, and can be answered without the source open by someone who understood it. Write each answer in Simplified Technical English (ASD-STE100) style: 1-2 sentences, at most 20 words each and 35 words in total, one idea per sentence, active voice, present tense, no idioms, the same word for the same thing every time. Keep the source's own technical terms.`;
+const SYS_CARDS = `You write flashcards for a reader working through a source: a research paper, a web article, or the transcript of a talk. Markers like [p.N] number its parts. Produce JSON: {"cards":[{"q":"","a":"1-2 short sentences","quote":"one sentence copied VERBATIM from the source that proves the answer"}]}. Write 4-6 cards. Every card must be provable from its quote; never invent facts or numbers. Plain text only, no LaTeX. ${CARD_RULES}`;
 const SYS_ANALYZE = `You are an expert research mentor preparing a student to deeply master a source: a research paper, a web article, or the transcript of a talk or lecture. Markers like [p.N] number its pages, paragraphs or transcript chunks; wherever "page" is asked for, give that number N. Produce JSON:
 {"title":"title of the source","authors":["Full Name"],"year":"YYYY","venue":"short name of the journal/conference, site or channel, e.g. NeurIPS",
 "tldr":"2 plain sentences",
@@ -1190,9 +1219,9 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 "sections":[{"title":"","page":1,"gist":"what to look for in this part","question":"a checkpoint question testing understanding (why/how), answerable from this part"}],
 "concepts":[{"name":"short noun phrase","def":"one sentence"}],
 "links":[{"from":"concept name","to":"concept name","label":"verb phrase"}],
-"cards":[{"q":"","a":"short answer","quote":"one sentence copied VERBATIM from the source that proves the answer"}],
+"cards":[{"q":"","a":"1-2 short sentences","quote":"one sentence copied VERBATIM from the source that proves the answer"}],
 "references":[{"title":"exact title as written in the source's reference list","why":"why reading it helps understand this source"}]}
-Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 10-14, testing the ideas that matter in a year, not trivia.`;
+Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 8-12. ${CARD_RULES}`;
 
 // ---------- state ----------
 let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, ffilter = {}, stat = {}, mstat = {}, dragFrom = null; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
@@ -1225,7 +1254,7 @@ const chainHTML = (k, label) => {
     <button type="button" data-act="cfgtm" data-k="${k}" data-i="${i}" style="min-width:0;width:auto;flex:none;padding:2px 10px" aria-label="Test ${esc(e.m)}">Test</button><button type="button" data-act="cfgrm" data-k="${k}" style="min-width:0;width:auto;flex:none;padding:2px 10px" data-i="${i}" aria-label="Remove ${esc(e.m)}">Remove</button></span></li>`; }).join('') || '<li class="muted">Empty.' + (k === 'vision' ? ' Figures then use the model list above.' : '') + '</li>'}</ol>
     <p class="row" style="margin:8px 0 0"><select id="add-${k}-p" aria-label="Provider" style="width:auto;flex:none">${cfg.providers.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><input id="add-${k}-m" class="grow" placeholder="model name" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgadd" data-k="${k}" style="min-width:0;width:auto;flex:none">Add</button></p>`;
 };
-let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, shown = false, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, fx = false;
+let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, sess = null, busy = false, seq = 0, rtab = 'study', rdeck = null, ropen = null, adding = null; // sess: the study deck on screen; rdeck: the one paper Review studies; ropen: the deck open under Decks; adding: the deck whose new-card form is open
 let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
 const F = { q: '', kind: '', project: '', status: '', hits: [] }, disc = { q: '', rows: null, busy: false };
 const NAV = [['home', 'Home', 'home'], ['library', 'Library', 'book'], ['discover', 'Discover', 'compass'], ['review', 'Review', 'layers'], ['matrix', 'Matrix', 'table'], ['notebook', 'Notebook', 'pen'], ['map', 'Map', 'graph']];
@@ -1342,12 +1371,21 @@ function findQuote(p, quote) { // -> number of the part containing the quote (it
   const head = q.slice(0, 60), tail = q.slice(-60);
   return p.pages.findIndex((t, i) => { const h = norm(t), h2 = h + norm(p.pages[i + 1]); return h.includes(q.slice(0, 20)) && h2.includes(head) && h2.includes(tail); }) + 1;
 }
-// Spaced repetition (SM-2 style). g: 0 again, 1 good, 2 easy.
-function grade(c, g) {
-  c.ease = Math.max(1.3, (c.ease || 2.5) + [-.2, 0, .15][g]);
-  c.ivl = g === 0 ? 0 : c.ivl ? Math.round(c.ivl * c.ease * (g === 2 ? 1.3 : 1)) : (g === 2 ? 3 : 1);
-  c.due = Date.now() + c.ivl * 864e5;
+// Spaced repetition (SM-2 style) with Anki's four grades. g: 0 again, 1 hard, 2 good, 3 easy. s: this session's memory of the card.
+// Again and Hard keep the card in today's deck; so does Good, once, while the card is new or relearning. Anything else is done until c.due.
+const stays = (c, g, s = {}) => g < 2 || (g === 2 && !c.ivl && !s.passed);
+const nextIvl = (c, g) => c.ivl ? Math.max(c.ivl + 1, Math.round(c.ivl * (c.ease || 2.5) * (g === 3 ? 1.3 : 1))) : g === 3 ? 4 : 1;
+function grade(c, g, s = {}) { // -> true if the card stays in today's deck
+  const keep = stays(c, g, s);
+  if (keep) { if (g === 0) c.ivl = 0; if (g === 2) s.passed = true; c.due = Date.now(); }
+  else { c.ivl = nextIvl(c, g); c.due = Date.now() + c.ivl * 864e5; }
+  c.ease = Math.max(1.3, (c.ease || 2.5) + [-.2, -.15, 0, .15][g]);
+  return keep;
 }
+// Where a card that stays goes among the n cards still to go: Again after the next card, Hard 3 down, Good the middle. Small decks keep that order.
+const slot = (g, n) => g === 0 ? Math.min(1, n) : g === 1 ? Math.min(3, n) : Math.min(n, Math.max(4, Math.ceil(n / 2)));
+const ivlText = d => d < 30 ? d + 'd' : d < 365 ? (d / 30).toFixed(1) + 'mo' : (d / 365).toFixed(1) + 'y';
+const when = (c, g, s) => stays(c, g, s) ? ['<1m', '<6m', '<10m'][g] : ivlText(nextIvl(c, g));
 // A pasted transcript (YouTube's "Show transcript" panel, SRT, VTT or plain text) -> chunks of roughly 40 seconds.
 function parseTranscript(raw) {
   const out = []; let t = null;
@@ -1478,8 +1516,10 @@ const blocksMd = bs => bs.map(({ type, data: d }) =>
 if (location.hash === '#test') { // self-check: open /#test and look at the console
   const mb = mdBlocks('# T\n\ntext **b**\n- a\n- b\n\n> q\n---\n$$x^2$$\n<img src=x onerror=alert(1)>');
   console.assert(mb.map(b => b.type).join() === 'header,paragraph,list,quote,delimiter,math,paragraph' && blocksMd(mb) === '## T\n\ntext **b**\n\n- a\n- b\n\n> q\n\n---\n\n$$x^2$$\n\n<img src=x onerror=alert(1)>', 'notebook Markdown survives the round trip, HTML stays text', blocksMd(mb));
-  const c = {}; grade(c, 1); console.assert(c.ivl === 1, 'first good = 1 day'); grade(c, 1); console.assert(c.ivl === 3, 'second good grows');
-  grade(c, 0); console.assert(c.ivl === 0 && c.due <= Date.now(), 'again = due now');
+  const c = {}, s = {}; console.assert(grade(c, 2, s) && !grade(c, 2, s) && c.ivl === 1, 'a new card: Good once more today, then 1 day');
+  console.assert(!grade(c, 2) && c.ivl === 3, 'Good on a known card grows'); console.assert(grade(c, 0) && c.ivl === 0 && c.due <= Date.now(), 'Again = relearn now');
+  const e = {}; console.assert(!grade(e, 3) && e.ivl === 4, 'Easy on a new card: done, 4 days');
+  console.assert([0, 1, 2].map(g => slot(g, 8)).join() === '1,3,4' && slot(2, 20) === 10 && slot(1, 2) === 2 && slot(0, 0) === 0, 'deck slots keep their order');
   console.assert(md('<b> p.3', { id: 'x', kind: 'pdf' }).includes('&lt;b&gt;') && md('p.3', { id: 'x', kind: 'pdf' }).includes('data-page="3"'), 'md escapes + links');
   console.assert(md('see p.2', { id: 'x', kind: 'video', times: [0, 75] }).includes('>1:15<') && md('p.2', null) === 'p.2', 'citations show timestamps for videos');
   console.assert(md('# T\n- a\n- **b**\n1. c\ntext', null) === '<b class="h">T</b><ul><li>a</li><li><b>b</b></li></ul><ol><li>c</li></ol><span class="pl">text</span>', 'md lists and headings');
@@ -1746,7 +1786,7 @@ async function openItem(id, n) {
   const p = byId(id); if (!p) return;
   try { await text(p); } catch (e) { return toast('Could not open it: ' + e.message); }
   CSS.highlights?.clear(); yt = null;
-  P = p; view = 'read'; tab = p.brief ? 'read' : 'brief'; shown = false;
+  P = p; view = 'read'; tab = p.brief ? 'read' : 'brief';
   findQ = ''; findHits = []; $('#find').value = $('#findn').textContent = ''; askWith.clear();
   p.opened = Date.now(); save(p); enter($('#body'), $('#doc')); await vt(render);
   if (P !== p) return; // something else was opened meanwhile
@@ -1756,26 +1796,86 @@ async function openItem(id, n) {
 }
 function go(v) {
   if (view === 'read') yt?.pauseVideo?.();
-  view = v; shown = false; enter($('#page'));
+  view = v; enter($('#page'));
   vt(() => { document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0; });
   if (v === 'discover') loadNews();
   if (v === 'settings') api('settings').then(c => { cfg = c; if (view === 'settings') render(); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
   if (v === 'settings') loadWh().then(paintWh).catch(e => toast('Could not check Whisper (' + e.message + ').'));
 }
 
-// ---------- study panel ----------
-function cardsHTML(ps, all) {
-  const q = due(ps);
-  const anim = fx ? 'fxin' : ''; fx = false; // set by the show and grade actions, so only those two moves animate
-  if (!q.length) {
+// ---------- study deck ----------
+// The deck on screen. Its order lives here, not in c.due, so a card can go back "3 cards down" and come up again today.
+// sess.deck: [{ p, c, k, s, done }], live cards first and done ones under them; k names the card's element.
+// ponytail: every due card is in the DOM; cap the rendered stack if decks of thousands appear.
+function session(ps, key) {
+  if (sess?.key !== key) sess = { key, deck: [], flip: false };
+  const d = sess.deck = sess.deck.filter(x => ps.includes(x.p) && x.p.cards.includes(x.c)), have = new Set(d.map(x => x.c));
+  const add = due(ps).filter(x => !have.has(x.c)).map(x => ({ p: x.p, c: x.c, k: ++seq, s: {} })), at = d.findIndex(x => x.done);
+  d.splice(at < 0 ? d.length : at, 0, ...add);
+  if (d[0]?.k !== sess.top) { sess.flip = false; sess.top = d[0]?.k; } // a deleted top card must not leave the next one showing its answer
+  return d;
+}
+const live = () => sess.deck.filter(x => !x.done);
+const vroot = () => view === 'read' ? $('#body') : $('#page'), sroot = () => vroot().querySelector('.sdeck');
+// Depth spreads over at most 28px, so "3 down", "the middle" and "the bottom" look different in any size of deck.
+const pose = (x, i, n) => { const st = Math.min(5, 28 / Math.max(1, n - 1)); return `z-index:${500 - i};transform:translate(${i * st * .25}px,${i * st}px) rotate(${i ? (x.k * 37 % 7 - 3) * .7 : 0}deg)`; };
+const scard = (x, i, n, all) => `<div class="scard${i === 0 && sess.flip ? ' flip' : ''}" data-k="${x.k}" ${i === 0 ? 'data-act="show"' : ''} style="${pose(x, i, n)}"><div class="sin">
+  <div class="sface">${all ? `<small class="sfrom">${esc(x.p.title)}</small>` : ''}<p class="q">${esc(x.c.q)}</p></div>
+  <div class="sface sback"><div>${md(x.c.a, x.p)}${x.c.src ? `<blockquote>“${esc(x.c.quote)}” ${cite(x.p, x.c.src)}</blockquote>`
+    : x.c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : ''}</div></div></div></div>`;
+const scount = () => { const l = live(); return `<b class="n" title="New">${l.filter(x => !x.c.ivl && !x.s.learn).length}</b><b class="l" title="Learning">${l.filter(x => x.s.learn).length}</b><b class="r" title="To review">${l.filter(x => x.c.ivl && !x.s.learn).length}</b>`; };
+const sbar = () => sess.flip
+  ? ['Again', 'Hard', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-g="${g}">${l}<small>${when(sess.deck[0].c, g, sess.deck[0].s)}</small></button>`).join('')
+  : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer<kbd>Space</kbd></button>`;
+function cardsHTML(ps, key, all) {
+  const d = session(ps, key);
+  if (!live().length) {
     const next = Math.min(...ps.flatMap(p => p.cards.map(c => c.due))) - Date.now(), h = Math.ceil(next / 36e5);
-    return `<div class="box ${anim}"><b>Nothing due.</b> <span class="muted">${next > 0 && isFinite(next) ? `The next card comes back in ${h < 24 ? h + ' hour' + (h === 1 ? '' : 's') : Math.round(h / 24) + ' day' + (h < 36 ? '' : 's')}, right before you'd forget it.` : 'Cards are written when a source is analyzed, and come back right before you’d forget them.'}</span></div>`;
+    return `<div class="box"><b>Nothing due.</b> <span class="muted">${next > 0 && isFinite(next) ? `The next card comes back in ${h < 24 ? h + ' hour' + (h === 1 ? '' : 's') : Math.round(h / 24) + ' day' + (h < 36 ? '' : 's')}, right before you'd forget it.` : 'Cards are written when a source is analyzed, and come back right before you’d forget them.'}</span></div>`;
   }
-  const { p, c, i } = q[0];
-  return `<div class="box ${shown ? '' : anim}"><small class="muted">${q.length} due${all ? ' · ' + esc(p.title) : ''}</small><p class="q">${esc(c.q)}</p>` +
-    (shown ? `<div class="${anim}"><p>${md(c.a, p)}</p>` + (c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src)}</blockquote>`
-      : c.quote !== undefined ? `<p class="warn">⚠ Not verified against the source’s text. Check it before you trust it.</p>` : '') + `<div class="row">${['Again', 'Good', 'Easy'].map((l, g) => `<button data-act="grade" data-pid="${esc(p.id)}" data-i="${i}" data-g="${g}">${l}<kbd>${g + 1}</kbd></button>`).join('')}</div></div>`
-      : `<p class="muted">Say the answer out loud first.</p><button class="pri" data-act="show">Show answer<kbd>Space</kbd></button>`) + `</div>`;
+  return `<div class="study"><div class="srow"><small class="muted sdue">${live().length} due</small><span class="scount">${scount()}</span><button class="ib" popovertarget="keys" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button></div>
+    <div class="sdeck"><div class="swhere" aria-live="polite"></div>${d.map((x, i) => scard(x, i, d.length, all)).join('')}</div><div class="sbar">${sbar()}</div></div>`;
+}
+function layout() {
+  const r = sroot(), n = sess.deck.length; if (!r) return;
+  sess.top = sess.deck[0]?.k;
+  sess.deck.forEach((x, i) => { const el = r.querySelector(`[data-k="${x.k}"]`); if (!el) return; el.setAttribute('style', pose(x, i, n)); i ? el.removeAttribute('data-act') : el.dataset.act = 'show'; });
+}
+function paintDeck() {
+  const w = sroot()?.closest('.study'); if (!w) return;
+  w.querySelector('.sbar').innerHTML = sbar(); w.querySelector('.scount').innerHTML = scount(); w.querySelector('.sdue').textContent = live().length + ' due';
+}
+function say(r, t) { const w = r.querySelector('.swhere'); w.textContent = t; w.classList.add('on'); clearTimeout(say.t); say.t = setTimeout(() => w.classList.remove('on'), 1600); }
+function flipTop() {
+  const r = sroot(), x = sess?.deck[0]; if (busy || !r || !x || x.done || sess.flip) return;
+  sess.flip = true; r.querySelector(`[data-k="${x.k}"]`).classList.add('flip'); paintDeck();
+}
+// The top card slides out (left for Again, right otherwise), turns back to its question, and slides in under exactly the cards it now sits beneath.
+async function gradeTop(g) {
+  const r = sroot(), x = sess?.deck[0]; if (busy || !r || !x || !sess.flip) return;
+  busy = true; sess.flip = false;
+  const d = sess.deck, n = live().length - 1; d.shift();
+  if (grade(x.c, g, x.s)) { x.s.learn = true; const at = slot(g, n); d.splice(at, 0, x); say(r, at === 0 ? 'Right back' : at >= n ? 'Last in this round' : `Back after ${plural(at, 'card')}`); }
+  else { x.done = true; d.push(x); say(r, 'Done · back in ' + ivlText(x.c.ivl)); }
+  log('review', x.p); save(x.p);
+  r.closest('.study').querySelectorAll('.sbar button').forEach(b => b.disabled = true);
+  const el = r.querySelector(`[data-k="${x.k}"]`), dir = g ? 1 : -1, aside = `translate(${dir * 118}%,-26px) rotate(${dir * 9}deg)`, slow = matchMedia('(prefers-reduced-motion:reduce)').matches ? .01 : 1;
+  const out = el.animate([{ transform: el.style.transform }, { transform: `translate(${dir * 30}px,-34px) rotate(${dir * 3}deg) scale(1.03)`, offset: .35 }, { transform: aside }], { duration: 420 * slow, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+  await out.finished.catch(() => {});
+  el.classList.remove('flip'); layout();
+  const back = el.animate([{ transform: aside }, { transform: el.style.transform }], { duration: 600 * slow, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+  out.cancel(); await back.finished.catch(() => {}); back.cancel();
+  busy = false; renderRail();
+  if (!live().length) return render(); // the "nothing due" box, with when the next card comes back
+  paintDeck();
+}
+// A deck's cards to read, add to and delete. In Review it also offers to study just this deck.
+const folders = ps => { const w = ps.filter(p => p.cards.length); return w.length ? `<div class="folders">${w.map(p => { const n = due([p]).length; return `<a href="#" class="folder" data-act="ropen" data-v="${esc(p.id)}"><b>${esc(p.title)}</b><small>${plural(p.cards.length, 'card')}${n ? ` · <span class="due">${n} due</span>` : ''}</small></a>`; }).join('')}</div>` : '<p class="muted">No cards yet. Cards are written when a source is analyzed.</p>'; };
+function deckHTML(p, inReview) {
+  const id = esc(p.id);
+  return `<div class="row" style="margin:10px 0">${inReview ? `<button class="pri" data-act="rdeck" data-v="${id}">Study this deck</button>` : ''}<button data-act="newcard" data-pid="${id}">+ New card</button><button data-act="morecards" data-pid="${id}" ${working || !p.brief ? 'disabled' : ''}>✦ More cards with AI</button></div>` +
+    (adding === p.id ? `<form data-f="newcard" data-pid="${id}" class="box cardform"><textarea name="q" required placeholder="Question: ask why or how, not who or when" aria-label="Question"></textarea><textarea name="a" required placeholder="Answer: one or two short sentences" aria-label="Answer"></textarea><div class="row"><button class="pri">Save card</button><button type="button" data-act="newcard" data-pid="">Cancel</button></div></form>` : '') +
+    (p.cards.map((c, i) => `<div class="box crow"><div class="grow"><b>${esc(c.q)}</b><div class="muted">${md(c.a, p)}</div>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(p, c.src)}</blockquote>` : ''}</div><button data-act="delcard" data-pid="${id}" data-i="${i}">Delete</button></div>`).join('') || '<p class="muted">No cards in this deck.</p>');
 }
 const SKEL = `<div class="tldr"><i class="sk"></i><i class="sk"></i><i class="sk" style="width:55%"></i></div>` +
   ['The problem', 'The core idea', 'How they did it'].map(k => `<div class="fact"><div class="k">${k}</div><i class="sk"></i><i class="sk" style="width:80%"></i></div>`).join('');
@@ -1822,10 +1922,8 @@ const VIEW = {
         <div class="k">Misconceptions</div>${list(f.misconceptions)}<div class="k">Do this next</div><div>${md(f.next)}</div></div>` : '');
   },
   cards() {
-    return cardsHTML([P]) + `<details><summary>All ${P.cards.length} cards</summary>` +
-      `<p class="muted">Answers stay hidden. Tap a question to reveal its answer.</p>` +
-      P.cards.map((c, i) => `<details class="cardrow box"><summary>${esc(c.q)}</summary><p>${md(c.a)}</p>${c.src ? `<blockquote>“${esc(c.quote)}” ${cite(P, c.src)}</blockquote>` : ''}<button data-act="delcard" data-i="${i}">Delete card</button></details>`).join('') + `</details>
-      <p class="muted">To write your own card, select text in the source and choose “Card”.</p>`;
+    return cardsHTML([P], 'tab:' + P.id) + `<div class="sec"><h3>All ${plural(P.cards.length, 'card')}</h3></div>` + deckHTML(P) +
+      `<p class="muted">You can also select text in the source and choose “Card”.</p>`;
   },
   map() {
     return `<div id="cy"></div><div id="node" class="box" style="margin-top:12px"><span class="muted">Tap a concept to see what it means.</span></div>
@@ -1997,7 +2095,11 @@ const PAGE = {
       <div id="whbox" class="box set">${whBox()}</div></div>`;
   },
   review() {
-    return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>${cardsHTML(inScope(), true)}
+    const ps = inScope(), dk = rdeck && byId(rdeck), op = ropen && byId(ropen);
+    const body = rtab === 'decks' ? (op ? `<p><a href="#" data-act="ropen" data-v="">← All decks</a></p><h2>${esc(op.title)}</h2>` + deckHTML(op, true) : `<p class="muted">One deck per source. Open one to read, add or delete its cards.</p>` + folders(ps))
+      : (dk ? `<p class="muted">Studying <b>${esc(dk.title)}</b> · <a href="#" data-act="rdeck" data-v="">study all decks</a></p>` : '') + cardsHTML(dk ? [dk] : ps, 'rv:' + (dk ? dk.id : 'all:' + F.project), !dk);
+    return `<div class="wrap narrow"><h1>Review</h1><p class="muted lead">Cards from everything in your library, timed to come back right before you'd forget them.</p>
+      <div class="row" style="margin-bottom:14px">${[['study', 'Study'], ['decks', 'Decks']].map(([v, l]) => `<button class="chip ${rtab === v ? 'on' : ''}" data-act="rtab" data-v="${v}">${l}</button>`).join('')}</div>${body}
       <div class="sec"><h3>Study activity</h3><small class="muted">${plural(streak(), 'day')} streak</small></div>${heat()}</div>`;
   },
   matrix() {
@@ -2054,7 +2156,7 @@ async function ftSearch() {
 
 const MATH = { throwOnError: false, delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }, { left: '$', right: '$', display: false }] };
 function renderRail() {
-  const d = due(lib).length, dark = document.documentElement.dataset.theme === 'dark';
+  const d = due(inScope()).length, dark = document.documentElement.dataset.theme === 'dark'; // the same cards the Review page shows: the chosen project's
   $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}${v === 'discover' && news ? ((c) => c ? `<span class="n">${c}</span>` : '')(news.filter(x => !seen.has(x.link)).length) : ''}</button>`).join('');
   $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : '';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
@@ -2622,22 +2724,33 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && t.classList?.contains('ttl')) { e.preventDefault(); return ed?.focus(); } // from the title straight into the page
   if (e.ctrlKey || e.metaKey || e.altKey || $('#pal').open || $('#peek').open || /INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
   if (e.key === '/') { e.preventDefault(); return ACT.palette(); }
+  if (e.key === '?') { e.preventDefault(); return $('#keys').togglePopover(); }
   if (e.key === 'Enter' && t.matches('[tabindex][data-open],[tabindex][data-act]')) return t.click();
   const root = view === 'read' ? $('#body') : $('#page');
   const b = e.key === ' ' && t.tagName !== 'BUTTON' ? root.querySelector('[data-act=show]') : root.querySelectorAll('[data-act=grade]')[+e.key - 1];
   if (b) { e.preventDefault(); b.click(); }
 });
 const ACT = {
-  tab: el => { tab = el.dataset.t; shown = false; enter($('#body')); render(); },
+  tab: el => { tab = el.dataset.t; enter($('#body')); render(); },
   look: el => { const v = el.dataset.v; try { localStorage.look = v; } catch {} vt(() => { v ? document.documentElement.dataset.look = v : delete document.documentElement.dataset.look; render(); }); },
   theme: () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.theme = t; } catch {} vt(() => { document.documentElement.dataset.theme = t; render(); }); },
   analyze,
   palette: () => { palPick = null; $('#palq').value = ''; $('#palq').placeholder = 'Jump to a source, a note or a page. Or paste a link to add it.'; palI = 0; palette(); $('#pal').showModal(); },
   sample: async el => { el.disabled = true; toast('Fetching that link…'); try { await addLink(el.dataset.v); } catch (e) { toast(e.message); el.disabled = false; } },
   find: el => { go('discover'); discover(el.dataset.v); },
-  show: () => { shown = fx = true; render(); },
-  grade: el => { const p = byId(el.dataset.pid); grade(p.cards[+el.dataset.i], +el.dataset.g); shown = false; fx = true; log('review', p); save(p); render(); },
-  delcard: el => { P.cards.splice(+el.dataset.i, 1); save(P); render(); },
+  show: () => flipTop(),
+  grade: el => gradeTop(+el.dataset.g),
+  delcard: el => { const p = byId(el.dataset.pid); p.cards.splice(+el.dataset.i, 1); save(p); render(); },
+  newcard: el => { adding = el.dataset.pid || null; render(); vroot().querySelector('form[data-f=newcard] textarea')?.focus(); },
+  morecards: el => run('Writing more cards…', async p => {
+    await text(p);
+    const j = await aiJSON(SYS_CARDS + '\n\nThe deck already has these questions. Write new ones that test other ideas:\n' + p.cards.map(c => '- ' + c.q).join('\n'), await sourceText(p, 'the core argument, the method, the evidence and the assumptions'));
+    const add = (j.cards || []).filter(c => c.q && c.a).map(c => ({ q: c.q, a: c.a, quote: c.quote || '', src: findQuote(p, c.quote) }));
+    p.cards.push(...add); toast(add.length ? `Added ${plural(add.length, 'card')}.` : 'No new cards: the AI found nothing the deck does not already test.');
+  }, byId(el.dataset.pid)),
+  rtab: el => { rtab = el.dataset.v; render(); },
+  rdeck: el => { rdeck = el.dataset.v || null; rtab = 'study'; render(); },
+  ropen: el => { ropen = el.dataset.v || null; adding = null; render(); },
   delnote: el => { P.notes.splice(+el.dataset.i, 1); save(P); render(); paintAll(); },
   bib: () => navigator.clipboard.writeText(bib(P)).then(() => toast('BibTeX copied.'), () => toast(bib(P))),
   addnote: () => { P.notes.unshift({ note: '' }); save(P); render(); $('#body textarea')?.focus(); },
@@ -2881,6 +2994,7 @@ const SET = {
   nbfolder: v => { const n = curNote(); docOf(n).folder = v.trim(); n.note = JSON.stringify(docOf(n)); nbSide(); }, // the folder lives in the page's saved text, so it is stored with the page
 };
 const FORM = {
+  newcard: f => { const p = byId(f.dataset.pid); p.cards.push({ q: f.q.value.trim(), a: f.a.value.trim() }); adding = null; save(p); render(); toast('Card added.'); },
   ask: f => ask(f.q.value),
   add: async f => {
     const v = f.u.value.trim(), b = f.querySelector('button'); if (!v) return;
@@ -3064,7 +3178,7 @@ $('#sel').onclick = e => {
   if (k === 'note') mark({ c: 1 }, true);
   if (k === 'explain') ask(`Explain this passage from p.${at.page} in plain language, with the intuition behind it:\n"${quote}"`);
   if (k === 'card') run('Writing a flashcard…', async p => {
-    const j = await aiJSON('Turn the passage into one flashcard that tests the underlying idea. JSON: {"q":"","a":"short answer"}', quote);
+    const j = await aiJSON('Turn the passage into one flashcard that tests the idea behind it. ' + CARD_RULES + ' JSON: {"q":"","a":""}', quote);
     p.cards.push({ q: j.q, a: j.a }); toast('Card added: ' + j.q);
   });
 };
