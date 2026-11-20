@@ -31,9 +31,15 @@ Keys are stored encrypted on the server and are never sent back to the browser. 
 
 Everything downloaded here can be removed again from the same screen.
 
-## Embedding model
+## Map links and long sources (embedding model)
 
-Optional. Pick a provider and an embedding model so Ask can handle sources too long to send whole (books, theses, long lectures): the passages that best match the question are found by meaning and sent instead. "Index my library" prepares sources you saved earlier; new ones are indexed when saved. The same model also lets the concept map join concepts that mean similar things, across sources too.
+Optional. An embedding model lets the Map join concepts that mean the same thing, across your sources and under different names, and lets Ask handle sources too long to send whole (books, theses, long lectures): the passages that best match the question are found by meaning and sent instead. "Index my library" prepares sources you saved earlier; new ones are indexed when saved.
+
+**Free, on this computer.** Download two things, like Whisper: the llama.cpp program (about 25 MB; on a Mac or Linux install it with `brew install llama.cpp`) and Qwen3-Embedding-0.6B (639 MB), the best-scoring free embedding model on Hugging Face for a laptop. Then press **Use it**. Nothing leaves your computer and there is no key. It starts by itself the first time it is needed. Indexing a long paper takes a minute or two.
+
+**Or a service.** Pick a provider and its embedding model in the list below. It must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model), and the text of your sources is sent to it.
+
+**Switching and deleting.** Change the choice any time. Concept vectors are kept per model, so switching back costs nothing; passages are redone for the model in use when you index. Delete either download to free the space; if it was in use, the Map and Ask stop using an embedding model until you choose one again.
 
 ## Library folder
 

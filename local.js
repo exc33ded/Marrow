@@ -185,9 +185,9 @@ function getParts(id) {
   open();
   return db.prepare('select n,t,body,html from parts where item_id=? order by n').all(id).map(drop);
 }
-function partsWithoutEmb(id) {
+function partsWithoutEmb(id, model) { // no vector yet, or one made by a different model
   open();
-  return db.prepare('select id,body from parts where item_id=? and emb is null order by n').all(id);
+  return db.prepare('select id,body from parts where item_id=? and (emb is null or emb_model is not ?) order by n').all(id, model);
 }
 function allItemIds() {
   open();

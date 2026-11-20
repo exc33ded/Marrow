@@ -140,9 +140,9 @@ async function offered(p) { // p is the provider as typed in Settings, so a new 
 // ponytail: fixed 1024 dimensions (the column size), so the model must support a `dimensions` option or be 1024 natively. A part is cut at 6000 characters.
 const DIM = 1024;
 async function embed(c, texts) {
-  const e = c.embed, p = c.providers.find(x => x.id === e?.p);
+  const e = c.embed, p = e?.p === LOCAL ? { name: 'This computer', url: await localEmbed(), key: '' } : c.providers.find(x => x.id === e?.p);
   if (!p) throw fail(400, 'pick an embedding model in Settings');
-  const r = await fetch(p.url + '/embeddings', { method: 'POST', headers: headers(p), signal: AbortSignal.timeout(60000), body: JSON.stringify({ model: e.m, input: texts.map(t => t.slice(0, 6000)), dimensions: DIM }) })
+  const r = await fetch(p.url + '/embeddings', { method: 'POST', headers: headers(p), signal: AbortSignal.timeout(e.p === LOCAL ? 600000 : 60000), body: JSON.stringify({ model: e.m, input: texts.map(t => t.slice(0, 6000)), dimensions: DIM }) })
     .catch(() => { throw fail(502, `could not reach ${p.url}`); });
   const j = await r.json().catch(() => ({}));
   const v = Array.isArray(j.data) && j.data.sort((a, b) => a.index - b.index).map(d => d.embedding);
@@ -151,9 +151,9 @@ async function embed(c, texts) {
 }
 // Embed the parts of one source that have no vector yet.
 async function embedItem(c, id) {
-  const rows = local.partsWithoutEmb(id);
-  for (let i = 0; i < rows.length; i += 64) {
-    const b = rows.slice(i, i + 64), v = await embed(c, b.map(r => r.body));
+  const rows = local.partsWithoutEmb(id, c.embed.m), step = c.embed.p === LOCAL ? 16 : 64; // the computer's own model is slower: smaller batches
+  for (let i = 0; i < rows.length; i += step) {
+    const b = rows.slice(i, i + step), v = await embed(c, b.map(r => r.body));
     local.setEmb(b.map((r, k) => ({ id: r.id, v: v[k] })), c.embed.m);
   }
 }
@@ -257,6 +257,55 @@ const whisperState = S => ({
   use: inUse(S), platform: process.platform,
   program: { have: !!whisperCli(), mine: !!within(BIN, WIN ? 'whisper-cli.exe' : 'whisper-cli'), job: pub(jobs.program) },
   ytdlp: { have: !!ytDlp(), mine: fs.existsSync(YTDLP), job: pub(jobs.ytdlp) },
+});
+// ---------- embeddings on this computer: llama.cpp's llama-server running Qwen3-Embedding-0.6B ----------
+// Chosen from Hugging Face (2026-11): the best-scoring open-license embedding model that runs on a laptop (MTEB multilingual 64.3),
+// 1024 numbers per vector like every other model Marrow uses, 32k tokens of context. Apache 2.0.
+const LOCAL = 'local', LBIN = path.join(DATA, 'embed', 'bin');
+const LE = { name: 'Qwen3-Embedding-0.6B', size: 639150592, file: path.join(DATA, 'embed', 'Qwen3-Embedding-0.6B-Q8_0.gguf'), url: 'https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf' };
+fs.mkdirSync(LBIN, { recursive: true });
+const llamaServer = () => within(LBIN, WIN ? 'llama-server.exe' : 'llama-server') || onPath('llama-server');
+async function getLlama() { // llama.cpp's CPU build for Windows, from its newest numbered release
+  const rels = await (await fetch('https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=10', { headers: { 'User-Agent': 'Marrow' } })).json();
+  const a = (Array.isArray(rels) ? rels : []).flatMap(r => r.assets || []).find(a => /^llama-b\d+-bin-win-cpu-x64\.zip$/.test(a.name));
+  if (!a) throw new Error('could not find the llama.cpp download on GitHub');
+  const zip = path.join(DATA, 'embed', 'llama.zip');
+  await download('le:program', a.browser_download_url, zip);
+  jobs['le:program'] = { got: a.size, total: a.size, unpacking: true };
+  stopLocal(); fs.rmSync(LBIN, { recursive: true, force: true }); fs.mkdirSync(LBIN);
+  try { await run(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', LBIN]); } finally { fs.rmSync(zip, { force: true }); }
+  if (!llamaServer()) throw new Error('the download did not contain llama-server');
+  delete jobs['le:program'];
+}
+// Started the first time a vector is needed and kept running; one process serves the map, Ask and indexing.
+// ponytail: one shared process on a free local port; it stops with Marrow or when the program or model is deleted.
+let lsrv = null;
+const stopLocal = () => { lsrv?.proc.kill(); lsrv = null; };
+process.on('exit', stopLocal);
+function localEmbed() {
+  if (lsrv) return lsrv.ready;
+  const bin = llamaServer();
+  if (!bin || !fs.existsSync(LE.file)) throw fail(400, 'the free model is not downloaded yet: Settings → Map links and long sources');
+  const me = lsrv = {};
+  me.ready = (async () => {
+    const port = await new Promise(ok => { const s = net.createServer().listen(0, '127.0.0.1', () => { const n = s.address().port; s.close(() => ok(n)); }); });
+    // --pooling last and one slot with an 8k batch: Qwen3's card; a passage (at most 6000 characters) always fits in one go.
+    me.proc = spawn(bin, ['-m', LE.file, '--embedding', '--pooling', 'last', '--host', '127.0.0.1', '--port', String(port), '-c', '8192', '-b', '8192', '-ub', '8192', '-np', '1'], { stdio: 'ignore', windowsHide: true });
+    let gone = null; me.proc.on('exit', code => { gone = code; if (lsrv === me) lsrv = null; });
+    const url = `http://127.0.0.1:${port}`;
+    for (let t = Date.now(); Date.now() - t < 120000; await new Promise(ok => setTimeout(ok, 500))) {
+      if (gone !== null) throw fail(502, `the local embedding program stopped (code ${gone})`);
+      if ((await fetch(url + '/health').catch(() => null))?.ok) return url + '/v1';
+    }
+    stopLocal(); throw fail(502, 'the local embedding program did not start within 2 minutes');
+  })();
+  me.ready.catch(() => { if (lsrv === me) stopLocal(); });
+  return me.ready;
+}
+const localState = () => ({
+  platform: process.platform, name: LE.name, running: !!lsrv,
+  program: { have: !!llamaServer(), mine: !!within(LBIN, WIN ? 'llama-server.exe' : 'llama-server'), job: pub(jobs['le:program']) },
+  model: { have: fs.existsSync(LE.file), size: LE.size, job: pub(jobs['le:model']) },
 });
 // whisper-cli -oj writes { transcription: [{ offsets: { from: ms }, text }] }.
 const segsOf = j => (j.transcription || []).map(s => ({ t: s.offsets.from / 1000, body: s.text.trim() })).filter(s => s.body);
@@ -377,7 +426,7 @@ http.createServer(async (req, res) => {
     if (M === 'POST' && p === '/api/retrieve') { // the passages that best answer a question; item omitted = the whole library
       const b = await json(req, 1e5), c = conf(S()), query = String(b.q || '').trim();
       if (!query) throw fail(400, 'q required');
-      const [e] = await embed(c, [query]);
+      const [e] = await embed(c, [c.embed?.p === LOCAL ? 'Instruct: Given a question, find the passages of a source that answer it\nQuery: ' + query : query]);
       return send(res, 200, local.matchParts({ qe: e, q: query, m: c.embed.m, k: 12, only_item: b.item ? String(b.item) : null }));
     }
     if (M === 'POST' && p === '/api/embed') { // embed what has no vector yet: one source, or the whole library
@@ -416,7 +465,7 @@ http.createServer(async (req, res) => {
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
       const chain = clean(b.chain); // may be empty while a provider is being set up: the key is saved and tested before models are picked
       const vision = clean(b.vision);
-      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision) }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
+      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision) }, { k: 'embed', v: JSON.stringify(b.embed && (ids.has(b.embed.p) || b.embed.p === LOCAL) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
       cooling.clear();
       return send(res, 200, {});
     }
@@ -429,6 +478,20 @@ http.createServer(async (req, res) => {
     }
     if (p === '/api/settings/test' && M === 'POST') { const b = await json(req, 1e4), c = conf(S()); if (b.p && b.m) c.chain = [{ p: String(b.p), m: String(b.m) }]; /* one model, or the whole saved list */ const r = await ai(c, [{ role: 'user', content: 'Reply with the single word: ready' }]); return send(res, 200, { model: r.model, provider: r.provider }); }
     // ponytail: Whisper and yt-dlp run on this computer. Fine on your own machine; a small free host can't run them.
+    if (p === '/api/localemb' && M === 'GET') return send(res, 200, localState());
+    if (p === '/api/localemb' && (M === 'POST' || M === 'DELETE')) { // what = program | model
+      const what = q('what'); if (!['program', 'model'].includes(what)) throw fail(400, 'unknown download');
+      const key = 'le:' + what;
+      if (M === 'POST') {
+        if (what === 'program' && !WIN) throw fail(400, 'on this system install it yourself: brew install llama.cpp');
+        start(key, what === 'model' ? () => download(key, LE.url, LE.file).then(() => delete jobs[key]) : getLlama);
+      } else { // delete it, or stop it downloading; if it was in use, the map and Ask go back to having no embedding model
+        jobs[key]?.ac?.abort(); delete jobs[key]; stopLocal();
+        fs.rmSync(what === 'model' ? LE.file : LBIN, { recursive: true, force: true });
+        if (conf(S()).embed?.p === LOCAL) local.saveSettings([{ k: 'embed', v: 'null' }]);
+      }
+      return send(res, 200, localState());
+    }
     if (p === '/api/whisper' && M === 'GET') return send(res, 200, whisperState(S()));
     if (p === '/api/whisper' && (M === 'POST' || M === 'DELETE')) { // what = model:<id> | program | ytdlp
       const what = q('what'), id = what.startsWith('model:') && what.slice(6);

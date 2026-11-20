@@ -341,6 +341,12 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 #status{padding-left:34px;left:auto;right:16px;border-radius:var(--r2);max-width:min(400px,80vw)} #status::before{position:absolute;left:14px;top:11px}
 #status b{display:block;font-weight:600} #status small{display:block;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere} #status small.bad{color:var(--vid)}
 #toast{white-space:pre-line}
+.mlegend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted);margin:10px 0} .mlegend span{display:inline-flex;align-items:center;gap:7px} .mlegend i{display:inline-block;flex:none}
+.k-dot{width:12px;height:12px;border-radius:50%;background:var(--muted)} .k-dot.acc{background:var(--acc)} .k-dot.gap{outline:2px dashed var(--ink);outline-offset:1px}
+.k-arrow{width:22px;border-top:1.5px solid var(--muted);position:relative} .k-arrow::after{content:"";position:absolute;right:-2px;top:-5.5px;border:4px solid transparent;border-left:6px solid var(--muted)}
+.k-dots{width:22px;border-top:2px dotted var(--muted)} .k-src{width:14px;height:10px;border-radius:3px;background:var(--ok)} .k-page{width:9px;height:9px;background:var(--ink);transform:rotate(45deg)}
+#node .rel{margin:0 0 10px} #node .rel p{margin:0 0 2px} #node .rel small{display:block;font-size:12.5px;line-height:1.45} #node .mstat{font-size:13px;margin-top:-4px}
+#node .explain{border-left:3px solid var(--acc);padding:2px 0 2px 12px;margin:0 0 14px} #node .explain blockquote{margin:4px 0 0;font-size:13px} #node .bad{color:var(--vid)}
 .set .okc{color:var(--ok)} .set .bad,#status .bad{color:var(--vid)}
 .prov{padding:12px 16px;margin:0 0 8px} .prov details{margin-top:6px} .prov summary{cursor:pointer;font-size:13px;width:fit-content}
 .phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap} .phead b{flex:1;font-size:15px} .phead button{min-width:0;width:auto}
@@ -1290,8 +1296,13 @@ const saveCfg = async () => { // writes the Settings form to the server and relo
   catch (e) { toast('Could not save the settings: ' + e.message + '.'); return false; }
 };
 const persist = async () => { render(); if (await saveCfg()) render(); }; // order and picks are saved as soon as they change
+// Embedding models the service offers, suggested in the model box (found after a test; their names say "embed").
+const embOpts = pid => (Array.isArray(found[pid]) ? found[pid] : []).filter(m => /embed/i.test(m.id)).map(m => `<option value="${esc(m.id)}">`).join('');
 const embedHTML = () => { const e = cfg.embed || {};
-  return `<h4 style="margin:16px 0 4px">Embedding model (to ask questions of sources too long to send whole)</h4><p class="row" style="margin:0"><select id="emb-p" aria-label="Provider" style="width:auto;flex:none"><option value="">None</option>${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === e.p ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input id="emb-m" class="grow" value="${esc(e.m || '')}" placeholder="e.g. text-embedding-3-small" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgemb" style="min-width:0;width:auto;flex:none">Save</button><button type="button" data-act="cfgidx" style="min-width:0;width:auto;flex:none">Index my library</button></p><small class="muted">It must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model). The text of your sources is sent to this service.</small>`;
+  const on = e.p && e.m, pn = e.p === 'local' ? 'This computer' : cfg.providers.find(p => p.id === e.p)?.name, here = e.p === 'local' || (le?.program.have && le?.model.have);
+  return `<h4 class="mhead" id="emb">Map links and long sources</h4><p class="muted mnote">An embedding model lets the Map join concepts that mean the same thing, across your sources and under different names, and lets Ask search inside sources too long to send whole.</p>
+    <p class="${on ? 'okc' : 'muted'}" style="margin:0 0 8px;font-weight:600">${on ? `● On: ${esc(pn || '?')}, ${esc(e.m)}` : '○ Off: the Map only links concepts inside one source, by shared words.'}</p><div class="box flat" style="margin:0 0 12px"><div class="k" style="margin-top:0">Free, on this computer</div><div id="lebox">${leBox()}</div></div>
+    <p class="muted" style="margin:0 0 6px;font-size:13px">Or choose here, and switch any time. Vectors are kept per model, so switching back is quick.</p><p class="row" style="margin:0"><select id="emb-p" aria-label="Provider" style="width:auto;flex:none"><option value="">None</option>${here ? `<option value="local" ${e.p === 'local' ? 'selected' : ''}>This computer (free)</option>` : ''}${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === e.p ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input id="emb-m" class="grow" list="emb-list" value="${esc(e.m || '')}" placeholder="e.g. text-embedding-3-small" autocomplete="off" spellcheck="false"><datalist id="emb-list">${embOpts(e.p || cfg.providers[0]?.id)}</datalist><button type="button" data-act="cfgemb" style="min-width:0;width:auto;flex:none">Save</button><button type="button" data-act="cfgidx" style="min-width:0;width:auto;flex:none">Index my library</button></p><small class="muted">A service must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model), and the text of your sources is sent to it. The free model on this computer sends nothing anywhere.</small>`;
 };
 // One list of models. Each says whether it answers text, images (figures), or both; Marrow saves these as the two ordered lists the server tries.
 const paidAt = (pid, m) => /openrouter\.ai/.test(cfg.providers.find(p => p.id === pid)?.url || '') && !m.endsWith(':free') && m !== 'openrouter/free'; // costs money when it answers
@@ -1404,12 +1415,12 @@ function conceptNear() {
   const by = new Map(); for (const p of lib) for (const c of p.concepts || []) if (!by.has(ckey(c.name))) by.set(ckey(c.name), c.name + ': ' + (c.def || ''));
   const keys = [...by.keys()], texts = [...by.values()], key = texts.join('\n');
   if (CN.key === key) return CN.near && CN;
-  CN = { key }; if (keys.length < 3 || keys.length > 3000) return;
+  CN = { key }; if (keys.length < 3 || keys.length > 3000) { CN.none = 1; return; }
   send('POST', 'concept-near', { texts }).then(r => {
-    if (CN.key !== key || !r.near) return;
+    if (CN.key !== key) return; if (!r.near) { CN.none = 1; return; }
     CN.near = new Map(keys.map((k, i) => [k, r.near[i].map(([j, s]) => [keys[j], s])])); CN.same = r.same; CN.cross = r.cross;
     if (view === 'map') drawBig();
-  }).catch(() => {}); // no embedding model, or the provider is down: the local links stay, and this is not retried until the library or Settings change
+  }).catch(() => { if (CN.key === key) CN.failed = 1; }); // no embedding model, or the provider is down: the local links stay, and this is not retried until the library or Settings change
 }
 const vecCos = (a, b) => { let s = 0; for (const [k, x] of a) { const y = b.get(k); if (y) s += x * y; } return s; };
 // How sources in the library connect: one cites the other (found when a source is analyzed), they share concepts, or they share a tag.
@@ -1480,11 +1491,11 @@ const loadWh = () => api('whisper').then(x => { wh = x; return x; });
 const txInner = () => `<h4>Transcribing on this computer</h4><p class="muted">${esc(tx.stage)}</p><div class="row"><progress ${tx.pct == null ? '' : `max="100" value="${tx.pct}"`}></progress>${tx.pct == null ? '' : `<b>${tx.pct}%</b>`}<span class="sp"></span><button data-act="txstop">Stop</button></div>`;
 const bytes = b => b >= 1e9 ? (b / 1e9).toFixed(2) + ' GB' : Math.round(b / 1e6) + ' MB';
 // One line per download: what it is, then a Download button, its progress, or Delete.
-const whRow = (key, title, note, x, size) => {
-  const j = x.job, act = j?.error ? `<span class="warn">Failed: ${esc(j.error)}</span><button data-act="whget" data-v="${key}">Try again</button>`
-    : j ? `<progress max="${j.total || 1}" value="${j.unpacking ? j.total : j.got}"></progress><small class="muted">${j.unpacking ? 'Unpacking…' : j.total ? `${bytes(j.got)} of ${bytes(j.total)} · ${Math.floor(j.got / j.total * 100)}%` : bytes(j.got)}</small>${j.unpacking ? '' : `<button data-act="whdel" data-v="${key}" data-stop="1">Cancel</button>`}`
-    : x.have ? `<span class="okk">✓ Ready</span>` + (x.mine === false ? '<small class="muted">installed on this computer</small>' : `<button data-act="whdel" data-v="${key}">Delete</button>`)
-    : size ? `<button class="pri" data-act="whget" data-v="${key}">Download · ${bytes(size)}</button>` : '';
+const whRow = (key, title, note, x, size, ep = 'whisper') => {
+  const j = x.job, act = j?.error ? `<span class="warn">Failed: ${esc(j.error)}</span><button data-act="whget" data-ep="${ep}" data-v="${key}">Try again</button>`
+    : j ? `<progress max="${j.total || 1}" value="${j.unpacking ? j.total : j.got}"></progress><small class="muted">${j.unpacking ? 'Unpacking…' : j.total ? `${bytes(j.got)} of ${bytes(j.total)} · ${Math.floor(j.got / j.total * 100)}%` : bytes(j.got)}</small>${j.unpacking ? '' : `<button data-act="whdel" data-ep="${ep}" data-v="${key}" data-stop="1">Cancel</button>`}`
+    : x.have ? `<span class="okk">✓ Ready</span>` + (x.mine === false ? '<small class="muted">installed on this computer</small>' : `<button data-act="whdel" data-ep="${ep}" data-v="${key}">Delete</button>`)
+    : size ? `<button class="pri" data-act="whget" data-ep="${ep}" data-v="${key}">Download · ${bytes(size)}</button>` : '';
   return `<div class="whrow"><div><b>${title}</b><small class="muted">${note}</small></div><div class="whact">${act}</div></div>`;
 };
 function whBox() {
@@ -1496,6 +1507,18 @@ function whBox() {
     `<p class="muted" style="margin:12px 0 0">${used ? `Models take ${bytes(used)} in data/whisper. ` : ''}Models come from Hugging Face (ggerganov/whisper.cpp); the program and the helper from their GitHub releases.</p>`;
 }
 let whT;
+// The free embedding model on this computer: llama.cpp's program and Qwen3-Embedding-0.6B, downloaded like Whisper.
+let le = null, leT;
+const loadLe = () => api('localemb').then(x => le = x);
+const leBox = () => {
+  if (!le) return '<p class="muted">Loading…</p>';
+  const W = le.platform === 'win32', ready = le.program.have && le.model.have, using = cfg?.embed?.p === 'local';
+  return whRow('program', 'llama.cpp program', W ? 'About 25 MB. Runs the model on this computer.' : le.program.have ? 'llama.cpp, found on this computer.' : 'Install it once from a terminal: <code>brew install llama.cpp</code>, then reopen Settings.', le.program, W && 25e6, 'localemb') +
+    whRow('model', esc(le.name), `${bytes(le.model.size)} · The best-scoring free embedding model on Hugging Face for a laptop. Reads long passages, in about 100 languages.`, le.model, le.model.size, 'localemb') +
+    (ready ? `<p class="row" style="margin:10px 0 0">${using ? '<span class="okk">✓ In use</span>' : '<button class="pri" data-act="leuse">Use it</button>'}<small class="muted">Free, and nothing leaves this computer. It starts by itself the first time it is needed.</small></p>` : '');
+};
+const paintLe = () => { const b = $('#lebox'); if (b) b.innerHTML = leBox(); clearTimeout(leT); // keep watching while anything downloads
+  if (view === 'settings' && [le?.program, le?.model].some(x => x?.job && !x.job.error)) leT = setTimeout(() => loadLe().then(() => { paintLe(); if (le.program.have && le.model.have && !$('#emb-p option[value=local]')) render(); }).catch(() => {}), 700); };
 const paintWh = () => { const b = $('#whbox'); if (b) b.innerHTML = whBox(); clearTimeout(whT); // keep watching while anything downloads
   if (view === 'settings' && [wh?.program, wh?.ytdlp, ...(wh?.models || [])].some(x => x?.job && !x.job.error)) whT = setTimeout(() => loadWh().then(paintWh).catch(() => {}), 700); };
 const paintTx = () => { const b = $('#txbox'); if (b) b.innerHTML = txInner(); };
@@ -1858,6 +1881,7 @@ function go(v) {
   // Services with a saved key are checked on opening, so each shows whether it works and its models can be searched without a click.
   if (v === 'settings') api('settings').then(c => { cfg = merged(c); if (view !== 'settings') return; const tests = Promise.all(c.providers.filter(p => p.hasKey && !found[p.id]).map(probe)); render(); tests.then(() => view === 'settings' && soft()); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
   if (v === 'settings') loadWh().then(paintWh).catch(e => toast('Could not check Whisper (' + e.message + ').'));
+  if (v === 'settings') loadLe().then(() => view === 'settings' && soft()).catch(() => {});
 }
 
 // ---------- study deck ----------
@@ -2284,7 +2308,7 @@ function drawMap(ps, all) {
     n.many = all && !solo && n.in.length > 1 ? 1 : 0;
     if (all && !solo) for (const id of n.in) edges.push({ source: 'src:' + id, target: n.id });
   }
-  for (const p of ps) for (const l of p.links) { const a = ckey(l.from), b = ckey(l.to); if (a !== b && nodes.has(a) && nodes.has(b)) edges.push({ source: a, target: b, label: l.label, rel: 1 }); }
+  for (const p of ps) for (const l of p.links) { const a = ckey(l.from), b = ckey(l.to); if (a !== b && nodes.has(a) && nodes.has(b)) edges.push({ source: a, target: b, label: l.label, rel: 1, src: p.id }); }
   // Concepts that mean similar things sit closer, even when no source links them.
   // Only in the many-source force layout: the one-source tree and By year place nodes from real links alone.
   const cNodes = [...nodes.values()].filter(n => !n.src && !n.page);
@@ -2330,7 +2354,14 @@ function drawMap(ps, all) {
       : shown.map(p => `<button class="chip" data-act="mapsel" data-v="src:${esc(p.id)}" title="${esc(p.title)}">${ic(KIND[p.kind][1], 13)}${esc(p.title.length > 42 ? p.title.slice(0, 40) + '…' : p.title)}</button>`).join('')) : '';
   }
   // "By year" lays sources out left to right in time, one column per year, with each concept hanging between the sources that use it.
-  const box = $in('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 12)); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
+  const box = $in('#cy'), big = Math.max(1, Math.sqrt(nodes.size / 12));
+  // The key: what each mark means, only for marks this map actually shows.
+  const nv = [...nodes.values()], many = all && !solo, key = `<div class="mlegend" aria-label="Map key"><span><i class="k-dot"></i>Concept (bigger: ${many ? 'used by more sources' : 'more links'})</span>` +
+    (nv.some(n => n.many) ? `<span><i class="k-dot acc"></i>${many ? 'In more than one source' : 'Key idea (3 or more links)'}</span>` : '') +
+    (nv.some(n => n.gap) ? '<span><i class="k-dot gap"></i>Not studied yet: none of your highlights, cards or pages mention it</span>' : '') +
+    (edges.some(e => e.rel) ? '<span><i class="k-arrow"></i>A link the source states; click a concept to read its links</span>' : '') +
+    (edges.some(e => e.sem) ? '<span><i class="k-dots"></i>Similar meaning</span>' : '') + (many ? '<span><i class="k-src"></i>Source</span>' : '') + (nv.some(n => n.page) ? '<span><i class="k-page"></i>Your page</span>' : '') + '</div>';
+  const at = box.closest('.mapgrid') || box; at.previousElementSibling?.classList.contains('mlegend') ? at.previousElementSibling.outerHTML = key : at.insertAdjacentHTML('beforebegin', key); // the layout fills the panel's own shape, growing with the number of nodes so labels stay readable
   let layout = { name: 'cose', animate: nodes.size < 150 ? 'end' : false, animationDuration: 450, nodeRepulsion: () => 40000, idealEdgeLength: () => 220, nodeOverlap: 20, padding: 30, nodeDimensionsIncludeLabels: true,
     boundingBox: { x1: 0, y1: 0, w: box.clientWidth * big, h: box.clientHeight * big } };
   if (all && M.by === 'year') {
@@ -2430,20 +2461,33 @@ function mapLayout(eles, layout, root) {
 // ponytail: substring match on each block's JSON data; a concept called "text" or "items" would match the field names. Use the editor's plain text if that bites.
 const pageText = pg => docOf(pg).blocks.map(b => JSON.stringify(b.data || '')).join(' ').replace(/<[^>]+>/g, ' ');
 // A concept's page: every place it turns up, in the sources and in your own work.
+const explained = {}; // concept id -> the AI's explanation of its links, kept until the page is reloaded
 function conceptPanel(node, all) {
   const d = node.data(), k = d.label.toLowerCase(), has = s => String(s || '').toLowerCase().includes(k);
   const defs = d.in.map(id => [byId(id), byId(id)?.concepts.find(c => ckey(c.name) === d.id)?.def]).filter(([p, def]) => p && def);
   const pill = n => `<button class="chip" data-act="mapsel" data-v="${esc(n.id())}">${esc(n.data('label'))}</button>`;
-  const rels = node.connectedEdges('[rel]').map(e => { const out = e.source().same(node); return `<p class="rel">${out ? `<b>${esc(d.label)}</b>` : pill(e.source())} ${esc(e.data('label'))} ${out ? pill(e.target()) : `<b>${esc(d.label)}</b>`}</p>`; });
+  // Each link as a sentence, with what the other concept means, whether you have studied it, and which source states the link.
+  const rels = node.connectedEdges('[rel]').map(e => { const out = e.source().same(node), o = out ? e.target() : e.source(), od = o.data(), from = all && byId(e.data('src'));
+    return `<div class="rel"><p>${out ? `<b>${esc(d.label)}</b>` : pill(o)} <i>${esc(e.data('label'))}</i> ${out ? pill(o) : `<b>${esc(d.label)}</b>`}</p>` +
+      (od.def ? `<small>${esc(od.label)}: ${esc(od.def)}</small>` : '') + (od.gap || from ? `<small class="muted">${[od.gap ? '◌ Not studied yet' : '', from ? 'From ' + esc(short(from)) : ''].filter(Boolean).join(' · ')}</small>` : '') + '</div>'; });
+  const todo = node.connectedEdges('[rel]').connectedNodes().not(node).filter('[gap]').length;
+  // Similar ideas anywhere in the library, from the embedding model: other words for the same idea, and the same idea in other sources.
+  const E = conceptNear(), mine = new Set(d.in), srcOf = kk => lib.filter(p => (p.concepts || []).some(c => ckey(c.name) === kk));
+  const sims = E ? (E.near.get(d.id) || []).map(([kk, s]) => { const ps = srcOf(kk); return { kk, s, ps, cross: !ps.some(p => mine.has(p.id)) }; }).filter(x => x.ps.length && x.s >= (x.cross ? E.cross : E.same)).slice(0, 6) : [];
+  const simHTML = !E ? `<p class="muted">${CN.failed ? 'The embedding model did not answer, so similar ideas are not shown. Check it in Settings.' : CN.none ? 'Choose an embedding model in <a href="#" data-view="settings">Settings → Map links and long sources</a> to see ideas like this one, including in your other sources and under other names.' : 'Looking for similar ideas…'}</p>`
+    : sims.length ? sims.map(x => { const nm = x.ps[0].concepts.find(c => ckey(c.name) === x.kk).name; return `<p>${cy.$id(x.kk).length ? `<button class="chip" data-act="mapsel" data-v="${esc(x.kk)}">${esc(nm)}</button>` : `<b>${esc(nm)}</b>`} <small class="muted">${x.cross ? 'another source: ' : ''}${x.ps.slice(0, 2).map(p => `<a href="#" data-open="${esc(p.id)}">${esc(short(p))}</a>`).join(', ')}</small></p>`; }).join('')
+    : '<p class="muted">Nothing in your library is close enough in meaning.</p>';
   const pool = all ? scoped() : d.in.map(byId).filter(Boolean);
   const hls = pool.flatMap(p => (p.notes || []).filter(n => has(n.quote) || has(n.note)).map(n => [p, n])).slice(0, 6);
   const cards = pool.flatMap(p => (p.cards || []).filter(c => has(c.q) || has(c.a)).map(c => [p, c])).slice(0, 6);
   const pages = notes.filter(pg => (!F.project || pg.project === F.project) && (has(pg.title) || has(pageText(pg))));
   const near = node.closedNeighborhood().closedNeighborhood().nodes().not('[solo]').length;
   return `<div class="k" style="margin-top:0">Concept</div><h3>${esc(d.label)}</h3>` +
+    `<p class="muted mstat">${[rels.length ? 'Linked to ' + plural(rels.length, 'concept') : '', d.in.length ? 'in ' + plural(d.in.length, 'source') : '', todo ? `${todo} linked ${todo === 1 ? 'concept' : 'concepts'} not studied yet` : ''].filter(Boolean).join(' · ')}</p>` +
     (defs.length > 1 ? defs.map(([p, def]) => `<p>${md(def, p)} <small class="muted">— <a href="#" data-open="${esc(p.id)}">${esc(p.title)}</a></small></p>`).join('') : `<p>${md(d.def, null)}</p>`) +
     `<div class="acts"><button data-act="mappage" data-v="${esc(d.label)}" data-s="${esc(d.in.join(','))}">Start a page on this</button>${near < cy.nodes(':visible').length ? `<button data-act="mapfocus" data-v="${esc(d.id)}">Show only what's around it</button>` : ''}${cy.nodes(':hidden').not('[solo]').length ? `<button data-act="mapall">Show the whole map</button>` : ''}</div>` +
-    (rels.length ? `<div class="k">How it connects</div>${rels.join('')}` : '') +
+    (rels.length ? `<div class="k">How it connects</div>` + (explained[d.id] || `<p class="row"><button data-act="mapexplain" data-v="${esc(d.id)}" ${working ? 'disabled' : ''}>${ic('bulb', 16)}Explain these connections</button><small class="muted">The AI says why each link holds, quoting the source.</small></p>`) + rels.join('') : '') +
+    `<div class="k">Similar ideas</div>${simHTML}` +
     (all && d.in.length ? `<div class="k">In ${d.in.length} source${d.in.length === 1 ? '' : 's'}</div>` + d.in.map(id => `<p><a href="#" data-open="${esc(id)}">${esc(byId(id)?.title)}</a></p>`).join('') : '') +
     `<div class="k">Your highlights</div>` + (hls.length ? hls.map(([p, n]) => `<blockquote>${n.quote ? `“${esc(n.quote)}”` : ''}${n.note ? `<br><b>${esc(n.note)}</b>` : ''} <small>${n.page ? cite(p, n.page) : ''}</small></blockquote>`).join('') : '<p class="muted">None mention it yet.</p>') +
     `<div class="k">Your cards</div>` + (cards.length ? cards.map(([, c]) => `<p>${esc(c.q)}</p>`).join('') : '<p class="muted">None yet.</p>') +
@@ -2883,7 +2927,8 @@ const ACT = {
   cfgflag: el => { const e = cfg.models[+el.dataset.i]; e[el.dataset.f] = !e[el.dataset.f]; persist(); },
   cfgclose: el => closePick(el.dataset.k),
   cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); persist(); },
-  cfgemb: () => { const p = $('#emb-p').value, m = $('#emb-m').value.trim(); cfg.embed = p && m ? { p, m } : null; persist(); },
+  leuse: () => { cfg.embed = { p: 'local', m: le.name }; persist(); toast(`The map and Ask now use ${le.name} on this computer. Press “Index my library” to prepare sources you saved before.`); },
+  cfgemb: () => { const p = $('#emb-p').value, m = p === 'local' ? le?.name : $('#emb-m').value.trim(); cfg.embed = p && m ? { p, m } : null; persist(); },
   cfgidx: async () => { toast('Indexing your library. This can take a while…'); try { await send('POST', 'embed', { all: true }); toast('Your library is indexed.'); } catch (e) { toast('Could not index: ' + e.message); } },
   cfgaddp: () => { if (!$('#newp').value) return toast('Choose a service first.'); const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
   cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); cfg.models = cfg.models.filter(e => e.p !== p.id); render(); },
@@ -2904,8 +2949,15 @@ const ACT = {
   mapshared: el => { M.shared = !!el.dataset.v; render(); },
   mapby: el => { M.by = el.dataset.v; render(); },
   mapfit: () => cy?.animate({ fit: { padding: 30 } }, { duration: 300 }),
-  whget: async el => { try { wh = await api('whisper?what=' + encodeURIComponent(el.dataset.v), { method: 'POST' }); } catch (e) { toast('Could not start the download: ' + e.message); } paintWh(); },
+  whget: async el => { if (el.dataset.ep === 'localemb') { try { le = await api('localemb?what=' + el.dataset.v, { method: 'POST' }); } catch (e) { toast('Could not start the download: ' + e.message); } return paintLe(); }
+    try { wh = await api('whisper?what=' + encodeURIComponent(el.dataset.v), { method: 'POST' }); } catch (e) { toast('Could not start the download: ' + e.message); } paintWh(); },
   whdel: async el => {
+    if (el.dataset.ep === 'localemb') { // deleting what is in use turns the map's and Ask's embedding model off (the server clears it)
+      const k = el.dataset.v, name = k === 'model' ? le.name : 'the llama.cpp program', size = k === 'model' ? le.model.size : 25e6;
+      if (!el.dataset.stop && !(await sure(`Delete ${name}?`, `It frees ${bytes(size)}.${cfg?.embed?.p === 'local' ? ' The map and Ask stop using it until you download it again or choose another model.' : ''} You can download it again any time.`))) return;
+      try { le = await api('localemb?what=' + k, { method: 'DELETE' }); cfg = merged(await api('settings')); CN = { key: '' }; } catch (e) { toast('Could not delete it: ' + e.message); }
+      return view === 'settings' ? render() : paintLe();
+    }
     const k = el.dataset.v, m = wh.models.find(x => 'model:' + x.id === k), name = m?.name || (k === 'program' ? 'the Whisper program' : 'the YouTube helper');
     if (!el.dataset.stop && !(await sure(`Delete ${name}?`, `It frees ${bytes(m?.size || (k === 'program' ? 9e6 : 24e6))}. Transcripts you already have stay. You can download it again any time.`))) return;
     try { wh = await api('whisper?what=' + encodeURIComponent(k), { method: 'DELETE' }); } catch (e) { toast('Could not delete it: ' + e.message); } paintWh();
@@ -2914,6 +2966,23 @@ const ACT = {
   txyt: () => transcribeIt(P),
   txfile: () => { const p = P, i = Object.assign(document.createElement('input'), { type: 'file', accept: 'audio/*,video/*' }); i.onchange = () => i.files[0] && transcribeIt(p, i.files[0]); i.click(); },
   txstop: () => { const id = tx?.id; tx = null; api('transcribe?id=' + id, { method: 'DELETE' }).catch(() => {}); render(); },
+  // Not run(): that re-renders the page, which would redraw the map and lose the picked concept. Same pill, same busy flag.
+  mapexplain: async el => {
+    const id = el.dataset.v, n = cy?.$id(id); if (!n?.length) return;
+    if (working) return toast('Still working on the last request. Try again when it finishes.');
+    const d = n.data(), label = `Explaining how “${d.label}” connects…`; jobs++; working = label; renderRail(); el.disabled = true;
+    try {
+      const ps = d.in.map(byId).filter(Boolean).slice(0, 3); for (const p of ps) await text(p);
+      const links = n.connectedEdges('[rel]').map(e => `${e.source().data('label')} ${e.data('label')} ${e.target().data('label')}`), share = Math.floor(150000 / Math.max(1, ps.length));
+      const ctx = (await Promise.all(ps.map(async (p, i) => `=== S${i + 1}: "${p.title}" ===\n` + (await sourceText(p, d.label + ': ' + links.join('; '))).slice(0, share)))).join('\n\n');
+      const j = await aiJSON(`You explain one concept on a researcher's concept map, using only the sources below ("=== S1 ===" starts a source; markers like [p.N] number its parts). Concept: "${d.label}"${d.def ? ` (${d.def})` : ''}. Its links on the map:\n${links.map(l => '- ' + l).join('\n')}\nJSON: {"summary":"2 plain sentences: what this concept does in the source and why it matters","links":[{"link":"the link exactly as listed","why":"1-2 short plain sentences: why the link holds and what it tells the reader","src":"S1","quote":"one sentence copied VERBATIM from that source that supports it"}]}. Leave out any link the sources do not support. Plain text, no LaTeX.`, ctx);
+      // Quotes are checked against the source text; one that is not found is flagged, not hidden.
+      explained[id] = `<div class="explain"><p>${esc(j.summary || '')}</p>` + (j.links || []).map(l => { const p = ps[(+String(l.src || '').replace(/\D/g, '') || 1) - 1] || ps[0], at = p && l.quote ? findQuote(p, l.quote) : 0;
+        return `<div class="rel"><p><b>${esc(l.link)}</b></p><p>${esc(l.why)}</p>${l.quote ? `<blockquote>“${esc(l.quote)}” <small>${at ? cite(p, at) : '<span class="bad">Not found in the source</span>'}</small></blockquote>` : ''}</div>`; }).join('') + '</div>';
+    } catch (e) { toast(e.message); }
+    if (!--jobs) working = ''; renderRail();
+    if (cy?.$id(id).length) cy.$id(id).emit('tap'); // redraw the panel with the explanation
+  },
   mapsel: el => { const n = cy?.$id(el.dataset.v); if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
   mapjump: el => { const n = el.value && cy?.$id('src:' + el.value); el.value = ''; if (n?.length) { n.emit('tap'); if (n.visible()) cy.animate({ center: { eles: n } }, { duration: 300 }); } },
   mapfocus: el => { const n = cy.$id(el.dataset.v), keep = n.closedNeighborhood().closedNeighborhood().not('[solo]'); cy.elements().not(keep).style('display', 'none'); mapLayout(keep, 'tree', n); n.emit('tap'); },
@@ -3142,6 +3211,7 @@ document.addEventListener('change', e => {
   const d = e.target.dataset;
   if (d.act) return onClick(e);
   if (d.pk) { pick[d.pk].p = e.target.value; return render(); }
+  if (e.target.id === 'emb-p') { $('#emb-list').innerHTML = embOpts(e.target.value); if (e.target.value === 'local') $('#emb-m').value = le?.name || ''; return; }
   if (d.k === 'take' || d.k === 'col') save(byId(d.id));
   else if (d.k?.startsWith('nb')) { clearTimeout(nbT); saveNote(curNote()); renderRail(); }
   else if (d.k && P) { save(P); renderRail(); }

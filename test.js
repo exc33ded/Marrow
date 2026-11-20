@@ -89,6 +89,11 @@ srv.stdout.once('data', async () => {
     { const r = await raw('embed', 'POST', { item: 'abc' }); assert.equal(r.status, 200, JSON.stringify(r.body)); }
     const near = (await raw('retrieve', 'POST', { q: 'dictionary learning', item: 'abc' })).body;
     assert.equal(near[0].n, 2, 'the passage about dictionary learning comes first');
+    // Switching models redoes the passages for the new one (search filters by model, so stale vectors would leave it empty); a second run has nothing left to do.
+    { await raw('settings', 'PUT', { ...withEmb, embed: { p: 'a', m: 'fake-2' } }); const before = embCalls; await raw('embed', 'POST', { item: 'abc' });
+      assert.ok(embCalls > before, 'switching models re-indexes the passages'); const after = embCalls; await raw('embed', 'POST', { item: 'abc' });
+      assert.equal(embCalls, after, 'nothing left to redo'); assert.equal((await raw('retrieve', 'POST', { q: 'dictionary learning', item: 'abc' })).body[0].n, 2, 'search works with the new model');
+      assert.equal((await raw('localemb')).status, 200, 'the local model state is readable'); await raw('settings', 'PUT', withEmb); }
     // ---- concept map: nearest concepts by meaning, with cut-offs; vectors are cached so a redraw costs no provider call
     const texts = ['Ice sheet: glacial ice melting into the sea', 'Sea level: the sea rises as glacial ice melts', 'Query planner: picks how a database query runs', 'Index: speeds up a database query'];
     const cn = (await raw('concept-near', 'POST', { texts })).body, calls = embCalls;

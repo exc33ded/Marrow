@@ -34,6 +34,8 @@ One concept map across everything you have studied. Squares are sources, circles
 
 Solid lines are links the AI found in a source; dotted lines join concepts that mean similar things, so related ideas gather together. With an embedding model chosen in Settings, dotted lines can also join similar concepts from different sources, the connections you may not have made yet. A dashed ring marks a concept none of your highlights, cards or pages mention yet: what is left to work on.
 
+A key above the map says what each mark means. Click a concept and the panel tells you what it means, how many concepts it links to, and how many of those you have not studied yet. Every link reads as a sentence, with what the other concept means and which source says so. **Explain these connections** has the AI say why each link holds, quoting the source; click a quote's page to open it there, and a quote the AI got wrong is marked "Not found in the source". **Similar ideas** lists concepts that mean nearly the same thing anywhere in your library, including in other sources and under other names; it needs an embedding model (Settings → Map links and long sources).
+
 ## Search everything
 
 `Ctrl K` (or `/`) opens one box that finds any source, note or page, searches the full text, or adds a link you paste.
