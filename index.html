@@ -345,6 +345,7 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 .prov{padding:12px 16px;margin:0 0 8px} .prov details{margin-top:6px} .prov summary{cursor:pointer;font-size:13px;width:fit-content}
 .phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap} .phead b{flex:1;font-size:15px} .phead button{min-width:0;width:auto}
 .pst{font-size:13px;font-weight:600;color:var(--muted);overflow-wrap:anywhere}
+.set .busy::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:7px;vertical-align:-1px;animation:spin 1s linear infinite}
 .set .mhead{margin:24px 0 8px}
 ol.chain{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}
 ol.chain li{display:flex;align-items:center;gap:10px;padding:4px 6px 4px 10px;min-height:42px;cursor:grab;background:var(--panel)} ol.chain li+li{border-top:1px solid var(--line)} ol.chain li:hover{background:var(--bg)}
@@ -1276,7 +1277,7 @@ const pickRows = k => {
   const q = pick[k].q.trim().toLowerCase(); if (!q || !pick[k].open) return ''; // closed with ×, Esc or a click elsewhere; typing opens it again
   const hit = offered(k).filter(m => m.id.toLowerCase().includes(q));
   return `<div class="mlhead"><span>${hit.length ? plural(hit.length, 'match') : 'No match'}</span><button type="button" class="ib" data-act="cfgclose" data-k="${k}" title="Close (Esc)" aria-label="Close the list">${ic('x', 16)}</button></div>` +
-    (hit.length ? hit.slice(0, 40).map(m => `<button type="button" data-act="cfgpick" data-k="${k}" data-id="${esc(m.id)}">${ic('plus', 15)}<code>${esc(m.id)}</code>${m.img ? '<span class="tag">images</span>' : ''}${m.free ? '<span class="tag ok">free</span>' : ''}</button>`).join('') + (hit.length > 40 ? `<p class="muted">${hit.length - 40} more. Keep typing to narrow it down.</p>` : '')
+    (hit.length ? hit.slice(0, 40).map(m => `<button type="button" data-act="cfgpick" data-k="${k}" data-id="${esc(m.id)}">${ic('plus', 15)}<code>${esc(m.id)}</code>${m.img ? '<span class="tag">images</span>' : ''}${m.free ? '<span class="tag ok">free</span>' : paidAt(pickP(k), m.id) ? '<span class="tag">paid</span>' : ''}</button>`).join('') + (hit.length > 40 ? `<p class="muted">${hit.length - 40} more. Keep typing to narrow it down.</p>` : '')
     : `<p class="muted">${found[pickP(k)] ? 'Nothing it offers matches.' : 'Test this service to search its models.'} Add puts “${esc(pick[k].q.trim())}” in the list as typed.</p>`);
 };
 const probe = async p => { // asks the service for its model list: proves the address and key work, and fills the pick list
@@ -1285,7 +1286,7 @@ const probe = async p => { // asks the service for its model list: proves the ad
   catch (e) { delete found[p.id]; stat[p.id] = { ok: false, msg: e.message }; }
 };
 const saveCfg = async () => { // writes the Settings form to the server and reloads it (keys come back masked); true if it worked
-  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: pairs(cfg.models.filter(e => e.text)), vision: pairs(cfg.models.filter(e => e.img)), embed: cfg.embed, paid: !!$('input[name=paid]')?.checked }); cfg = merged(await api('settings')); CN.key = ''; return true; }
+  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: pairs(cfg.models.filter(e => e.text)), vision: pairs(cfg.models.filter(e => e.img)), embed: cfg.embed }); cfg = merged(await api('settings')); CN.key = ''; return true; }
   catch (e) { toast('Could not save the settings: ' + e.message + '.'); return false; }
 };
 const persist = async () => { render(); if (await saveCfg()) render(); }; // order and picks are saved as soon as they change
@@ -1293,6 +1294,7 @@ const embedHTML = () => { const e = cfg.embed || {};
   return `<h4 style="margin:16px 0 4px">Embedding model (to ask questions of sources too long to send whole)</h4><p class="row" style="margin:0"><select id="emb-p" aria-label="Provider" style="width:auto;flex:none"><option value="">None</option>${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === e.p ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input id="emb-m" class="grow" value="${esc(e.m || '')}" placeholder="e.g. text-embedding-3-small" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgemb" style="min-width:0;width:auto;flex:none">Save</button><button type="button" data-act="cfgidx" style="min-width:0;width:auto;flex:none">Index my library</button></p><small class="muted">It must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model). The text of your sources is sent to this service.</small>`;
 };
 // One list of models. Each says whether it answers text, images (figures), or both; Marrow saves these as the two ordered lists the server tries.
+const paidAt = (pid, m) => /openrouter\.ai/.test(cfg.providers.find(p => p.id === pid)?.url || '') && !m.endsWith(':free') && m !== 'openrouter/free'; // costs money when it answers
 const pairs = l => l.map(({ p, m }) => ({ p, m }));
 const merged = c => { const id = e => e.p + '|' + e.m, v = new Set(c.vision.map(id)), t = new Set(c.chain.map(id));
   c.models = [...c.chain.map(e => ({ ...e, text: true, img: v.has(id(e)) })), ...c.vision.filter(e => !t.has(id(e))).map(e => ({ ...e, text: false, img: true }))]; return c; };
@@ -1301,8 +1303,8 @@ const closePick = k => { pick[k].open = false; const l = $('#ml-' + k); if (l) l
 const chainHTML = (k, label) => {
   const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?', n = offered(k).length;
   return `<h4 class="mhead">${label}</h4><p class="muted mnote">Each model can do <b>Text</b> (answers, briefs, cards), <b>Images</b> (explaining a figure you snip), or both. Click to switch. With no model on Images, figures go to the Text models.</p><ol class="chain">${rows.map((e, i) => { const t = mstat[k + '|' + e.p + '|' + e.m];
-    return `<li draggable="true" data-k="${k}" data-i="${i}"><span class="grip" aria-hidden="true" title="Drag to reorder">⠿</span><span class="ix">${i + 1}</span><span class="tag">${esc(name(e.p))}</span><code>${esc(e.m)}</code>` +
-      (t ? `<span role="status" class="mst ${t.ok === null ? '' : t.ok ? 'okc' : 'bad'}">${esc(t.msg)}</span>` : '') +
+    return `<li draggable="true" data-k="${k}" data-i="${i}"><span class="grip" aria-hidden="true" title="Drag to reorder">⠿</span><span class="ix">${i + 1}</span><span class="tag">${esc(name(e.p))}</span><code>${esc(e.m)}</code>${paidAt(e.p, e.m) ? '<span class="tag">paid</span>' : ''}` +
+      (t ? `<span role="status" class="mst ${t.ok === null ? 'busy' : t.ok ? 'okc' : 'bad'}">${esc(t.msg)}</span>` : '') +
       [['text', 'Text', 'Use it for writing and answering'], ['img', 'Images', 'Use it to explain figures (the model must read images)']].map(([f, l, tip]) => `<button type="button" class="flag" data-act="cfgflag" data-i="${i}" data-f="${f}" aria-pressed="${!!e[f]}" title="${tip}">${l}</button>`).join('') +
       `<button type="button" class="ib" data-act="cfgtm" data-k="${k}" data-i="${i}" title="Test this model" aria-label="Test ${esc(e.m)}">${ic('play', 16)}</button><button type="button" class="ib" data-act="cfgrm" data-k="${k}" data-i="${i}" title="Remove" aria-label="Remove ${esc(e.m)}">${ic('x', 16)}</button></li>`; }).join('') ||
     '<li class="muted">No models yet. Search below to add one.</li>'}</ol>
@@ -1854,7 +1856,7 @@ function go(v) {
   vt(() => { document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0; });
   if (v === 'discover') loadNews();
   // Services with a saved key are checked on opening, so each shows whether it works and its models can be searched without a click.
-  if (v === 'settings') api('settings').then(c => { cfg = merged(c); if (view !== 'settings') return; render(); Promise.all(c.providers.filter(p => p.hasKey && !found[p.id]).map(probe)).then(() => view === 'settings' && soft()); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
+  if (v === 'settings') api('settings').then(c => { cfg = merged(c); if (view !== 'settings') return; const tests = Promise.all(c.providers.filter(p => p.hasKey && !found[p.id]).map(probe)); render(); tests.then(() => view === 'settings' && soft()); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
   if (v === 'settings') loadWh().then(paintWh).catch(e => toast('Could not check Whisper (' + e.message + ').'));
 }
 
@@ -2127,8 +2129,8 @@ const PAGE = {
         ${c.providers.map((p, i) => { const s = stat[p.id], has = p.hasKey && !p.clearKey;
           // One line per service once its key is saved: name, state, Test. The key and address fold away until needed.
           return `<div class="box flat prov">
-          <div class="phead"><b>${esc(p.name)}</b>${s ? `<span role="status" class="pst ${s.ok === null ? '' : s.ok ? 'okc' : 'bad'}">${esc(s.msg)}</span>` : p.key ? '<span class="tag">New key, not saved</span>' : has ? `<span class="tag ok">Key ··${esc(p.hint)}</span>` : '<span class="tag">No key</span>'}
-            <button type="button" data-act="cfgfind" data-i="${i}" title="Save, then check the key and load this service's models">Save &amp; test</button><button type="button" class="ib" data-act="cfgrmp" data-i="${i}" title="Remove this service" aria-label="Remove ${esc(p.name)}">${ic('x', 16)}</button></div>
+          <div class="phead"><b>${esc(p.name)}</b>${s ? `<span role="status" class="pst ${s.ok === null ? 'busy' : s.ok ? 'okc' : 'bad'}">${esc(s.msg)}</span>` : p.key ? '<span class="tag">New key, not saved</span>' : has ? `<span class="tag ok">Key ··${esc(p.hint)}</span>` : '<span class="tag">No key</span>'}
+            <button type="button" data-act="cfgfind" data-i="${i}" title="Save, then check the key and load this service's models" ${s?.ok === null ? 'disabled' : ''}>Save &amp; test</button><button type="button" class="ib" data-act="cfgrmp" data-i="${i}" title="Remove this service" aria-label="Remove ${esc(p.name)}">${ic('x', 16)}</button></div>
           <details ${has && p.url && !p.replace ? '' : 'open'}><summary class="muted">Key and address</summary>
           <label for="pk${i}">API key</label>${p.hasKey && !p.clearKey && !p.replace
             ? `<p class="row" style="margin:0"><code class="grow" style="letter-spacing:.12em">••••••••••••${esc(p.hint)}</code><button type="button" data-act="cfgrep" data-i="${i}" style="min-width:0;width:auto">Replace</button><button type="button" data-act="cfgdel" data-i="${i}" style="min-width:0;width:auto">Remove key</button></p>`
@@ -2140,7 +2142,7 @@ const PAGE = {
         ${c.providers.length ? '' : '<p class="muted" style="margin:0 0 10px">No AI service yet. Choose the one you have a key for, add it, and paste the key.</p>'}<p class="row" style="margin:0"><select id="newp" aria-label="Service to add"><option value="" selected disabled>Choose a service…</option>${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
         ${chainHTML('models', 'Models, tried from the top until one answers')}
         ${embedHTML()}
-        <label class="row" style="margin-top:14px"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow OpenRouter models that cost money. Without this, only models ending in “:free” are used there. Other providers are always asked, so choose their models with care.</label>
+        <p class="muted" style="margin:14px 0 0;font-size:13px">On OpenRouter, free models are always asked before paid ones, and a test uses a free model first. Models marked <span class="tag">paid</span> cost money when they answer.</p>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
         <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600;white-space:pre-line"></p>
       </form>`) + `<h2 style="margin-top:1.6em">Library folder</h2><p class="muted lead">Your library, your PDFs and a Markdown copy of every source and notebook page live in this folder, in a folder per project. Back it up to back up everything.</p>
@@ -2867,8 +2869,9 @@ const ACT = {
   cfgdel: el => { const p = cfg.providers[+el.dataset.i]; p.clearKey = true; p.replace = false; p.key = ''; render(); }, // takes effect on Save
   cfgrep: el => { cfg.providers[+el.dataset.i].replace = true; render(); },
   cfgundo: el => { const p = cfg.providers[+el.dataset.i]; p.clearKey = p.replace = false; p.key = ''; render(); },
-  cfgfind: async el => { const id = cfg.providers[+el.dataset.i].id; if (await saveCfg()) await probe(cfg.providers.find(p => p.id === id)); render(); }, // saves, then tests and loads the models
-  cfgall: async () => { if (await saveCfg()) await Promise.all(cfg.providers.map(probe)); render(); },
+  // Saves, then tests and loads the models. The panel shows a spinner and the button waits until the answer is in.
+  cfgfind: async el => { const id = cfg.providers[+el.dataset.i].id; stat[id] = { ok: null, msg: 'Saving and testing…' }; render(); if (await saveCfg()) await probe(cfg.providers.find(p => p.id === id)); else delete stat[id]; render(); },
+  cfgall: async () => { for (const p of cfg.providers) stat[p.id] = { ok: null, msg: 'Saving and testing…' }; render(); if (await saveCfg()) await Promise.all(cfg.providers.map(probe)); else stat = {}; render(); },
   cfgpick: el => { const k = el.dataset.k, p = pickP(k); if (!cfg[k].some(e => e.p === p && e.m === el.dataset.id)) cfg[k].push(fresh(p, el.dataset.id)); pick[k].q = ''; persist(); },
   cfgadd: el => { const k = el.dataset.k, m = pick[k].q.trim(), p = pickP(k); if (m && p && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push(fresh(p, m)); pick[k].q = ''; persist(); },
   cfgtm: async el => { // asks this one model for a one-word reply (saves first: the server tests what is saved)
@@ -3145,7 +3148,6 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target, v = t.value;
-  if (t.name === 'paid' && cfg) cfg.paid = t.checked;
   if (t.dataset?.pq) { const k = t.dataset.pq; pick[k].q = v; pick[k].open = true; $('#ml-' + k).innerHTML = pickRows(k); return; }
   if (t.dataset?.cf) { const p = cfg.providers[+t.dataset.i]; p[t.dataset.cf] = v; if (t.dataset.cf === 'key' && v) p.clearKey = false; return; } // Settings: providers are edited in cfg and sent on Save
   if (t.id === 'q') { F.q = v; libRows(); clearTimeout(ftT); ftT = setTimeout(ftSearch, 300); return; }

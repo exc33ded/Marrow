@@ -22,7 +22,7 @@ Marrow has no AI key of its own, and no service is set up when you start: you ad
 6. **Text and Images.** Each model has two switches. **Text** models write answers, briefs and cards; **Images** models explain a figure you snip, so they must read images. A model can do both. When you add a model that OpenRouter says reads images, Images is switched on for you. With no model on Images, figures go to the Text models.
 7. **Test the connection** at the bottom checks which model answers first.
 
-Keys are stored encrypted on the server and are never sent back to the browser. A saved key is shown as dots plus its last four characters, with Replace and Remove key. On OpenRouter only free models are used, unless you allow paid ones. Other providers are always asked, so choose their models with care.
+Keys are stored encrypted on the server and are never sent back to the browser. A saved key is shown as dots plus its last four characters, with Replace and Remove key. On OpenRouter, free models are always asked before paid ones (a test too), and paid models are marked “paid”, so add one only if you mean to pay for it. Other providers are always asked, so choose their models with care.
 
 ## Transcription
 

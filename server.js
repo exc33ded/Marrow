@@ -35,7 +35,7 @@ const conf = S => {
   const jsonOf = k => { try { return JSON.parse(S[k]); } catch {} };
   // No provider or model by default: the reader adds the services they have keys for in Settings.
   const providers = (jsonOf('providers') || []).map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), key: unseal(p.key) }));
-  return { providers, chain: jsonOf('chain') || [], vision: jsonOf('vchain') || [], paid: S.paid === '1', embed: jsonOf('embed') };
+  return { providers, chain: jsonOf('chain') || [], vision: jsonOf('vchain') || [], embed: jsonOf('embed') };
 };
 
 const putItem = (id, b) => local.putItem(id, b);
@@ -80,17 +80,24 @@ const headers = p => ({ 'Content-Type': 'application/json', 'X-Title': 'Marrow',
 // What each AI request is doing right now, so the waiting reader sees which model is answering and which already failed.
 // ponytail: an in-memory map, fine for one reader on one server.
 const progress = new Map(); // request id -> { n, of, model, provider, failed }
+// OpenRouter's free models are asked before its paid ones, so a test or a retry never spends money while a free model can answer.
+// They swap places only among OpenRouter's own rows; other providers keep their place in the order.
+const isFree = m => m.endsWith(':free') || m === 'openrouter/free';
+function freeFirst(c, list) {
+  const onOR = e => { const p = c.providers.find(x => x.id === e.p); return p && isOR(p.url); };
+  const ors = list.filter(onOR), slots = [...ors.filter(e => isFree(e.m)), ...ors.filter(e => !isFree(e.m))];
+  return list.map(e => onOR(e) ? slots.shift() : e);
+}
 async function ai(c, messages, rid) {
   try { return await tryModels(c, messages, rid); } finally { progress.delete(rid); }
 }
 async function tryModels(c, messages, rid) {
   const errs = [], badKey = new Set(), ck = (p, m) => p + '|' + m;
   const all = messages.some(m => Array.isArray(m.content)) && c.vision.length ? c.vision : c.chain; // no model marked for images: the text models are asked
-  const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now())), list = open.length ? open : all;
+  const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now())), list = freeFirst(c, open.length ? open : all);
   for (const [i, { p: pid, m: model }] of list.entries()) {
     const p = c.providers.find(x => x.id === pid);
     if (!p || badKey.has(pid)) continue;
-    if (isOR(p.url) && !c.paid && !model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money unless told to
     if (!p.key && isOR(p.url)) { badKey.add(pid); errs.push(`${p.name}: no API key yet. Add one in Settings`); continue; }
     if (rid) progress.set(rid, { n: i + 1, of: list.length, model, provider: p.name, failed: [...errs] });
     let err;
@@ -110,7 +117,7 @@ async function tryModels(c, messages, rid) {
     cooling.set(ck(pid, model), Date.now() + 10 * 60e3);
     console.warn('model failed ->', errs.at(-1));
   }
-  throw fail(502, errs.length ? errs.join('\n') : 'no AI model is set up yet. In Settings, add a provider with your key and pick a model (on OpenRouter only free models are used unless you allow paid ones)');
+  throw fail(502, errs.length ? errs.join('\n') : 'no AI model is set up yet. In Settings, add a provider with your key and pick a model');
 }
 
 // The models a provider offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
@@ -126,7 +133,7 @@ async function offered(p) { // p is the provider as typed in Settings, so a new 
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !Array.isArray(j.data)) throw fail(502, `${p.name} did not return a model list (${r.status}). Type the model name instead`);
   // img: the service says the model reads images (OpenRouter lists input_modalities; most others say nothing, so it stays false)
-  return j.data.filter(m => m.id).sort((a, b) => a.id < b.id ? -1 : 1).map(m => ({ id: m.id, free: m.id.endsWith(':free'), img: !!m.architecture?.input_modalities?.includes('image') }));
+  return j.data.filter(m => m.id).sort((a, b) => a.id < b.id ? -1 : 1).map(m => ({ id: m.id, free: isFree(m.id), img: !!m.architecture?.input_modalities?.includes('image') }));
 }
 
 // Meaning-based search. Embeddings go through the same providers as chat: POST {url}/embeddings (OpenAI format; OpenAI, Gemini, OpenRouter and Ollama have it, Anthropic does not).
@@ -354,7 +361,7 @@ http.createServer(async (req, res) => {
     // Browsers leave Origin off plain GETs (an <img> or <script>), so also refuse pages from another site.
     if (p.startsWith('/api/') && /^(cross-site|same-site)$/.test(req.headers['sec-fetch-site'] || '')) throw fail(403, 'cross-site request refused');
 
-    if (M === 'GET' && (p === '/' || p === '/index.html')) return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8');
+    if (M === 'GET' && (p === '/' || p === '/index.html')) { res.setHeader('Cache-Control', 'no-cache'); return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8'); } // no-cache: a reload always gets the current app
     if (M === 'GET' && p === '/api/store') return send(res, 200, local.store()); // where the library lives; dir is null until the reader picks one
     if (M === 'POST' && p === '/api/store') { // pick the folder on first launch, or move the library later
       // It writes wherever it is told, so only a reader on this machine may use it: behind a proxy (ALLOWED_HOSTS) requests also come from 127.0.0.1.
@@ -394,7 +401,7 @@ http.createServer(async (req, res) => {
     if (M === 'GET' && p === '/api/ai/progress') return send(res, 200, progress.get(q('id')) || {});
     if (p === '/api/settings' && M === 'GET') { // keys never leave the server: only whether there is one, and its last four characters
       const c = conf(S());
-      return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, embed: c.embed, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
+      return send(res, 200, { chain: c.chain, vision: c.vision, embed: c.embed, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
     }
     if (p === '/api/settings' && M === 'PUT') {
       const b = await json(req, 1e5); let have = []; try { have = JSON.parse(S().providers) || []; } catch {}
@@ -409,7 +416,7 @@ http.createServer(async (req, res) => {
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
       const chain = clean(b.chain); // may be empty while a provider is being set up: the key is saved and tested before models are picked
       const vision = clean(b.vision);
-      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
+      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision) }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
       cooling.clear();
       return send(res, 200, {});
     }

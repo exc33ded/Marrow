@@ -57,9 +57,9 @@ srv.stdout.once('data', async () => {
     assert.deepEqual([(await raw('settings')).body.providers, (await raw('settings')).body.chain], [[], []], 'no provider or model until the reader adds one');
     assert.equal((await raw('settings/test', 'POST', {})).status, 502, 'with nothing set up, AI cannot answer');
     assert.equal((await raw('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', 'test-key-1234')], chain: [] })).status, 200, 'a key can be saved before any model is picked');
-    assert.equal((await raw('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', 'test-key-1234')], chain: [{ p: 'a', m: 'x' }, { p: 'a', m: 'y' }, { p: 'gone', m: 'z' }], paid: true })).status, 200);
+    assert.equal((await raw('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', 'test-key-1234')], chain: [{ p: 'a', m: 'x' }, { p: 'a', m: 'y' }, { p: 'gone', m: 'z' }] })).status, 200);
     let cfg = (await raw('settings')).body, p0 = cfg.providers[0];
-    assert.deepEqual([p0.url, p0.hasKey, p0.hint, cfg.paid, cfg.chain.map(e => e.m)], ['http://127.0.0.1:9/v1', true, '1234', true, ['x', 'y']], 'models of unknown providers are dropped');
+    assert.deepEqual([p0.url, p0.hasKey, p0.hint, cfg.chain.map(e => e.m)], ['http://127.0.0.1:9/v1', true, '1234', ['x', 'y']], 'models of unknown providers are dropped');
     assert.ok(!JSON.stringify(cfg).includes('test-key'), 'the key is never sent back');
     { const r = await raw('settings/test', 'POST', {}); assert.equal(r.status, 502, 'with no reachable provider, AI cannot answer'); }
     await raw('settings', 'PUT', { providers: [prov('http://127.0.0.1:9/v1', '')], chain: [{ p: 'a', m: 'y' }, { p: 'a', m: 'x' }] });
