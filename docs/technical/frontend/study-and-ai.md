@@ -6,7 +6,7 @@ covers: [index.html]
 
 ## Calling the AI
 
-- `ai(messages)` posts to `/api/ai`. The browser never sees an API key; the server picks the model (see [AI proxy](../backend/auth-and-ai.md)).
+- `ai(messages)` posts to `/api/ai` with a random request id. The browser never sees an API key; the server picks the model (see [AI proxy](../backend/auth-and-ai.md)). While it waits, it polls `GET /api/ai/progress` every second and `paintStatus()` fills the status pill (bottom right): the job's label, the seconds so far, "usually about N s" once this kind of job has run before (`took`, kept in `localStorage.aiTook` and keyed by the first 40 characters of the instructions), the model being asked ("model 2 of 8") and the last failure. If models failed before one answered, a toast lists them. If none answered, the error lists every model's reason, one per line.
 - `aiJSON(system, user)` asks for a single JSON object and cuts it out of the reply, so a model that wraps it in prose still works.
 - `fullText(p)` builds the prompt text, with each part prefixed `[p.N]`. It is capped at 150,000 characters.
 

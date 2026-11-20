@@ -41,3 +41,7 @@ A label above the deck says where the card went, and each button shows when the 
 **Good cards.** The AI writes cards that test whether you understood the source, not whether you remember its facts: why the problem is hard, how the method works, what the evidence shows, which assumption it rests on. It never asks for authors, years or a bare number. Answers are one or two short, plain sentences (following the ASD-STE100 Simplified English rules), using the source's own terms.
 
 Your streak and a year-long activity grid sit underneath.
+
+## While the AI works
+
+A box at the bottom right shows what the AI is doing, how many seconds it has taken, how long that job usually takes on your computer, and which model is answering ("model 2 of 8"). If a model fails (rate limited, too slow, no answer), the box says so and Marrow moves on to the next one in your list. When a later model answers, a message lists the ones that failed and why. If none answers, the message lists every model's reason. A model that keeps failing can be moved down or removed in Settings.

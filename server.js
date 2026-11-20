@@ -77,30 +77,40 @@ async function fetchPublic(link) {
 // A model that just failed is skipped for 10 minutes, so one flaky provider doesn't slow every request.
 const cooling = new Map(); // keyed by provider and model
 const headers = p => ({ 'Content-Type': 'application/json', 'X-Title': 'Marrow', ...(p.key && { Authorization: `Bearer ${p.key}`, ...(/anthropic\.com$/.test(new URL(p.url).hostname) && { 'x-api-key': p.key, 'anthropic-version': '2023-06-01' }) }) });
-async function ai(c, messages) {
+// What each AI request is doing right now, so the waiting reader sees which model is answering and which already failed.
+// ponytail: an in-memory map, fine for one reader on one server.
+const progress = new Map(); // request id -> { n, of, model, provider, failed }
+async function ai(c, messages, rid) {
+  try { return await tryModels(c, messages, rid); } finally { progress.delete(rid); }
+}
+async function tryModels(c, messages, rid) {
   const errs = [], badKey = new Set(), ck = (p, m) => p + '|' + m;
-  const all = messages.some(m => Array.isArray(m.content)) ? c.vision : c.chain;
-  const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now()));
-  for (const { p: pid, m: model } of open.length ? open : all) {
+  const all = messages.some(m => Array.isArray(m.content)) && c.vision.length ? c.vision : c.chain; // no model marked for images: the text models are asked
+  const open = all.filter(e => !(cooling.get(ck(e.p, e.m)) > Date.now())), list = open.length ? open : all;
+  for (const [i, { p: pid, m: model }] of list.entries()) {
     const p = c.providers.find(x => x.id === pid);
     if (!p || badKey.has(pid)) continue;
     if (isOR(p.url) && !c.paid && !model.endsWith(':free') && model !== 'openrouter/free') continue; // never spend money unless told to
     if (!p.key && isOR(p.url)) { badKey.add(pid); errs.push(`${p.name}: no API key yet. Add one in Settings`); continue; }
+    if (rid) progress.set(rid, { n: i + 1, of: list.length, model, provider: p.name, failed: [...errs] });
     let err;
     try {
       const r = await fetch(p.url + '/chat/completions', { method: 'POST', headers: headers(p), body: JSON.stringify({ model, messages, temperature: 0.3 }), signal: AbortSignal.timeout(90000) });
       const j = await r.json().catch(() => ({})); // an error page is not JSON
       const text = j.choices?.[0]?.message?.content;
-      if (text) return { text, model, provider: p.name };
+      if (text) return { text, model, provider: p.name, failed: errs };
       // A rejected key fails every model of that provider the same way, so skip the rest of its models.
       if (r.status === 401 || r.status === 403) { badKey.add(pid); errs.push(`${p.name}: the service rejected the API key`); continue; }
-      err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' : j.error?.message || `answered ${r.status} with no text`;
+      // Say why, in the service's own words where it gives any: "rate limited" alone hides a used-up daily quota.
+      const c0 = j.choices?.[0], why = String(j.error?.message || c0?.error?.message || '').slice(0, 200);
+      err = r.status === 404 ? 'the service does not know this model' : r.status === 429 ? 'rate limited' + (why ? ` (${why})` : '') : why ||
+        (c0?.finish_reason === 'length' ? 'ran out of room before writing an answer' : c0?.message?.reasoning ? 'only thought, wrote no answer' : `answered ${r.status} with no text${c0?.finish_reason ? ` (stopped: ${c0.finish_reason})` : ''}`);
     } catch (e) { err = e.name === 'TimeoutError' ? 'no answer within 90 s' : e.message === 'fetch failed' ? `could not reach ${p.url}` : e.message; }
     errs.push(`${p.name} / ${model}: ${err}`);
     cooling.set(ck(pid, model), Date.now() + 10 * 60e3);
     console.warn('model failed ->', errs.at(-1));
   }
-  throw fail(502, errs.length ? errs.join('; ') : 'no AI model is set up yet. In Settings, add a provider with your key and pick a model (on OpenRouter only free models are used unless you allow paid ones)');
+  throw fail(502, errs.length ? errs.join('\n') : 'no AI model is set up yet. In Settings, add a provider with your key and pick a model (on OpenRouter only free models are used unless you allow paid ones)');
 }
 
 // The models a provider offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
@@ -115,7 +125,8 @@ async function offered(p) { // p is the provider as typed in Settings, so a new 
   if (r.status === 401 || r.status === 403) throw fail(401, `${p.name} rejected the API key`);
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !Array.isArray(j.data)) throw fail(502, `${p.name} did not return a model list (${r.status}). Type the model name instead`);
-  return j.data.map(m => m.id).filter(Boolean).sort().map(id => ({ id, free: id.endsWith(':free') }));
+  // img: the service says the model reads images (OpenRouter lists input_modalities; most others say nothing, so it stays false)
+  return j.data.filter(m => m.id).sort((a, b) => a.id < b.id ? -1 : 1).map(m => ({ id: m.id, free: m.id.endsWith(':free'), img: !!m.architecture?.input_modalities?.includes('image') }));
 }
 
 // Meaning-based search. Embeddings go through the same providers as chat: POST {url}/embeddings (OpenAI format; OpenAI, Gemini, OpenRouter and Ollama have it, Anthropic does not).
@@ -376,10 +387,11 @@ http.createServer(async (req, res) => {
     }
     if (M === 'GET' && p === '/api/discover') return send(res, 200, await discover(q('q')));
     if (M === 'POST' && p === '/api/ai') {
-      const { messages } = await json(req, 6e6); // source text plus one cropped image
+      const { messages, rid } = await json(req, 6e6); // source text plus one cropped image
       if (!Array.isArray(messages)) throw fail(400, 'messages required');
-      return send(res, 200, await ai(conf(S()), messages));
+      return send(res, 200, await ai(conf(S()), messages, rid && String(rid)));
     }
+    if (M === 'GET' && p === '/api/ai/progress') return send(res, 200, progress.get(q('id')) || {});
     if (p === '/api/settings' && M === 'GET') { // keys never leave the server: only whether there is one, and its last four characters
       const c = conf(S());
       return send(res, 200, { paid: c.paid, chain: c.chain, vision: c.vision, embed: c.embed, providers: c.providers.map(({ id, name, url, key }) => ({ id, name, url, hasKey: !!key, fromEnv: false, hint: key.slice(-4) })) });
@@ -397,7 +409,7 @@ http.createServer(async (req, res) => {
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
       const chain = clean(b.chain); // may be empty while a provider is being set up: the key is saved and tested before models are picked
       const vision = clean(b.vision);
-      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
+      local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
       cooling.clear();
       return send(res, 200, {});
     }

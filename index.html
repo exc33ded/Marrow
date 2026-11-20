@@ -338,6 +338,26 @@ body.snip .page{cursor:crosshair;touch-action:none} body.snip .textLayer{pointer
 #pall button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;border-radius:var(--r);padding:.55em .7em} #pall button.on{background:var(--acc-bg)}
 #pall .grow{overflow:hidden;text-overflow:ellipsis}
 #status:empty{display:none}
+#status{padding-left:34px;left:auto;right:16px;border-radius:var(--r2);max-width:min(400px,80vw)} #status::before{position:absolute;left:14px;top:11px}
+#status b{display:block;font-weight:600} #status small{display:block;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere} #status small.bad{color:var(--vid)}
+#toast{white-space:pre-line}
+.set .okc{color:var(--ok)} .set .bad,#status .bad{color:var(--vid)}
+.prov{padding:12px 16px;margin:0 0 8px} .prov details{margin-top:6px} .prov summary{cursor:pointer;font-size:13px;width:fit-content}
+.phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap} .phead b{flex:1;font-size:15px} .phead button{min-width:0;width:auto}
+.pst{font-size:13px;font-weight:600;color:var(--muted);overflow-wrap:anywhere}
+.set .mhead{margin:24px 0 8px}
+ol.chain{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}
+ol.chain li{display:flex;align-items:center;gap:10px;padding:4px 6px 4px 10px;min-height:42px;cursor:grab;background:var(--panel)} ol.chain li+li{border-top:1px solid var(--line)} ol.chain li:hover{background:var(--bg)}
+ol.chain .grip{color:var(--muted);opacity:.6} ol.chain .ix{min-width:1.3em;text-align:right;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+ol.chain code,.mlist code{background:none!important;border:0!important;padding:0!important} ol.chain code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px} ol.chain .tag{flex:none}
+ol.chain .mst{flex:none;max-width:40%;font-size:12.5px;font-weight:600;color:var(--muted)}
+ol.chain .ib{border-color:transparent!important;background:none!important;box-shadow:none!important;opacity:0} ol.chain li:hover .ib,ol.chain li:focus-within .ib{opacity:1} @media (hover:none){ol.chain .ib{opacity:1}}
+.madd{display:flex;gap:8px;margin-top:8px} .madd select{width:auto;flex:none} .madd input{flex:1;min-width:0} .madd button{flex:none;min-width:0;width:auto}
+.mlist:empty{display:none} .mlist{margin-top:6px;border:1px solid var(--line);border-radius:var(--r2);max-height:264px;overflow:auto;background:var(--panel);box-shadow:var(--sh)}
+.mlist button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0!important;border-radius:0!important;background:none;min-height:36px;padding:4px 12px!important;font-size:13px;box-shadow:none!important}
+.mlist button:hover,.mlist button:focus-visible{background:var(--acc-bg)} .mlist .mlhead{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 2px 12px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted);position:sticky;top:0;background:var(--panel)} .mlist .mlhead .ib{min-height:30px;height:30px}
+.set .mnote{margin:-4px 0 10px;font-size:13px}
+ol.chain .flag{flex:none;min-width:0!important;width:auto!important;min-height:26px;height:26px;padding:0 10px!important;font-size:12px;border-radius:99px;background:none;color:var(--muted);border:1px dashed var(--line)} ol.chain .flag[aria-pressed=true]{background:var(--acc-bg);color:var(--ink);border:1px solid var(--acc);font-weight:600} .mlist code{flex:1;min-width:0;background:none;padding:0;overflow-wrap:anywhere} .mlist p{margin:10px 12px;font-size:13px}
 #status::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;margin-right:8px;animation:spin 1s linear infinite;vertical-align:-1px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (max-width:900px){
@@ -594,6 +614,7 @@ html[data-look=concourse] .mx td textarea:hover,html[data-look=concourse] .mx td
 /* misc */
 html[data-look=concourse] #status{background:#FFD100;color:#111;border:2px solid #111;border-radius:var(--r);font-weight:600}
 html[data-look=concourse] #status::before{border-color:#111;border-top-color:transparent}
+html[data-look=concourse] #status small{color:#2b2b2b} html[data-look=concourse] #status .bad{color:#8a0000}
 html[data-look=concourse] #toast{border:2px solid var(--fr);border-radius:var(--r)}
 html[data-look=concourse] #sure .danger{background:var(--vid);color:#fff;border:2px solid var(--fr);font-weight:700}
 html[data-look=concourse][data-theme=dark] #sure .danger{color:#111}
@@ -1001,7 +1022,7 @@ html[data-look=studio] .msg{border-radius:var(--r2)} html[data-look=studio] .msg
 html[data-look=studio] :is(#peek,#sure,#pal){border:1px solid var(--line);border-radius:var(--rc);box-shadow:var(--pop)}
 html[data-look=studio] #sure .danger{background:var(--vid);border-color:var(--vid);color:#fff}
 html[data-look=studio][data-theme=dark] #sure .danger{color:#111}
-html[data-look=studio] :is(#status,#toast){border-radius:99px;box-shadow:var(--pop)}
+html[data-look=studio] :is(#status,#toast){border-radius:99px;box-shadow:var(--pop)} html[data-look=studio] #status{border-radius:18px}
 html[data-look=studio] :is(.askbar,.icons){border-radius:var(--r2);box-shadow:var(--pop)}
 html[data-look=studio] .lookcard{border-radius:var(--r2)} html[data-look=studio] .lookcard[aria-pressed=true]{outline:2px solid var(--acc);outline-offset:2px}
 html[data-look=studio] :is(.heat i,.hleg i){border-radius:3px}
@@ -1153,7 +1174,7 @@ const sure = (title, body, ok = 'Delete', danger = true) => new Promise(done => 
   d.returnValue = ''; d.onclick = e => { if (e.target === d) d.close(); }; d.onclose = () => done(d.returnValue === 'yes'); d.showModal();
 });
 let toastT;
-const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6000); };
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), Math.max(6000, m.length * 50)); }; // long messages (a list of failed models) stay up long enough to read
 // Motion. enter(): the next render inside these containers plays its entrance. vt(): cross-fade a whole-screen change where the browser can.
 const enter = (...els) => els.forEach(el => { el.classList.add('in'); clearTimeout(el._in); el._in = setTimeout(() => el.classList.remove('in'), 900); });
 const vt = fn => {
@@ -1186,9 +1207,29 @@ const text = async p => p.pages || (p.parts = await api(`items/${p.id}/parts`), 
 const log = (kind, p) => { activity.push({ ts: Date.now(), kind, item_id: p?.id }); send('POST', 'activity', { kind, item_id: p?.id }).catch(() => {}); };
 
 // ---------- AI ----------
+// While a model works, the pill under the rail counts the seconds, names the model answering and says which ones already failed.
+// "Usually" is this kind of job's recent time on this computer, keyed by the start of its instructions, so it is only shown once there is one.
+const took = (() => { try { return JSON.parse(localStorage.aiTook) || {}; } catch { return {}; } })();
+let aiNow = null; // { rid, t0, kind, prog }
+function paintStatus() { // #status is a live region: its markup changes only when what it says changes, and the ticking seconds are hidden from screen readers
+  const s = $('#status'); if (!working) { s.innerHTML = ''; s.said = ''; return; }
+  const g = aiNow?.prog, u = aiNow && took[aiNow.kind], last = g?.failed?.at(-1);
+  const html = `<b>${esc(working)}</b>` + (aiNow ? `<small><span class="tick" aria-hidden="true"></span>${u ? `usually about ${u} s` : ''}${g?.model ? `${u ? ' · ' : ''}${esc(g.provider)}: ${esc(g.model)}${g.of > 1 ? ` (model ${g.n} of ${g.of})` : ''}` : ''}</small>` +
+    (last ? `<small class="bad">${plural(g.failed.length, 'model')} failed. Last: ${esc(last)}</small>` : '') : '');
+  if (s.said !== html) s.innerHTML = s.said = html;
+  const t = s.querySelector('.tick'); if (t) t.textContent = Math.round((Date.now() - aiNow.t0) / 1000) + ' s' + (u || g?.model ? ' · ' : '');
+}
 async function ai(messages) {
-  try { return (await send('POST', 'ai', { messages })).text; }
-  catch (e) { throw new Error('AI is unavailable right now (' + e.message + '). Try again in a moment.'); }
+  const rid = crypto.randomUUID(), kind = String(messages[0]?.content).slice(0, 40), t0 = Date.now(), me = aiNow = { rid, t0, kind };
+  const tick = setInterval(() => { paintStatus(); api('ai/progress?id=' + rid).then(g => { if (aiNow === me && g.model) me.prog = g; }).catch(() => {}); }, 1000);
+  paintStatus();
+  try {
+    const r = await send('POST', 'ai', { messages, rid }), sec = Math.round((Date.now() - t0) / 1000);
+    took[kind] = took[kind] ? Math.round((took[kind] * 2 + sec) / 3) : sec; try { localStorage.aiTook = JSON.stringify(took); } catch {}
+    if (r.failed?.length) toast(`${r.provider}: ${r.model} answered after ${plural(r.failed.length, 'model')} failed:\n${r.failed.join('\n')}`);
+    return r.text;
+  } catch (e) { throw new Error('No AI model could answer:\n' + e.message + '\nTry again in a minute, or put a different model first in Settings.'); }
+  finally { clearInterval(tick); if (aiNow === me) aiNow = null; paintStatus(); }
 }
 async function aiJSON(system, user) {
   const t = await ai([{ role: 'system', content: system + '\nReturn ONLY one valid JSON object. No markdown fences, no commentary.' }, { role: 'user', content: user }]);
@@ -1224,35 +1265,48 @@ const SYS_ANALYZE = `You are an expert research mentor preparing a student to de
 Rules: plain text only, no LaTeX. problem, idea, method, results and limitations: 2-3 tight sentences each, at most 60 words. Every card must be provable from its quote; never invent facts or numbers. references: the 3-5 most important prior works, or [] if the source lists none. If a list of existing concept names is given, reuse the exact name whenever the same concept appears. prerequisites max 6. sections: 5-9, in order, covering the whole source, page = marker number where it starts. concepts: 8-14; links must use exact concept names and form a connected map. cards: 8-12. ${CARD_RULES}`;
 
 // ---------- state ----------
-let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, ffilter = {}, stat = {}, mstat = {}, dragFrom = null; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
+let feeds = [], news = null, newsAt = 0, seen = new Set((() => { try { return JSON.parse(localStorage.seen) || []; } catch { return []; } })()), nf = '', unreadOnly = true, dtab = 'inbox', later = (() => { try { return JSON.parse(localStorage.later) || []; } catch { return []; } })(), cfg = null, found = {}, pick = { models: { q: '', open: false } }, stat = {}, mstat = {}, dragFrom = null; // cfg is the Settings form as edited: providers, the two ordered model lists, paid; found = models each provider offered
 const PRESETS = [['OpenRouter', 'https://openrouter.ai/api/v1'], ['OpenAI', 'https://api.openai.com/v1'], ['Claude (Anthropic)', 'https://api.anthropic.com/v1'], ['Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/openai'], ['NVIDIA', 'https://integrate.api.nvidia.com/v1'], ['Groq', 'https://api.groq.com/openai/v1'], ['DeepSeek', 'https://api.deepseek.com/v1'], ['Mistral', 'https://api.mistral.ai/v1'], ['xAI (Grok)', 'https://api.x.ai/v1'], ['Together AI', 'https://api.together.xyz/v1'], ['Fireworks', 'https://api.fireworks.ai/inference/v1'], ['Hugging Face', 'https://router.huggingface.co/v1'], ['Cerebras', 'https://api.cerebras.ai/v1'], ['SambaNova', 'https://api.sambanova.ai/v1'], ['Ollama (this computer)', 'http://localhost:11434/v1'], ['Other', '']];
 // One ordered list of models. Each row says which provider answers it; ↑ ↓ change the order they are tried in.
-const foundHTML = (p, i) => { // what a provider offers: a filter and a short scrolling list; clicking a name adds it
-  if (!found[p.id]) return ''; if (typeof found[p.id] === 'string') return `<small class="muted">${esc(found[p.id])}</small>`;
-  const v = left(p); // models already in the list are not offered again
-  const q = (ffilter[p.id] || '').toLowerCase(), hit = v.filter(m => m.id.toLowerCase().includes(q));
-  return `<input data-ff="${i}" value="${esc(ffilter[p.id] || '')}" placeholder="Filter ${v.length} models" aria-label="Filter models" autocomplete="off" spellcheck="false" style="margin-top:6px"><div id="fl${i}" style="max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:var(--r);margin-top:4px">${foundRows(p, i)}</div><small class="muted" id="fc${i}">${hit.length > 80 ? `Showing 80 of ${hit.length}. Type to narrow it down.` : `${hit.length} shown. Click one to add it.`}</small>`;
+// Adding a model: choose the service, then type. Matches come from what the service offers (models already in the list are not offered again);
+// a name it does not list can still be added as typed. Results only show while there is something typed, so the page never holds a 400-row box.
+const pickP = k => pick[k].p || cfg.providers[0]?.id;
+const offered = k => { const p = pickP(k), l = found[p]; return Array.isArray(l) ? l.filter(m => !cfg[k].some(e => e.p === p && e.m === m.id)) : []; };
+const pickRows = k => {
+  const q = pick[k].q.trim().toLowerCase(); if (!q || !pick[k].open) return ''; // closed with ×, Esc or a click elsewhere; typing opens it again
+  const hit = offered(k).filter(m => m.id.toLowerCase().includes(q));
+  return `<div class="mlhead"><span>${hit.length ? plural(hit.length, 'match') : 'No match'}</span><button type="button" class="ib" data-act="cfgclose" data-k="${k}" title="Close (Esc)" aria-label="Close the list">${ic('x', 16)}</button></div>` +
+    (hit.length ? hit.slice(0, 40).map(m => `<button type="button" data-act="cfgpick" data-k="${k}" data-id="${esc(m.id)}">${ic('plus', 15)}<code>${esc(m.id)}</code>${m.img ? '<span class="tag">images</span>' : ''}${m.free ? '<span class="tag ok">free</span>' : ''}</button>`).join('') + (hit.length > 40 ? `<p class="muted">${hit.length - 40} more. Keep typing to narrow it down.</p>` : '')
+    : `<p class="muted">${found[pickP(k)] ? 'Nothing it offers matches.' : 'Test this service to search its models.'} Add puts “${esc(pick[k].q.trim())}” in the list as typed.</p>`);
 };
-const left = p => found[p.id].filter(m => !cfg.chain.some(e => e.p === p.id && e.m === m.id));
-const foundRows = (p, i) => { const q = (ffilter[p.id] || '').toLowerCase(); return left(p).filter(m => m.id.toLowerCase().includes(q)).slice(0, 80).map(m => `<button type="button" data-act="cfgpick" data-i="${i}" data-id="${esc(m.id)}" style="display:block;width:100%;text-align:left;border:0;border-radius:0;min-height:30px;padding:3px 10px;background:none;font-size:13px;white-space:normal;overflow-wrap:anywhere">${esc(m.id)}${m.free ? ' <small class="muted">free</small>' : ''}</button>`).join('') || '<p class="muted" style="margin:8px 10px">No match.</p>'; };
 const probe = async p => { // asks the service for its model list: proves the address and key work, and fills the pick list
   stat[p.id] = { ok: null, msg: 'Testing…' }; found[p.id] = '';
   try { const l = await send('POST', 'settings/models', { id: p.id, name: p.name, url: p.url, key: p.key, clearKey: p.clearKey }); found[p.id] = l; stat[p.id] = { ok: true, msg: `Connected · ${l.length} model${l.length === 1 ? '' : 's'}` }; }
   catch (e) { delete found[p.id]; stat[p.id] = { ok: false, msg: e.message }; }
 };
 const saveCfg = async () => { // writes the Settings form to the server and reloads it (keys come back masked); true if it worked
-  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: cfg.chain, vision: cfg.vision, embed: cfg.embed, paid: !!$('input[name=paid]')?.checked }); cfg = await api('settings'); CN.key = ''; return true; }
+  try { await send('PUT', 'settings', { providers: cfg.providers.map(({ id, name, url, key, clearKey }) => ({ id, name, url, key, clearKey })), chain: pairs(cfg.models.filter(e => e.text)), vision: pairs(cfg.models.filter(e => e.img)), embed: cfg.embed, paid: !!$('input[name=paid]')?.checked }); cfg = merged(await api('settings')); CN.key = ''; return true; }
   catch (e) { toast('Could not save the settings: ' + e.message + '.'); return false; }
 };
 const persist = async () => { render(); if (await saveCfg()) render(); }; // order and picks are saved as soon as they change
 const embedHTML = () => { const e = cfg.embed || {};
   return `<h4 style="margin:16px 0 4px">Embedding model (to ask questions of sources too long to send whole)</h4><p class="row" style="margin:0"><select id="emb-p" aria-label="Provider" style="width:auto;flex:none"><option value="">None</option>${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === e.p ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input id="emb-m" class="grow" value="${esc(e.m || '')}" placeholder="e.g. text-embedding-3-small" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgemb" style="min-width:0;width:auto;flex:none">Save</button><button type="button" data-act="cfgidx" style="min-width:0;width:auto;flex:none">Index my library</button></p><small class="muted">It must give 1024-number vectors (OpenAI and Gemini can; Claude has no embedding model). The text of your sources is sent to this service.</small>`;
 };
+// One list of models. Each says whether it answers text, images (figures), or both; Marrow saves these as the two ordered lists the server tries.
+const pairs = l => l.map(({ p, m }) => ({ p, m }));
+const merged = c => { const id = e => e.p + '|' + e.m, v = new Set(c.vision.map(id)), t = new Set(c.chain.map(id));
+  c.models = [...c.chain.map(e => ({ ...e, text: true, img: v.has(id(e)) })), ...c.vision.filter(e => !t.has(id(e))).map(e => ({ ...e, text: false, img: true }))]; return c; };
+const fresh = (p, m) => ({ p, m, text: true, img: !!(Array.isArray(found[p]) && found[p].find(x => x.id === m)?.img) }); // images on when the service says the model reads them
+const closePick = k => { pick[k].open = false; const l = $('#ml-' + k); if (l) l.innerHTML = ''; };
 const chainHTML = (k, label) => {
-  const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?';
-  return `<h4 style="margin:16px 0 4px">${label}</h4><ol class="chain" style="padding-left:22px;margin:0">${rows.map((e, i) => { const t = mstat[k + '|' + e.p + '|' + e.m]; return `<li draggable="true" data-k="${k}" data-i="${i}" style="margin:3px 0;cursor:grab"><span class="row" style="gap:6px;flex-wrap:nowrap"><span aria-hidden="true" title="Drag to reorder" class="muted" style="flex:none">⠿</span><small class="muted" style="flex:none;max-width:30%">${esc(name(e.p))}</small> <code style="flex:1;min-width:0;overflow-wrap:anywhere;font-size:12.5px;background:none;padding:0">${esc(e.m)}</code>${t ? `<small role="status" style="flex:none;font-weight:600;color:var(${t.ok === null ? '--muted' : t.ok ? '--ok' : '--vid'})">● ${esc(t.msg)}</small>` : ''}
-    <button type="button" data-act="cfgtm" data-k="${k}" data-i="${i}" style="min-width:0;width:auto;flex:none;padding:2px 10px" aria-label="Test ${esc(e.m)}">Test</button><button type="button" data-act="cfgrm" data-k="${k}" style="min-width:0;width:auto;flex:none;padding:2px 10px" data-i="${i}" aria-label="Remove ${esc(e.m)}">Remove</button></span></li>`; }).join('') || '<li class="muted">Empty.' + (k === 'vision' ? ' Figures then use the model list above.' : '') + '</li>'}</ol>
-    <p class="row" style="margin:8px 0 0"><select id="add-${k}-p" aria-label="Provider" style="width:auto;flex:none">${cfg.providers.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><input id="add-${k}-m" class="grow" placeholder="model name" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgadd" data-k="${k}" style="min-width:0;width:auto;flex:none">Add</button></p>`;
+  const rows = cfg[k], name = id => cfg.providers.find(p => p.id === id)?.name || '?', n = offered(k).length;
+  return `<h4 class="mhead">${label}</h4><p class="muted mnote">Each model can do <b>Text</b> (answers, briefs, cards), <b>Images</b> (explaining a figure you snip), or both. Click to switch. With no model on Images, figures go to the Text models.</p><ol class="chain">${rows.map((e, i) => { const t = mstat[k + '|' + e.p + '|' + e.m];
+    return `<li draggable="true" data-k="${k}" data-i="${i}"><span class="grip" aria-hidden="true" title="Drag to reorder">⠿</span><span class="ix">${i + 1}</span><span class="tag">${esc(name(e.p))}</span><code>${esc(e.m)}</code>` +
+      (t ? `<span role="status" class="mst ${t.ok === null ? '' : t.ok ? 'okc' : 'bad'}">${esc(t.msg)}</span>` : '') +
+      [['text', 'Text', 'Use it for writing and answering'], ['img', 'Images', 'Use it to explain figures (the model must read images)']].map(([f, l, tip]) => `<button type="button" class="flag" data-act="cfgflag" data-i="${i}" data-f="${f}" aria-pressed="${!!e[f]}" title="${tip}">${l}</button>`).join('') +
+      `<button type="button" class="ib" data-act="cfgtm" data-k="${k}" data-i="${i}" title="Test this model" aria-label="Test ${esc(e.m)}">${ic('play', 16)}</button><button type="button" class="ib" data-act="cfgrm" data-k="${k}" data-i="${i}" title="Remove" aria-label="Remove ${esc(e.m)}">${ic('x', 16)}</button></li>`; }).join('') ||
+    '<li class="muted">No models yet. Search below to add one.</li>'}</ol>
+    <div class="madd"><select data-pk="${k}" aria-label="Service for the new model">${cfg.providers.map(p => `<option value="${esc(p.id)}" ${p.id === pickP(k) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input data-pq="${k}" value="${esc(pick[k].q)}" placeholder="${n ? `Search ${n} models` : 'Model name'}" aria-label="Find a model to add" autocomplete="off" spellcheck="false"><button type="button" data-act="cfgadd" data-k="${k}">Add</button></div><div class="mlist" id="ml-${k}">${pickRows(k)}</div>`;
 };
 let lib = [], notes = [], activity = [], P = null, N = null, view = 'home', tab = 'brief', working = '', jobs = 0, askWith = new Set(), pdfDoc = null, io = null, cy = null, yt = null, ytReady = null, nowN = 0, ftT, nbT, sess = null, busy = false, seq = 0, rtab = 'study', rdeck = null, ropen = null, adding = null; // sess: the study deck on screen; rdeck: the one paper Review studies; ropen: the deck open under Decks; adding: the deck whose new-card form is open
 let zoom = 1, findQ = '', findHits = [], findI = 0, snip = null;
@@ -1799,7 +1853,8 @@ function go(v) {
   view = v; enter($('#page'));
   vt(() => { document.body.classList.remove('study', 'snip'); render(); $('#page').scrollTop = 0; });
   if (v === 'discover') loadNews();
-  if (v === 'settings') api('settings').then(c => { cfg = c; if (view === 'settings') render(); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
+  // Services with a saved key are checked on opening, so each shows whether it works and its models can be searched without a click.
+  if (v === 'settings') api('settings').then(c => { cfg = merged(c); if (view !== 'settings') return; render(); Promise.all(c.providers.filter(p => p.hasKey && !found[p.id]).map(probe)).then(() => view === 'settings' && soft()); }).catch(e => toast('Could not load the settings (' + e.message + ').'));
   if (v === 'settings') loadWh().then(paintWh).catch(e => toast('Could not check Whisper (' + e.message + ').'));
 }
 
@@ -2069,25 +2124,25 @@ const PAGE = {
     return `<div class="wrap narrow"><h1>Settings</h1>${lookPicker()}<div class="sec"><h3>AI services</h3></div><p class="muted lead">Add each service you have a key for (Claude, OpenAI, OpenRouter, a model on this computer), then pick the models and put them in the order Marrow should try them. If one fails, the next one answers. Any service that speaks the OpenAI chat format works.</p>` + (!c ? '<p class="muted">Loading the settings…</p>' : `
       <form data-f="cfg" class="box set">
         <div class="row" style="margin:0 0 8px"><h4 class="grow" style="margin:0">Providers</h4><button type="button" data-act="cfgall">Save &amp; test all</button></div>
-        ${c.providers.map((p, i) => `<div class="box flat" style="margin:0 0 10px">
-          <p class="row" style="margin:0"><b class="grow" style="font-size:16px">${esc(p.name)}</b>${p.clearKey || !(p.hasKey || p.key) ? '<span class="tag">No key</span>' : '<span class="tag ok">Key ready</span>'}<button type="button" data-act="cfgrmp" data-i="${i}" style="min-width:0;width:auto">Remove</button></p>
+        ${c.providers.map((p, i) => { const s = stat[p.id], has = p.hasKey && !p.clearKey;
+          // One line per service once its key is saved: name, state, Test. The key and address fold away until needed.
+          return `<div class="box flat prov">
+          <div class="phead"><b>${esc(p.name)}</b>${s ? `<span role="status" class="pst ${s.ok === null ? '' : s.ok ? 'okc' : 'bad'}">${esc(s.msg)}</span>` : p.key ? '<span class="tag">New key, not saved</span>' : has ? `<span class="tag ok">Key ··${esc(p.hint)}</span>` : '<span class="tag">No key</span>'}
+            <button type="button" data-act="cfgfind" data-i="${i}" title="Save, then check the key and load this service's models">Save &amp; test</button><button type="button" class="ib" data-act="cfgrmp" data-i="${i}" title="Remove this service" aria-label="Remove ${esc(p.name)}">${ic('x', 16)}</button></div>
+          <details ${has && p.url && !p.replace ? '' : 'open'}><summary class="muted">Key and address</summary>
           <label for="pk${i}">API key</label>${p.hasKey && !p.clearKey && !p.replace
             ? `<p class="row" style="margin:0"><code class="grow" style="letter-spacing:.12em">••••••••••••${esc(p.hint)}</code><button type="button" data-act="cfgrep" data-i="${i}" style="min-width:0;width:auto">Replace</button><button type="button" data-act="cfgdel" data-i="${i}" style="min-width:0;width:auto">Remove key</button></p>`
             : `<input id="pk${i}" data-cf="key" data-i="${i}" type="password" autocomplete="off" placeholder="${p.clearKey ? 'No key' : 'Paste your key'}">`}
           <small class="muted">${p.clearKey ? 'The saved key is removed when you save. <a href="#" data-act="cfgundo" data-i="${i}">Undo</a>' : p.replace ? 'The new key replaces the saved one when you save. <a href="#" data-act="cfgundo" data-i="${i}">Keep the saved key</a>' : p.hasKey ? '' : 'Ollama on this computer needs no key.'} Keys are stored encrypted on the server and never reach the browser.</small>
-          <p class="row" style="margin:10px 0 0"><button type="button" data-act="cfgfind" data-i="${i}" class="pri">Save &amp; test connection</button>${stat[p.id] ? `<span role="status" style="font-weight:600;color:var(${stat[p.id].ok === null ? '--muted' : stat[p.id].ok ? '--ok' : '--vid'})">● ${esc(stat[p.id].msg)}</span>` : '<small class="muted" style="margin:0">Saves your key, then checks it</small>'}</p>
-          ${foundHTML(p, i)}
-          <details style="margin-top:10px" ${p.url ? '' : 'open'}><summary class="muted" style="cursor:pointer">Name and API address</summary>
             <label for="pn${i}">Name</label><input id="pn${i}" data-cf="name" data-i="${i}" value="${esc(p.name)}" autocomplete="off">
             <label for="pu${i}">API address</label><input id="pu${i}" data-cf="url" data-i="${i}" required value="${esc(p.url)}" autocomplete="off" placeholder="https://…/v1"></details>
-        </div>`).join('')}
+        </div>`; }).join('')}
         ${c.providers.length ? '' : '<p class="muted" style="margin:0 0 10px">No AI service yet. Choose the one you have a key for, add it, and paste the key.</p>'}<p class="row" style="margin:0"><select id="newp" aria-label="Service to add"><option value="" selected disabled>Choose a service…</option>${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
-        ${chainHTML('chain', 'Models, tried from the top until one answers')}
-        ${chainHTML('vision', 'Models for explaining figures (they must accept images)')}
+        ${chainHTML('models', 'Models, tried from the top until one answers')}
         ${embedHTML()}
         <label class="row" style="margin-top:14px"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow OpenRouter models that cost money. Without this, only models ending in “:free” are used there. Other providers are always asked, so choose their models with care.</label>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
-        <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600"></p>
+        <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600;white-space:pre-line"></p>
       </form>`) + `<h2 style="margin-top:1.6em">Library folder</h2><p class="muted lead">Your library, your PDFs and a Markdown copy of every source and notebook page live in this folder, in a folder per project. Back it up to back up everything.</p>
       <form data-f="libdir" class="box set"><label for="libdir">Folder</label>${ST.fixed ? `<p><code>${esc(ST.dir)}</code></p><small class="muted">Set by DATA_DIR when the server starts, so it can't be changed here.</small>`
         : `<input id="libdir" name="dir" value="${esc(ST.dir || '')}" autocomplete="off" spellcheck="false"><small class="muted">To move the library, give the full path of an empty folder (or one that doesn't exist yet). Everything is copied there and checked, then Marrow switches over; the old folder is left as it was.</small>
@@ -2160,7 +2215,7 @@ function renderRail() {
   $('#nav').innerHTML = NAV.map(([v, l, i]) => `<button data-view="${v}" class="${view === v || (v === 'library' && view === 'read') ? 'on' : ''}">${ic(i, 20)}${l}${v === 'review' && d ? `<span class="n">${d}</span>` : ''}${v === 'discover' && news ? ((c) => c ? `<span class="n">${c}</span>` : '')(news.filter(x => !seen.has(x.link)).length) : ''}</button>`).join('');
   $('#themeBtn').innerHTML = ic(dark ? 'sun' : 'moon', 20) + (dark ? 'Light' : 'Dark'); $('#palBtn').innerHTML = ic('search', 20) + 'Search'; $('#setBtn').innerHTML = ic('gear', 20) + 'Settings'; $('#setBtn').className = view === 'settings' ? 'on' : '';
   $('#projects').innerHTML = projects().map(x => `<option value="${esc(x)}">`).join('');
-  $('#status').textContent = working;
+  paintStatus();
   try { history.replaceState(null, '', view === 'read' && P ? `#/read/${P.id}/${tab}` : `#/${view}${view === 'notebook' && N ? '/' + N : ''}`); } catch {} // the screen lives in the URL so a reload comes back to it
 }
 function render() {
@@ -2814,19 +2869,21 @@ const ACT = {
   cfgundo: el => { const p = cfg.providers[+el.dataset.i]; p.clearKey = p.replace = false; p.key = ''; render(); },
   cfgfind: async el => { const id = cfg.providers[+el.dataset.i].id; if (await saveCfg()) await probe(cfg.providers.find(p => p.id === id)); render(); }, // saves, then tests and loads the models
   cfgall: async () => { if (await saveCfg()) await Promise.all(cfg.providers.map(probe)); render(); },
-  cfgpick: el => { const p = cfg.providers[+el.dataset.i]; if (!cfg.chain.some(e => e.p === p.id && e.m === el.dataset.id)) cfg.chain.push({ p: p.id, m: el.dataset.id }); persist(); },
-  cfgadd: el => { const k = el.dataset.k, m = $('#add-' + k + '-m').value.trim(), p = $('#add-' + k + '-p').value; if (m && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push({ p, m }); persist(); },
+  cfgpick: el => { const k = el.dataset.k, p = pickP(k); if (!cfg[k].some(e => e.p === p && e.m === el.dataset.id)) cfg[k].push(fresh(p, el.dataset.id)); pick[k].q = ''; persist(); },
+  cfgadd: el => { const k = el.dataset.k, m = pick[k].q.trim(), p = pickP(k); if (m && p && !cfg[k].some(e => e.p === p && e.m === m)) cfg[k].push(fresh(p, m)); pick[k].q = ''; persist(); },
   cfgtm: async el => { // asks this one model for a one-word reply (saves first: the server tests what is saved)
     const k = el.dataset.k, e = cfg[k][+el.dataset.i], key = k + '|' + e.p + '|' + e.m, t = Date.now();
     mstat[key] = { ok: null, msg: 'Testing…' }; render();
     if (await saveCfg()) { try { await send('POST', 'settings/test', { p: e.p, m: e.m }); mstat[key] = { ok: true, msg: `Works · ${((Date.now() - t) / 1000).toFixed(1)} s` }; } catch (x) { mstat[key] = { ok: false, msg: x.message.replace(/^.*?\/ [^:]+: /, '') }; } } else delete mstat[key];
     render();
   },
+  cfgflag: el => { const e = cfg.models[+el.dataset.i]; e[el.dataset.f] = !e[el.dataset.f]; persist(); },
+  cfgclose: el => closePick(el.dataset.k),
   cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); persist(); },
   cfgemb: () => { const p = $('#emb-p').value, m = $('#emb-m').value.trim(); cfg.embed = p && m ? { p, m } : null; persist(); },
   cfgidx: async () => { toast('Indexing your library. This can take a while…'); try { await send('POST', 'embed', { all: true }); toast('Your library is indexed.'); } catch (e) { toast('Could not index: ' + e.message); } },
   cfgaddp: () => { if (!$('#newp').value) return toast('Choose a service first.'); const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
-  cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); for (const k of ['chain', 'vision']) cfg[k] = cfg[k].filter(e => e.p !== p.id); render(); },
+  cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); cfg.models = cfg.models.filter(e => e.p !== p.id); render(); },
   cfgtest: async () => { // asks the saved models, in order, for a one-word reply and says, in place, whether it worked
     const say = (msg, color) => { const el = $('#cfgstate'); if (el) { el.textContent = msg; el.style.color = color; } }, t = Date.now();
     say('Checking: asking the first model that answers for a one-word reply…', 'var(--muted)');
@@ -3081,6 +3138,7 @@ document.addEventListener('dragend', () => { dragFrom = null; });
 document.addEventListener('change', e => {
   const d = e.target.dataset;
   if (d.act) return onClick(e);
+  if (d.pk) { pick[d.pk].p = e.target.value; return render(); }
   if (d.k === 'take' || d.k === 'col') save(byId(d.id));
   else if (d.k?.startsWith('nb')) { clearTimeout(nbT); saveNote(curNote()); renderRail(); }
   else if (d.k && P) { save(P); renderRail(); }
@@ -3088,7 +3146,7 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   const t = e.target, v = t.value;
   if (t.name === 'paid' && cfg) cfg.paid = t.checked;
-  if (t.dataset?.ff) { const i = +t.dataset.ff, p = cfg.providers[i]; ffilter[p.id] = v; $('#fl' + i).innerHTML = foundRows(p, i); $('#fc' + i).textContent = ''; return; }
+  if (t.dataset?.pq) { const k = t.dataset.pq; pick[k].q = v; pick[k].open = true; $('#ml-' + k).innerHTML = pickRows(k); return; }
   if (t.dataset?.cf) { const p = cfg.providers[+t.dataset.i]; p[t.dataset.cf] = v; if (t.dataset.cf === 'key' && v) p.clearKey = false; return; } // Settings: providers are edited in cfg and sent on Save
   if (t.id === 'q') { F.q = v; libRows(); clearTimeout(ftT); ftT = setTimeout(ftSearch, 300); return; }
   if (t.id === 'nbq') return nbSide();
@@ -3097,6 +3155,10 @@ document.addEventListener('input', e => {
   SET[t.dataset.k]?.(v, t.dataset);
   if (t.dataset.k?.startsWith('nb')) { curNote().updated = Date.now(); clearTimeout(nbT); nbT = setTimeout(() => saveNote(curNote()), 1500); }
 });
+document.addEventListener('keydown', e => { const k = e.target.dataset?.pq; if (!k) return; // Enter adds the top match, else the name as typed; Esc closes the list
+  if (e.key === 'Enter') { e.preventDefault(); ($('#ml-' + k + ' [data-act=cfgpick]') || e.target.nextElementSibling).click(); }
+  if (e.key === 'Escape' && pick[k].open) { e.preventDefault(); closePick(k); } });
+document.addEventListener('click', e => { for (const k in pick) if (pick[k].open && !e.target.closest?.('.madd, .mlist')) closePick(k); });
 document.addEventListener('submit', e => { const f = e.target.dataset.f; if (f) { e.preventDefault(); FORM[f](e.target); } });
 $('#resFile').onchange = e => e.target.files[0] && restore(e.target.files[0]).catch(err => toast('Not a valid Marrow backup: ' + err.message));
 $('#file').onchange = e => addFiles(e.target.files);

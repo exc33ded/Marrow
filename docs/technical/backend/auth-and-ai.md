@@ -30,15 +30,18 @@ Settings are rows in the `settings` table:
 
 `conf(S)` turns those rows into the working configuration. There are no defaults: without saved settings there are no providers and no models, and `ai()` answers `502` asking you to set one up in Settings.
 
-## The AI proxy: `ai(conf, messages)`
+## The AI proxy: `ai(conf, messages, rid)`
 
-1. It uses the vision chain if any message carries an image, otherwise the text chain.
+1. It uses the vision chain if any message carries an image and that chain is not empty, otherwise the text chain. (Saving no longer copies the text chain into an empty vision chain.)
 2. It skips models that failed in the last 10 minutes (the `cooling` map, keyed by provider and model), unless every model is cooling.
 3. On OpenRouter it skips non-`:free` models unless `paid` is set. It never spends money unless told to.
 4. It posts to `{provider url}/chat/completions` with `temperature: 0.3` and a 90 s timeout. Anthropic addresses also get `x-api-key` and `anthropic-version`.
-5. It returns the first reply that has text, as `{ text, model, provider }`. A `401`/`403` skips the rest of that provider's models. If nothing answers, it returns `502` with every model's error joined together.
+5. It returns the first reply that has text, as `{ text, model, provider, failed }`, where `failed` lists the models that failed before it. A `401`/`403` skips the rest of that provider's models. If nothing answers, it returns `502` with every model's error, one per line.
+6. Each error uses the service's own words where it gives any: a `429` says `rate limited (…)` with the service's message (OpenRouter names a used-up daily free quota there). A `200` with no text says whether the model ran out of room (`finish_reason: length`) or only returned its reasoning.
 
-`offered(p)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker. `POST /api/settings/models` calls it with the address and key as typed in the form, falling back to the saved key of that provider id, so a provider can be tested before it is saved. OpenRouter lists its models to anyone, so for OpenRouter `offered()` first checks the key with `GET {url}/key` and fails on a missing key or a `401`/`403`.
+While it works, `progress` (an in-memory map keyed by the request id `rid` the browser sends) holds which model is being asked (`n` of `of`), and the errors so far. `GET /api/ai/progress?id=` reads it; the entry is removed when the request ends.
+
+`offered(p)` lists a provider's models from `GET {url}/models` (the OpenAI format), for the model picker, as `{ id, free, img }`; `img` is true when the service lists `image` in `architecture.input_modalities` (OpenRouter does). `POST /api/settings/models` calls it with the address and key as typed in the form, falling back to the saved key of that provider id, so a provider can be tested before it is saved. OpenRouter lists its models to anyone, so for OpenRouter `offered()` first checks the key with `GET {url}/key` and fails on a missing key or a `401`/`403`.
 
 **Embeddings.** The `embed` setting (`{ p, m }`) names a provider and model. `embed(c, texts)` posts to `{url}/embeddings` with `dimensions: 1024` (`DIM`; parts are cut at 6000 characters) and rejects any other vector size. `embedItem()` embeds a source's parts that have no vector, 64 at a time, through `local.setEmb()`; `PUT /api/items/:id` runs it in the background when parts were saved, so a failure never blocks the save. `POST /api/embed` does one source (`item`) or all (`all`). `POST /api/retrieve` embeds the question and calls `local.matchParts()` for the 12 best parts.
 
