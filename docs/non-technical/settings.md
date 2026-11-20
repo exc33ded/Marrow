@@ -35,6 +35,13 @@ Everything downloaded here can be removed again from the same screen.
 
 Optional. Pick a provider and an embedding model so Ask can handle sources too long to send whole (books, theses, long lectures): the passages that best match the question are found by meaning and sent instead. "Index my library" prepares sources you saved earlier; new ones are indexed when saved. The same model also lets the concept map join concepts that mean similar things, across sources too.
 
-## Log out
+## Library folder
 
-The arrow button at the bottom of the rail logs you out.
+The first time Marrow starts, it asks where to keep your library. Everything goes in that one folder, so backing it up backs up everything:
+- the library itself (`marrow.db`);
+- a README;
+- a folder per project with its PDFs (`papers`), a Markdown copy of each source (`sources`) and of each notebook page (`pages`).
+
+Things not in a project go in `Unfiled`. The Markdown copies open in Obsidian, VS Code or any editor, and Marrow rewrites them whenever you change something, so make your changes in Marrow. Don't move or rename the PDFs, or Marrow can't open them.
+
+To move the library, type an empty folder's full path under "Library folder" and choose "Move library here". Marrow copies everything, checks the copy, then switches to it. The old folder is left as it was, for you to delete once you're happy.

@@ -98,6 +98,30 @@ srv.stdout.once('data', async () => {
     assert.deepEqual((await raw('concept-near', 'POST', { texts })).body, {}, 'no model: an empty answer, not an error');
     emb.close();
 
+    // ---- the library folder, run in this process against its own temp folder and config (never the reader's ~/.marrow.json)
+    { const t = fs.mkdtempSync(path.join(os.tmpdir(), 'marrow-lib-')), A = path.join(t, 'A'), B = path.join(t, 'B');
+      delete process.env.DATA_DIR; process.env.MARROW_CONFIG = path.join(t, 'conf.json'); process.env.MARROW_LEGACY = path.join(t, 'old');
+      const L = require('./local'), has = (...p) => fs.existsSync(path.join(L.DATA, ...p));
+      assert.equal(L.store().dir, null, 'no folder until the reader picks one'); assert.throws(() => L.library(), /choose a folder/);
+      L.choose(A); assert.ok(has('README.md'), 'the folder explains itself');
+      L.putFile('s1', Buffer.from('%PDF-1.4 x')); assert.ok(has('Unfiled', 'papers', 's1.pdf'), 'a PDF saved before its source waits in Unfiled');
+      L.putItem('s1', { kind: 'pdf', title: 'Flood: models?', project: 'Hydrology', md: '# Flood' });
+      assert.ok(has('Hydrology', 'papers', 'Flood models.pdf') && has('Hydrology', 'sources', 'Flood models.md') && !has('Unfiled'), 'the PDF joins its project, names lose reserved characters, empty folders go');
+      assert.equal(L.library().items[0].md, undefined, 'the Markdown is not stored in the library');
+      L.putItem('s2', { kind: 'web', title: 'flood MODELS', project: 'Hydrology', md: 'x' });
+      assert.ok(has('Hydrology', 'sources', 'flood MODELS (s2).md'), 'a name taken in any case gets the id');
+      L.saveNote('p1', { title: 'Ideas', project: '', note: '{}', md: '# Ideas' }); assert.ok(has('Unfiled', 'pages', 'Ideas.md'));
+      assert.deepEqual(L.library().unmirrored, []);
+      L.putItem('s1', { kind: 'pdf', title: 'Flood models', project: 'Rivers' }); // a save without Markdown still moves the files
+      assert.ok(has('Rivers', 'papers', 'Flood models.pdf') && has('Rivers', 'sources', 'Flood models.md')); assert.equal(L.getFile('s1').toString(), '%PDF-1.4 x');
+      L.deleteItem('s2'); L.deleteNote('p1'); assert.ok(!has('Hydrology') && !has('Unfiled'), 'deleting removes the files');
+      assert.throws(() => L.choose(path.join(A, 'in')), /inside/);
+      fs.mkdirSync(path.join(t, 'C')); fs.writeFileSync(path.join(t, 'C', 'x'), ''); assert.throws(() => L.choose(path.join(t, 'C')), /empty folder/);
+      L.choose(B);
+      assert.equal(JSON.parse(fs.readFileSync(process.env.MARROW_CONFIG, 'utf8')).dir, B, 'the choice is remembered');
+      assert.ok(has('Rivers', 'papers', 'Flood models.pdf') && fs.existsSync(path.join(A, 'marrow.db')), 'the library moved; the old folder is left as it was');
+      assert.equal(L.getFile('s1').toString(), '%PDF-1.4 x'); assert.equal(L.library().items.length, 1); }
+
     // ---- clean up
     await raw('items/abc', 'DELETE'); await raw('notes/n1', 'DELETE'); await raw('feeds?url=' + encodeURIComponent('https://example.org/feed.xml'), 'DELETE'); await raw('projects', 'PUT', { list: [] });
     lib = (await raw('library')).body;

@@ -2,7 +2,7 @@
 //   node --env-file=.env --env-file=.env.migrate migrate.js [email]
 // Needs SUPABASE_URL and a SUPABASE_SERVICE_ROLE_KEY in the environment, used only here.
 // Keep APP_SECRET from the old .env: AI keys are copied across still encrypted with it.
-const fs = require('fs'), { createDecipheriv } = require('crypto'), local = require('./local');
+const { createDecipheriv } = require('crypto'), local = require('./local');
 
 const SB = (process.env.SUPABASE_URL || '').replace(/\/+$/, ''), KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const APP_KEY = Buffer.from(process.env.APP_SECRET || '', 'hex');
@@ -76,8 +76,9 @@ const opens = s => {
     pdfs.push([name.slice(0, -4), Buffer.from(await (await call(`/storage/v1/object/files/${u.id}/${object}`)).arrayBuffer())]);
   }
 
-  fs.rmSync(local.FILES, { recursive: true, force: true });
-  for (const sql of ['delete from items', 'delete from notes', 'delete from activity', 'delete from feeds', 'delete from settings']) local.raw(sql);
+  for (const id of local.allItemIds()) local.deleteItem(id); // through deleteItem and deleteNote, so their files in the library folder go too
+  for (const { id } of local.raw('select id from notes where item_id is null')) local.deleteNote(id);
+  for (const sql of ['delete from notes', 'delete from activity', 'delete from feeds', 'delete from settings']) local.raw(sql);
   for (const [id, buf] of pdfs) local.putFile(id, buf);
 
   for (const it of items) {

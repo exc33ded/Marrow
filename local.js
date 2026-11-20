@@ -1,12 +1,15 @@
 // Marrow's local backend: one reader's library and PDFs on this machine. No service, no accounts, no dependencies.
 // The schema lives in schema.sql; this module opens it, keeps the indexes in step, and answers the API's data calls.
-const fs = require('fs'), path = require('path'), { randomUUID } = require('crypto');
+const fs = require('fs'), path = require('path'), os = require('os'), { randomUUID } = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 
-const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
-const FILES = path.join(DATA, 'files');
 const DAY = 86400000;
 const fail = (code, msg) => Object.assign(new Error(msg), { code });
+// The library folder: DATA_DIR fixes it (tests, servers); otherwise the reader picks it on first launch and it is remembered in CONF,
+// outside the library so it can be found before the library is. LEGACY is where libraries lived before the reader could choose.
+const CONF = process.env.MARROW_CONFIG || path.join(os.homedir(), '.marrow.json');
+const LEGACY = process.env.MARROW_LEGACY || path.join(__dirname, 'data'); // tests point it elsewhere so they never read a real library
+let DATA = process.env.DATA_DIR || (() => { try { return JSON.parse(fs.readFileSync(CONF, 'utf8')).dir || null; } catch { return null; } })();
 let db;
 
 const numbers = v => v && new Float64Array(v.buffer, v.byteOffset, Math.floor(v.byteLength / 8));
@@ -26,7 +29,8 @@ const matchQuery = (q, phrase) => phrase ? '"' + words(q).join(' ') + '"' : word
 
 function open() {
   if (db) return db;
-  fs.mkdirSync(FILES, { recursive: true });
+  if (!DATA) throw fail(409, 'choose a folder for your library first');
+  fs.mkdirSync(DATA, { recursive: true });
   db = new DatabaseSync(path.join(DATA, 'marrow.db'));
   db.exec('pragma journal_mode=wal; pragma foreign_keys=on');
   // A library made before vector search has parts without emb columns, and "create table if not exists" never adds columns.
@@ -34,7 +38,109 @@ function open() {
   if (cols.length && !cols.includes('emb')) db.exec('alter table parts add column emb blob; alter table parts add column emb_model text');
   db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
   db.function('cosine', cosine);
+  // Libraries from before the folder layout kept PDFs as files/<id>.pdf: each moves next to its project, once.
+  const old = path.join(DATA, 'files');
+  if (fs.existsSync(old)) {
+    for (const f of fs.readdirSync(old)) {
+      const id = f.slice(0, -4), it = f.endsWith('.pdf') && db.prepare('select project,title from items where id=?').get(id);
+      if (it) quietly(() => place('pdf:' + id, relOf('pdf:' + id, id, it.project, it.title, 'papers', '.pdf'), null, path.join(old, f)));
+    }
+    prune(old);
+  }
+  if (!fs.existsSync(path.join(DATA, 'README.md'))) fs.writeFileSync(path.join(DATA, 'README.md'), README);
   return db;
+}
+
+// ---------- the library folder: the database plus readable copies, one folder per project ----------
+const README = `# Marrow library
+
+This folder is your Marrow library. Marrow manages everything in it.
+
+- \`marrow.db\` is the library itself: sources, highlights, cards, notebook pages and settings. Back up this whole folder to back up everything.
+- \`<Project>/papers/\` holds the PDFs you added. Marrow opens them from here, so don't move or rename them, or the source will not open.
+- \`<Project>/sources/\` has one Markdown file per source: its brief, reading map, your notes, concepts and flashcards.
+- \`<Project>/pages/\` has your notebook pages as Markdown.
+- \`Unfiled/\` holds sources and pages that are not in a project.
+
+The Markdown files are copies for reading, searching and backing up; they open in Obsidian, VS Code or any editor. Marrow rewrites them whenever you change something in the app, so edits made here are overwritten. Make changes in Marrow.
+
+To move the library somewhere else, use Settings > Library folder.
+`;
+const abs = rel => path.join(DATA, ...rel.split('/'));
+const where = key => db.prepare('select rel from paths where key=?').get(key)?.rel;
+// Names every system accepts. Unicode letters stay; reserved characters and device names (CON, NUL…) do not; 80 characters keeps paths short.
+const safe = s => { let n = String(s || '').replace(/[<>:"/\\|?*\x00-\x1f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80).replace(/[. ]+$/, ''); return /^(con|prn|aux|nul|com\d|lpt\d)$/i.test(n) ? '_' + n : n || 'Untitled'; };
+// Where a file belongs. A name another file already has (in any case: Windows and macOS ignore it) gets the first 6 characters of the id.
+// ponytail: a project literally called "Unfiled" shares the unfiled folder.
+function relOf(key, id, project, title, sub, ext) {
+  const dir = `${project ? safe(project) : 'Unfiled'}/${sub}/`, mine = where(key);
+  const taken = r => r.toLowerCase() !== mine?.toLowerCase() && (db.prepare('select 1 from paths where key<>? and lower(rel)=lower(?)').get(key, r) || fs.existsSync(abs(r)));
+  const rel = dir + safe(title) + ext;
+  return taken(rel) ? `${dir}${safe(title)} (${String(id).slice(0, 6)})${ext}` : rel;
+}
+// Puts a file at rel: moves it from where it was (or from `from`), then writes body if given. The row changes only once the file is there.
+function place(key, rel, body, from = where(key) && abs(where(key))) {
+  const to = abs(rel);
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  if (from && path.resolve(from) !== path.resolve(to) && fs.existsSync(from)) { fs.renameSync(from, to); prune(path.dirname(from)); }
+  if (body != null) fs.writeFileSync(to, body);
+  if (fs.existsSync(to)) db.prepare('insert into paths(key,rel) values(?,?) on conflict(key) do update set rel=excluded.rel').run(key, rel);
+}
+function unplace(key) {
+  const rel = where(key); if (!rel) return;
+  fs.rmSync(abs(rel), { force: true }); prune(path.dirname(abs(rel)));
+  db.prepare('delete from paths where key=?').run(key);
+}
+// Folders left empty by a move or delete go too, up to the library folder.
+const prune = dir => { try { while (path.resolve(dir) !== path.resolve(DATA) && !fs.readdirSync(dir).length) { fs.rmdirSync(dir); dir = path.dirname(dir); } } catch {} };
+// The readable copies never block a save: the database already holds the truth, and the next save tries again (a PDF open in a viewer can't be renamed on Windows).
+const quietly = f => { try { f(); } catch (e) { console.warn('library folder:', e.message); } };
+function mirrorItem(id, md) {
+  const it = db.prepare('select project,title from items where id=?').get(id); if (!it) return;
+  if (where('pdf:' + id)) quietly(() => place('pdf:' + id, relOf('pdf:' + id, id, it.project, it.title, 'papers', '.pdf')));
+  if (md != null || where('src:' + id)) quietly(() => place('src:' + id, relOf('src:' + id, id, it.project, it.title, 'sources', '.md'), md));
+}
+
+function store() {
+  const suggest = fs.existsSync(path.join(LEGACY, 'marrow.db')) ? LEGACY : path.join(os.homedir(), 'Documents', 'Marrow');
+  return { dir: DATA, fixed: !!process.env.DATA_DIR, suggest, legacy: !DATA && fs.existsSync(path.join(LEGACY, 'marrow.db')) ? LEGACY : null };
+}
+// First launch: use dir; a library already there opens as it is, and one in the old ./data is copied in. Later: the library moves to dir.
+// The old folder is left untouched for the reader to delete.
+function choose(input) {
+  if (process.env.DATA_DIR) throw fail(400, 'the library folder is set by DATA_DIR');
+  if (!path.isAbsolute(String(input || '').trim())) throw fail(400, 'give the full path of a folder, e.g. ' + store().suggest);
+  const dir = path.resolve(String(input).trim()), from = DATA || store().legacy, has = fs.existsSync(path.join(dir, 'marrow.db'));
+  if (from && path.resolve(from) !== dir) {
+    if (DATA && has) throw fail(400, 'that folder already holds a Marrow library; pick an empty folder');
+    if (!has) copyLibrary(from, dir);
+  }
+  if (db) { db.close(); db = null; }
+  DATA = dir; open();
+  fs.writeFileSync(CONF, JSON.stringify({ dir }, null, 2));
+  return store();
+}
+function copyLibrary(from, to) {
+  const inside = (a, b) => !path.relative(a, b).startsWith('..') && !path.isAbsolute(path.relative(a, b));
+  if (inside(from, to) || inside(to, from)) throw fail(400, 'the new folder cannot be inside the old one, or the other way round');
+  if (fs.existsSync(to) && fs.readdirSync(to).length) throw fail(400, 'pick an empty folder (or one that does not exist yet)');
+  const ck = new DatabaseSync(path.join(from, 'marrow.db')); ck.exec('pragma wal_checkpoint(truncate)'); ck.close(); // everything in the main file before copying
+  if (db) { db.close(); db = null; }
+  const skip = s => path.relative(from, s).split(path.sep)[0] === 'whisper'; // Whisper's downloads are tools, not the library: they stay with the app
+  try {
+    fs.cpSync(from, to, { recursive: true, force: false, errorOnExist: true, filter: s => !skip(s) });
+    const a = new DatabaseSync(path.join(from, 'marrow.db'), { readOnly: true }), b = new DatabaseSync(path.join(to, 'marrow.db'), { readOnly: true });
+    try {
+      if (b.prepare('pragma integrity_check').get().integrity_check !== 'ok') throw new Error('the copied database is damaged');
+      for (const { name } of a.prepare("select name from sqlite_master where type='table' and name not like '%fts%'").all())
+        if (a.prepare(`select count(*) n from "${name}"`).get().n !== b.prepare(`select count(*) n from "${name}"`).get().n) throw new Error(`the copy of ${name} is incomplete`);
+    } finally { a.close(); b.close(); }
+    const count = d => fs.readdirSync(d, { recursive: true, withFileTypes: true }).filter(e => e.isFile() && !skip(path.join(e.parentPath, e.name))).length;
+    if (count(from) !== count(to)) throw new Error('not every file was copied');
+  } catch (e) {
+    fs.rmSync(to, { recursive: true, force: true });
+    throw fail(500, 'could not move the library: ' + e.message + '. Nothing changed.');
+  }
 }
 
 function settingsOf() {
@@ -51,7 +157,7 @@ function saveSettings(rows) {
 function putItem(id, b) {
   open();
   if (!safeId(id)) throw fail(400, 'invalid source id');
-  const { cards = [], notes = [], parts, kind, title, url, project, done, added, opened, id: _, ...data } = b;
+  const { cards = [], notes = [], parts, kind, title, url, project, done, added, opened, id: _, md, ...data } = b; // md: the source as Markdown, for its file only
   const q = {
     item: db.prepare(`insert into items(id,kind,title,url,project,done,added,opened,data) values(?,?,?,?,?,?,?,?,?)
       on conflict(id) do update set title=excluded.title,url=excluded.url,project=excluded.project,done=excluded.done,opened=excluded.opened,data=excluded.data`),
@@ -73,6 +179,7 @@ function putItem(id, b) {
     }
     db.exec('commit');
   } catch (e) { db.exec('rollback'); throw e; }
+  mirrorItem(id, md); // after the commit: a file problem never loses a save
 }
 function getParts(id) {
   open();
@@ -89,7 +196,7 @@ function allItemIds() {
 function deleteItem(id) {
   open();
   db.prepare('delete from items where id=?').run(id);
-  deleteFile(id);
+  deleteFile(id); quietly(() => unplace('src:' + id));
 }
 function setEmb(pairs, model) {
   open();
@@ -116,10 +223,12 @@ function saveNote(id, n) {
   db.prepare(`insert into notes(id,item_id,title,project,note,updated) values(?,null,?,?,?,?)
     on conflict(id) do update set title=excluded.title,project=excluded.project,note=excluded.note,updated=excluded.updated`)
     .run(id, n.title ?? null, n.project ?? null, n.note ?? null, n.updated || Date.now());
+  if (n.md != null || where('pg:' + id)) quietly(() => place('pg:' + id, relOf('pg:' + id, id, n.project, n.title || 'Untitled page', 'pages', '.md'), n.md));
 }
 function deleteNote(id) {
   open();
   db.prepare('delete from notes where id=? and item_id is null').run(id);
+  quietly(() => unplace('pg:' + id));
 }
 function addActivity(kind, itemId, ts) {
   open();
@@ -145,7 +254,10 @@ function library() {
   const notes = db.prepare('select id,title,project,note,updated from notes where item_id is null order by updated desc').all().map(drop);
   const activity = db.prepare('select ts,kind,item_id from activity where ts>? order by ts').all(Date.now() - 400 * DAY).map(drop);
   const feeds = db.prepare('select url,title from feeds order by added').all();
-  return { items, notes, activity, feeds, projects: json(settingsOf().projects, []) };
+  // Sources and pages with no file in the library folder yet (made before it, or moved in by migrate.js): the browser saves them once to write them.
+  const unmirrored = db.prepare(`select id from items where 'src:'||id not in (select key from paths)
+    union all select id from notes where item_id is null and 'pg:'||id not in (select key from paths)`).all().map(r => r.id);
+  return { items, notes, activity, feeds, projects: json(settingsOf().projects, []), unmirrored };
 }
 function searchParts(q, phrase) {
   open();
@@ -175,25 +287,24 @@ function matchParts({ qe, q, m, k = 12, only_item = null }) {
     select p.item_id,p.n,p.t,p.body from s join parts p on p.id=s.id order by sc desc limit ?`).all(...args).map(drop);
 }
 
-function fileOf(id) { return path.join(FILES, id + '.pdf'); }
+// PDFs live in <Project>/papers/<Title>.pdf. A PDF that arrives before its source is saved waits in Unfiled and moves on the first save.
+// Unlike the Markdown copies the PDF is the only copy, so a failed write here does fail the upload.
 function putFile(id, buf) {
   open();
   if (!safeId(id)) throw fail(400, 'invalid file name');
-  fs.mkdirSync(FILES, { recursive: true });
-  fs.writeFileSync(fileOf(id), buf);
+  const it = db.prepare('select project,title from items where id=?').get(id) || { project: '', title: id };
+  place('pdf:' + id, relOf('pdf:' + id, id, it.project, it.title, 'papers', '.pdf'), buf);
 }
 function getFile(id) {
   open();
   if (!safeId(id)) return null;
-  const f = fileOf(id);
-  return fs.existsSync(f) ? fs.readFileSync(f) : null;
+  const rel = where('pdf:' + id); if (!rel) return null;
+  if (!fs.existsSync(abs(rel))) throw fail(404, `the PDF is missing from your library folder: put it back at ${rel}, or add the source again`);
+  return fs.readFileSync(abs(rel));
 }
 function deleteFile(id) {
-  if (safeId(id)) fs.rmSync(fileOf(id), { force: true });
-}
-function fileList() {
   open();
-  return fs.existsSync(FILES) ? fs.readdirSync(FILES).filter(f => /^[\w-]{1,64}\.pdf$/.test(f)).map(f => f.slice(0, -4)) : [];
+  if (safeId(id)) quietly(() => unplace('pdf:' + id));
 }
 function raw(sql, ...args) {
   open();
@@ -202,4 +313,4 @@ function raw(sql, ...args) {
 
 module.exports = { open, fail, settingsOf, saveSettings, putItem, getParts, partsWithoutEmb, allItemIds, deleteItem, setEmb, conceptEmbs, saveConceptEmbs,
   saveNote, deleteNote, addActivity, saveFeed, deleteFeed, library, searchParts, matchParts,
-  putFile, getFile, deleteFile, fileList, raw, DATA, FILES };
+  putFile, getFile, deleteFile, raw, store, choose, get DATA() { return DATA; } };

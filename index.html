@@ -1148,11 +1148,14 @@ async function api(path, opts) {
 const send = (method, path, body) => api(path, { method, headers: JH, body: JSON.stringify(body) });
 // Saves are queued so an older save can never land after a newer one. The source text (parts) is only sent when it changes.
 let saving = Promise.resolve();
+// Each save also carries the Markdown copy the server keeps in the library folder. If it can't be written, the save goes without it.
+const mdOr = f => { try { return f(); } catch { return undefined; } };
+const pageMd = n => `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`;
 const save = (p, parts) => {
-  const { pages, parts: _, ...rest } = p, body = JSON.stringify(parts ? { ...rest, parts } : rest);
+  const { pages, parts: _, ...rest } = p, md = mdOr(() => srcMd(p)), body = JSON.stringify(parts ? { ...rest, parts, md } : { ...rest, md });
   return saving = saving.then(() => api('items/' + p.id, { method: 'PUT', headers: JH, body })).catch(e => toast('Could not save (' + e.message + '). Nothing is lost: it is saved again with your next change.'));
 };
-const saveNote = n => n && send('PUT', 'notes/' + n.id, { title: n.title, project: n.project, note: n.note }).catch(e => toast('Could not save the note: ' + e.message));
+const saveNote = n => n && send('PUT', 'notes/' + n.id, { title: n.title, project: n.project, note: n.note, md: mdOr(() => pageMd(n)) }).catch(e => toast('Could not save the note: ' + e.message));
 const text = async p => p.pages || (p.parts = await api(`items/${p.id}/parts`), p.pages = p.parts.map(x => x.body));
 const log = (kind, p) => { activity.push({ ts: Date.now(), kind, item_id: p?.id }); send('POST', 'activity', { kind, item_id: p?.id }).catch(() => {}); };
 
@@ -1987,7 +1990,10 @@ const PAGE = {
         <label class="row" style="margin-top:14px"><input type="checkbox" name="paid" style="width:auto" ${c.paid ? 'checked' : ''}> Allow OpenRouter models that cost money. Without this, only models ending in “:free” are used there. Other providers are always asked, so choose their models with care.</label>
         <p class="row" style="margin:18px 0 0"><button class="pri">Save settings</button><button type="button" data-act="cfgtest">Test the connection</button></p>
         <p id="cfgstate" role="status" style="margin:12px 0 0;font-weight:600"></p>
-      </form>`) + `<h2 style="margin-top:1.6em">Transcription</h2><p class="muted lead">Videos use YouTube's own captions when they have them. For anything else, Whisper, OpenAI's open-source speech model, writes the transcript on this computer; nothing is uploaded anywhere. Download the YouTube helper for captions, and the program plus one model for Whisper. Bigger models are more accurate and slower.</p>
+      </form>`) + `<h2 style="margin-top:1.6em">Library folder</h2><p class="muted lead">Your library, your PDFs and a Markdown copy of every source and notebook page live in this folder, in a folder per project. Back it up to back up everything.</p>
+      <form data-f="libdir" class="box set"><label for="libdir">Folder</label>${ST.fixed ? `<p><code>${esc(ST.dir)}</code></p><small class="muted">Set by DATA_DIR when the server starts, so it can't be changed here.</small>`
+        : `<input id="libdir" name="dir" value="${esc(ST.dir || '')}" autocomplete="off" spellcheck="false"><small class="muted">To move the library, give the full path of an empty folder (or one that doesn't exist yet). Everything is copied there and checked, then Marrow switches over; the old folder is left as it was.</small>
+        <p class="row" style="margin:12px 0 0"><button class="pri">Move library here</button></p>`}</form>` + `<h2 style="margin-top:1.6em">Transcription</h2><p class="muted lead">Videos use YouTube's own captions when they have them. For anything else, Whisper, OpenAI's open-source speech model, writes the transcript on this computer; nothing is uploaded anywhere. Download the YouTube helper for captions, and the program plus one model for Whisper. Bigger models are more accurate and slower.</p>
       <div id="whbox" class="box set">${whBox()}</div></div>`;
   },
   review() {
@@ -2287,17 +2293,19 @@ function conceptPanel(node, all) {
 const drawBig = () => $('#cy') && drawMap(scoped(), true);
 
 // ---------- export, backup, migration ----------
-function exportMd() {
-  const b = P.brief || {}, L = [`# ${P.title}`, '', P.url ? `<${P.url}>` : '', '', `> ${b.tldr || ''}`, ''];
+// A source as Markdown: what Export downloads, and the copy kept in the library folder (sent with every save).
+const srcMd = p => {
+  const b = p.brief || {}, L = [`# ${p.title}`, '', p.url ? `<${p.url}>` : '', '', `> ${b.tldr || ''}`, ''];
   for (const [k, v] of [['Problem', b.problem], ['Core idea', b.idea], ['Method', b.method], ['Results', b.results], ['Limitations', b.limitations]]) if (v) L.push(`## ${k}`, v, '');
-  L.push('## Reading map'); for (const s of P.sections) L.push(`### ${s.title} (${loc(P, s.page)})`, `**Q:** ${s.question}`, s.answer ? `**My answer:** ${s.answer}` : '', s.model ? `**Strong answer:** ${s.model}` : '', '');
-  if (P.feynman?.text) L.push('## My explanation', P.feynman.text, '');
-  if (P.take) L.push('## My take', P.take, '');
-  L.push('## Notes'); for (const n of P.notes) L.push(n.quote ? `> ${n.quote} (${loc(P, n.page)})` : '', n.note || '', '');
-  L.push('## Concepts'); for (const c of P.concepts) L.push(`- [[${c.name}]] — ${c.def}`);
-  L.push('', '## Flashcards'); for (const c of P.cards) L.push(`${c.q} :: ${c.a}`);
-  dl(fname(P.title) + '.md', L.join('\n'), 'text/markdown');
-}
+  L.push('## Reading map'); for (const s of p.sections || []) L.push(`### ${s.title} (${loc(p, s.page)})`, `**Q:** ${s.question}`, s.answer ? `**My answer:** ${s.answer}` : '', s.model ? `**Strong answer:** ${s.model}` : '', '');
+  if (p.feynman?.text) L.push('## My explanation', p.feynman.text, '');
+  if (p.take) L.push('## My take', p.take, '');
+  L.push('## Notes'); for (const n of p.notes || []) L.push(n.quote ? `> ${n.quote} (${loc(p, n.page)})` : '', n.note || '', '');
+  L.push('## Concepts'); for (const c of p.concepts || []) L.push(`- [[${c.name}]] — ${c.def}`);
+  L.push('', '## Flashcards'); for (const c of p.cards || []) L.push(`${c.q} :: ${c.a}`);
+  return L.join('\n');
+};
+function exportMd() { dl(fname(P.title) + '.md', srcMd(P), 'text/markdown'); }
 const bib = p => {
   const a = p.meta?.authors || [], y = p.meta?.year || '';
   const k = norm((a[0] || 'source').split(' ').pop() + y + (p.title.match(/[A-Za-z]{4,}/) || [''])[0]);
@@ -2841,7 +2849,7 @@ const ACT = {
   nbicon: () => { const el = $('#icons'); el.innerHTML = el.innerHTML ? '' : `<div class="icons">${ICONS.map(x => `<button data-act="nbseticon" data-v="${x}" aria-label="${x}" title="${x}">${ic(x, 20)}</button>`).join('')}<button data-act="nbseticon" data-v="">Remove icon</button></div>`; },
   nbseticon: async el => { const n = curNote(); if (edDirty) await keepEd(); docOf(n).icon = el.dataset.v; putDoc(n); dropEd(); render(); }, // the page is redrawn with its new icon, after the editor's text is saved
   tocgo: el => [...document.querySelectorAll('#ed h2,#ed h3,#ed h4')].filter(h => h.textContent.trim())[+el.dataset.i]?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-  nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', `# ${n.title || 'Untitled page'}\n\n${blocksMd(docOf(n).blocks)}`, 'text/markdown'); },
+  nbexport: async () => { const n = curNote(); if (edDirty) await keepEd(); dl(fname(n.title || 'page') + '.md', pageMd(n), 'text/markdown'); },
   nbaddsrc: () => pickSource('Choose the sources to work with on this page', id => { const s = docOf(curNote()).sources, i = s.indexOf(id); i < 0 ? s.push(id) : s.splice(i, 1); putDoc(curNote()); nbSrc(); nbSide(); }, id => docOf(curNote()).sources.includes(id)),
   nbunsrc: el => { const n = curNote(), s = docOf(n).sources; s.splice(s.indexOf(el.dataset.id), 1); putDoc(n); nbSrc(); nbSide(); },
   work: el => work(el.dataset.q),
@@ -2892,6 +2900,17 @@ const FORM = {
     PJ = [...new Set(PJ.map(x => x === old ? v : x).concat(v))]; saveProjects();
     if (!merged && mxAll[old]) mxAll[v] = mxAll[old]; delete mxAll[old]; mxKeep();
     ACT.setproject({ dataset: { v } }); toast(merged ? `Merged “${old}” into the existing project “${v}”.` : `Renamed to “${v}”.`);
+  },
+  firstrun: async f => { // the first launch's folder; a later move is libdir below
+    const b = f.querySelector('button'); b.disabled = true; $('#frerr').textContent = '';
+    try { await send('POST', 'store', { dir: f.dir.value.trim() }); location.reload(); } catch (e) { $('#frerr').textContent = e.message; b.disabled = false; }
+  },
+  libdir: async f => {
+    const dir = f.dir.value.trim(), b = f.querySelector('button'); if (!dir || dir === ST.dir) return;
+    b.disabled = true; b.textContent = 'Moving…';
+    try { ST = await send('POST', 'store', { dir }); toast('Your library now lives in ' + ST.dir + '. The old folder is left as it was; delete it when you are happy.'); }
+    catch (e) { toast('Could not move the library: ' + e.message); }
+    render();
   },
   newproj: f => { const v = f.p.value.trim(); if (!v) return; PJ = [...new Set([...PJ, v])]; saveProjects(); ACT.setproject({ dataset: { v } }); toast(`Project “${v}” created. Sources you add now are filed in it.`); },
   follow: async f => {
@@ -3051,8 +3070,22 @@ $('#sel').onclick = e => {
 };
 
 // ---------- boot ----------
+// First launch: nothing loads until the reader says where the library lives. A browser can't open a folder picker that answers with a path on the server, so it is typed.
+let ST = await api('store').catch(() => ({}));
+if (ST.dir === null) await new Promise(() => {
+  document.body.insertAdjacentHTML('beforeend', `<div id="firstrun" style="position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;padding:16px;overflow:auto">
+    <form data-f="firstrun" class="box" style="width:min(560px,100%)"><h2 style="margin-top:0">Where should Marrow keep your library?</h2>
+      <p class="muted">Everything goes in one folder: the library (<code>marrow.db</code>), your PDFs and a Markdown copy of every source and notebook page, in a folder per project. You can move it later in Settings.</p>
+      ${ST.legacy ? `<p>Your library is in <code style="word-break:break-all">${esc(ST.legacy)}</code>. Keep that folder, or give another and it is copied there (the old folder is left as it is).</p>` : ''}
+      <label for="frdir">Folder (full path)</label><input id="frdir" name="dir" required value="${esc(ST.suggest || '')}" autocomplete="off" spellcheck="false">
+      <p id="frerr" role="alert" style="color:var(--vid);min-height:1.4em;margin:8px 0 0"></p><button class="pri">Use this folder</button></form></div>`);
+  $('#frdir').focus();
+}); // waits forever: choosing the folder reloads the page
 try {
-  ({ items: lib, notes, activity, feeds = [], projects: PJ = [] } = await api('library'));
+  const L0 = await api('library');
+  ({ items: lib, notes, activity, feeds = [], projects: PJ = [] } = L0);
+  // Sources and pages from before the library folder have no Markdown copy yet: saving each once writes it.
+  for (const id of L0.unmirrored || []) { const p = byId(id); if (p) save(p); else saveNote(notes.find(n => n.id === id)); }
   const old = lsGet('projects', []).filter(x => !PJ.includes(x)); // project names this browser kept before they moved into the database
   if (old.length) { PJ = [...PJ, ...old]; await saveProjects(); } try { delete localStorage.projects; } catch {}
   F.project = lsGet('project', ''); if (!projects().includes(F.project)) F.project = '';

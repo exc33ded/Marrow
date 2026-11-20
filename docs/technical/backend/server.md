@@ -23,7 +23,8 @@ There is no session check: this is a single-user local server. Anyone who can re
 | `PUT /api/items/:id` | save a source with its cards, notes and, optionally, `parts` (`local.putItem()`) |
 | `GET /api/items/:id/parts` | a source's text |
 | `DELETE /api/items/:id` | delete the source and its PDF |
-| `PUT` / `GET /api/files/:id` | upload (must start with `%PDF-`, max 150 MB) / download a PDF from `DATA_DIR/files` |
+| `PUT` / `GET /api/files/:id` | upload (must start with `%PDF-`, max 150 MB) / download a PDF from its project folder (see [library folder](../database/schema.md#library-folder)) |
+| `GET` / `POST /api/store` | where the library lives (`dir` is null until chosen) / choose it on first launch or move it; refused unless the server listens on loopback with no `ALLOWED_HOSTS` |
 | `PUT` / `DELETE /api/notes/:id` | save / delete a notebook page |
 | `PUT /api/projects` | the project-name list |
 | `GET /api/search?q=&phrase=` | full-text search (`local.searchParts()`) |

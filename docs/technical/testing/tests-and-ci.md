@@ -23,6 +23,15 @@ Starts the server on port 5981 with a temporary `DATA_DIR`, so it never touches 
 
 It also checks meaning-based search against a fake embedding service on port 5982: no model chosen gives 400, the model is saved, `/api/embed` indexes a source, and `/api/retrieve` returns the dictionary-learning passage first. `/api/concept-near` pairs each concept with the one about the same thing, reuses cached vectors without calling the service again, and answers `{}` once the model is removed.
 
+The library folder is checked in-process against its own temp folder, with `MARROW_CONFIG` and `MARROW_LEGACY` pointed there so the reader's real config and `./data` are never read.
+- There is no folder until one is chosen.
+- A PDF uploaded before its source waits in `Unfiled` and joins the project on save.
+- Names lose reserved characters, and a clash in any letter case gets the id.
+- Files move when the title or project changes, and go when the source or page is deleted.
+- `md` is not stored in the library.
+- A folder inside the old one, or a non-empty one, is refused.
+- A move copies everything, remembers the choice and leaves the old folder intact.
+
 Run with `npm test` (which supplies `.env` for `APP_SECRET`) or `node test.js` (a test-only `APP_SECRET` is used if none is set). No accounts or external service are needed.
 
 ## `test-frontend.js`

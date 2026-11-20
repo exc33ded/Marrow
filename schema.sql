@@ -53,6 +53,10 @@ create table if not exists activity(
 create table if not exists feeds(
   url text primary key, title text not null, added integer not null
 );
+-- Where each file in the library folder lives, relative to it: key = pdf:<item id> | src:<item id> | pg:<page id>.
+create table if not exists paths(
+  key text primary key, rel text not null
+);
 -- Vectors for the concept map's "similar meaning" links, one per concept text ("name: definition") and model.
 create table if not exists concept_emb(
   text text not null, model text not null, emb blob not null,

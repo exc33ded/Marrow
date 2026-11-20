@@ -48,8 +48,13 @@ AI-generated flashcards and feedback must quote the source; quotes are checked a
 Requires Node 22.13+. Marrow has no dependencies to install and needs no external service: your library, notes and PDFs live in one folder on this computer.
 
 1. Copy `.env.example` to `.env` and fill in `APP_SECRET` (64 hex characters; the command to make one is in the file). Keep a copy: it encrypts your AI keys, and if it is lost you have to enter them again.
-2. Optionally set `DATA_DIR` in `.env` to keep everything somewhere other than `./data`. The folder holds `marrow.db` (the SQLite database), `files/` (PDFs) and `whisper/` (transcription downloads). `schema.sql` is the schema of record; the server creates it on first run.
-3. Start the app. There is no sign-in screen: this is a single-user, local-only server.
+2. Start the app. There is no sign-in screen: this is a single-user, local-only server.
+3. The first time, Marrow asks where to keep your library. It suggests `Documents/Marrow` (or your existing `./data`, if you used Marrow before). You can move it later in **Settings > Library folder**. The folder holds:
+   - `marrow.db`, the library itself (SQLite; `schema.sql` is the schema of record, created on first run);
+   - a folder per project, with its PDFs in `papers/`, one Markdown file per source in `sources/` and your notebook pages in `pages/` (`Unfiled/` for the rest). The Markdown files are readable copies that Marrow rewrites on every change; open them in Obsidian or any editor, but make changes in Marrow;
+   - a `README.md` that explains all this.
+
+   Setting `DATA_DIR` in `.env` fixes the folder instead (useful on a server), and Settings then shows it read-only.
 
 ```bash
 npm start        # node --env-file=.env server.js
@@ -68,14 +73,14 @@ Open http://localhost:5173, then open **Settings** (the gear, bottom left) and a
 ## How it works
 
 - `server.js`: serves the app, proxies AI calls with your keys (which never reach the browser), fetches the links you add, and fetches captions or runs Whisper for videos. It listens on this machine only. There is no login: anyone who can reach the server can read and change everything, so do not set `HOST=0.0.0.0` on an untrusted network. If you must, put it behind your own access control and set `ALLOWED_HOSTS` for a domain name.
-- `local.js`: the local store — one library in `marrow.db`, with SQLite full-text search and vectors, and PDFs in `files/`.
+- `local.js`: the local store — one library in `marrow.db`, with SQLite full-text search and vectors, and the library folder (PDFs and Markdown copies in a folder per project).
 - `index.html`: the whole app.
-- `schema.sql`: the SQLite tables: `items` (sources), `parts` (their text, full-text index and vectors), `cards`, `notes` (highlights, and notebook pages), `activity`, `feeds`, `settings`.
-- `data/`: the database, PDFs, and Whisper's and the YouTube helper's downloads. Use Backup in the Library for a single portable file of everything.
+- `schema.sql`: the SQLite tables: `items` (sources), `parts` (their text, full-text index and vectors), `cards`, `notes` (highlights, and notebook pages), `activity`, `feeds`, `settings`, `paths` (where each file in the library folder is), `concept_emb`.
+- `data/`: Whisper's and the YouTube helper's downloads, and the library too if you keep it here. Use Backup in the Library for a single portable file of everything.
 
 More detail is in [`docs/`](docs/): how to use each part, and how the code fits together.
 
-**Moving from Supabase.** Put `SUPABASE_URL` and a `SUPABASE_SERVICE_ROLE_KEY` in a `.env.migrate` file, then run `npm run migrate -- you@example.com`. It copies one account's sources, text, cards, notes, activity, feeds, settings (including encrypted AI keys) and PDFs into the local store. Use the same `APP_SECRET` as before or re-enter your keys. Keep the service-role key out of `.env`; it is only for this one-time move. Old backup files still restore from the Library screen.
+**Moving from Supabase.** Start Marrow once and choose the library folder. Then put `SUPABASE_URL` and a `SUPABASE_SERVICE_ROLE_KEY` in a `.env.migrate` file, then run `npm run migrate -- you@example.com`. It copies one account's sources, text, cards, notes, activity, feeds, settings (including encrypted AI keys) and PDFs into the local store. Use the same `APP_SECRET` as before or re-enter your keys. Keep the service-role key out of `.env`; it is only for this one-time move. Old backup files still restore from the Library screen.
 
 ## Looks
 

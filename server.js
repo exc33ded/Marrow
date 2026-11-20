@@ -6,7 +6,7 @@ const local = require('./local');
 
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || '127.0.0.1'; // local only; set HOST=0.0.0.0 to reach it from other devices or a host's proxy
-const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // the database, PDFs and Whisper's downloads all live here
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // Whisper's downloads live here; the library itself is wherever the reader chose (local.js)
 // Free models only, tried in order until one answers. Override with MODELS=a,b,c in .env.
 const MODELS = (process.env.MODELS ||
   'baidu/ernie-5.5-flash-preview:free,nvidia/nemotron-3-ultra-550b-a55b:free,google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,openrouter/free'
@@ -346,6 +346,12 @@ http.createServer(async (req, res) => {
     if (p.startsWith('/api/') && /^(cross-site|same-site)$/.test(req.headers['sec-fetch-site'] || '')) throw fail(403, 'cross-site request refused');
 
     if (M === 'GET' && (p === '/' || p === '/index.html')) return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8');
+    if (M === 'GET' && p === '/api/store') return send(res, 200, local.store()); // where the library lives; dir is null until the reader picks one
+    if (M === 'POST' && p === '/api/store') { // pick the folder on first launch, or move the library later
+      // It writes wherever it is told, so only a reader on this machine may use it: behind a proxy (ALLOWED_HOSTS) requests also come from 127.0.0.1.
+      if (!/^(127\.|::1$|localhost$)/.test(HOST) || process.env.ALLOWED_HOSTS) throw fail(403, "this server's library folder is set with DATA_DIR");
+      const b = await json(req, 1e4); return send(res, 200, local.choose(b.dir));
+    }
     if (M === 'GET' && p === '/api/library') return send(res, 200, local.library());
     if (M === 'PUT' && p === '/api/projects') { // project names, so a project with nothing in it yet is kept too
       const b = await json(req, 1e5); if (!Array.isArray(b.list)) throw fail(400, 'list must be an array');
