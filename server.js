@@ -7,14 +7,6 @@ const local = require('./local');
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || '127.0.0.1'; // local only; set HOST=0.0.0.0 to reach it from other devices or a host's proxy
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data'); // Whisper's downloads live here; the library itself is wherever the reader chose (local.js)
-// Free models only, tried in order until one answers. Override with MODELS=a,b,c in .env.
-const MODELS = (process.env.MODELS ||
-  'baidu/ernie-5.5-flash-preview:free,nvidia/nemotron-3-ultra-550b-a55b:free,google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free,openrouter/free'
-).split(',');
-// Used when a message carries an image (figure/equation snips).
-const VISION = (process.env.VISION_MODELS ||
-  'nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,openrouter/free'
-).split(',');
 
 // ---------- local store ----------
 const APP_KEY = Buffer.from(process.env.APP_SECRET || '', 'hex');
@@ -41,9 +33,9 @@ const unseal = s => {
 const isOR = url => /(^|\.)openrouter\.ai$/.test(new URL(url).hostname);
 const conf = S => {
   const jsonOf = k => { try { return JSON.parse(S[k]); } catch {} };
-  const providers = (jsonOf('providers') || [{ id: 'main', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '' }]).map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), key: unseal(p.key) }));
-  const first = providers[0].id, chainOf = (k, def) => jsonOf(k) || def.map(m => ({ p: first, m }));
-  return { providers, chain: chainOf('chain', MODELS), vision: chainOf('vchain', VISION), paid: S.paid === '1', embed: jsonOf('embed') };
+  // No provider or model by default: the reader adds the services they have keys for in Settings.
+  const providers = (jsonOf('providers') || []).map(p => ({ ...p, url: p.url.replace(/\/+$/, ''), key: unseal(p.key) }));
+  return { providers, chain: jsonOf('chain') || [], vision: jsonOf('vchain') || [], paid: S.paid === '1', embed: jsonOf('embed') };
 };
 
 const putItem = (id, b) => local.putItem(id, b);
@@ -108,11 +100,17 @@ async function ai(c, messages) {
     cooling.set(ck(pid, model), Date.now() + 10 * 60e3);
     console.warn('model failed ->', errs.at(-1));
   }
-  throw fail(502, errs.length ? errs.join('; ') : 'no model is allowed to answer. Add one in Settings (on OpenRouter only free models are used unless you allow paid ones)');
+  throw fail(502, errs.length ? errs.join('; ') : 'no AI model is set up yet. In Settings, add a provider with your key and pick a model (on OpenRouter only free models are used unless you allow paid ones)');
 }
 
 // The models a provider offers, so the reader picks from them instead of typing ids from memory. GET {url}/models is the OpenAI-format list.
 async function offered(p) { // p is the provider as typed in Settings, so a new one can be tried before it is saved
+  // OpenRouter lists its models to anyone, so the list proves nothing about the key: ask about the key itself.
+  if (isOR(p.url)) {
+    if (!p.key) throw fail(401, `${p.name}: no API key yet. Paste your key, then test again`);
+    const k = await fetch(p.url + '/key', { headers: headers(p), signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${p.url}`); });
+    if (k.status === 401 || k.status === 403) throw fail(401, `${p.name} rejected the API key`);
+  }
   const r = await fetch(p.url + '/models', { headers: headers(p), signal: AbortSignal.timeout(20000) }).catch(() => { throw fail(502, `could not reach ${p.url}`); });
   if (r.status === 401 || r.status === 403) throw fail(401, `${p.name} rejected the API key`);
   const j = await r.json().catch(() => ({}));
@@ -388,7 +386,7 @@ http.createServer(async (req, res) => {
     }
     if (p === '/api/settings' && M === 'PUT') {
       const b = await json(req, 1e5); let have = []; try { have = JSON.parse(S().providers) || []; } catch {}
-      if (!Array.isArray(b.providers) || !b.providers.length) throw fail(400, 'add at least one provider');
+      if (!Array.isArray(b.providers)) throw fail(400, 'providers must be a list');
       const ids = new Set(), providers = b.providers.map(x => {
         const id = String(x.id || ''), url = String(x.url || '').trim(), name = String(x.name || '').trim() || url;
         try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw fail(400, `${name}: the API address must start with http:// or https://`); }
@@ -397,7 +395,7 @@ http.createServer(async (req, res) => {
         return { id, name, url, key: typeof x.key === 'string' && x.key.trim() ? seal(x.key.trim()) : x.clearKey ? '' : prev?.key || '' };
       });
       const clean = a => (Array.isArray(a) ? a : []).filter(e => ids.has(e.p) && String(e.m || '').trim()).map(e => ({ p: e.p, m: String(e.m).trim() }));
-      const chain = clean(b.chain); if (!chain.length) throw fail(400, 'pick at least one model');
+      const chain = clean(b.chain); // may be empty while a provider is being set up: the key is saved and tested before models are picked
       const vision = clean(b.vision);
       local.saveSettings([{ k: 'providers', v: JSON.stringify(providers) }, { k: 'chain', v: JSON.stringify(chain) }, { k: 'vchain', v: JSON.stringify(vision.length ? vision : chain) }, { k: 'paid', v: b.paid ? '1' : '0' }, { k: 'embed', v: JSON.stringify(b.embed && ids.has(b.embed.p) && String(b.embed.m || '').trim() ? { p: b.embed.p, m: String(b.embed.m).trim() } : null) }]);
       cooling.clear();

@@ -2070,7 +2070,7 @@ const PAGE = {
       <form data-f="cfg" class="box set">
         <div class="row" style="margin:0 0 8px"><h4 class="grow" style="margin:0">Providers</h4><button type="button" data-act="cfgall">Save &amp; test all</button></div>
         ${c.providers.map((p, i) => `<div class="box flat" style="margin:0 0 10px">
-          <p class="row" style="margin:0"><b class="grow" style="font-size:16px">${esc(p.name)}</b>${p.clearKey || !(p.hasKey || p.key) ? '<span class="tag">No key</span>' : '<span class="tag ok">Key ready</span>'}${c.providers.length > 1 ? `<button type="button" data-act="cfgrmp" data-i="${i}" style="min-width:0;width:auto">Remove</button>` : ''}</p>
+          <p class="row" style="margin:0"><b class="grow" style="font-size:16px">${esc(p.name)}</b>${p.clearKey || !(p.hasKey || p.key) ? '<span class="tag">No key</span>' : '<span class="tag ok">Key ready</span>'}<button type="button" data-act="cfgrmp" data-i="${i}" style="min-width:0;width:auto">Remove</button></p>
           <label for="pk${i}">API key</label>${p.hasKey && !p.clearKey && !p.replace
             ? `<p class="row" style="margin:0"><code class="grow" style="letter-spacing:.12em">••••••••••••${esc(p.hint)}</code><button type="button" data-act="cfgrep" data-i="${i}" style="min-width:0;width:auto">Replace</button><button type="button" data-act="cfgdel" data-i="${i}" style="min-width:0;width:auto">Remove key</button></p>`
             : `<input id="pk${i}" data-cf="key" data-i="${i}" type="password" autocomplete="off" placeholder="${p.clearKey ? 'No key' : 'Paste your key'}">`}
@@ -2081,7 +2081,7 @@ const PAGE = {
             <label for="pn${i}">Name</label><input id="pn${i}" data-cf="name" data-i="${i}" value="${esc(p.name)}" autocomplete="off">
             <label for="pu${i}">API address</label><input id="pu${i}" data-cf="url" data-i="${i}" required value="${esc(p.url)}" autocomplete="off" placeholder="https://…/v1"></details>
         </div>`).join('')}
-        <p class="row" style="margin:0"><select id="newp" aria-label="Service to add">${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
+        ${c.providers.length ? '' : '<p class="muted" style="margin:0 0 10px">No AI service yet. Choose the one you have a key for, add it, and paste the key.</p>'}<p class="row" style="margin:0"><select id="newp" aria-label="Service to add"><option value="" selected disabled>Choose a service…</option>${PRESETS.map(([n], i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select><button type="button" data-act="cfgaddp">Add a provider</button></p>
         ${chainHTML('chain', 'Models, tried from the top until one answers')}
         ${chainHTML('vision', 'Models for explaining figures (they must accept images)')}
         ${embedHTML()}
@@ -2825,7 +2825,7 @@ const ACT = {
   cfgrm: el => { cfg[el.dataset.k].splice(+el.dataset.i, 1); persist(); },
   cfgemb: () => { const p = $('#emb-p').value, m = $('#emb-m').value.trim(); cfg.embed = p && m ? { p, m } : null; persist(); },
   cfgidx: async () => { toast('Indexing your library. This can take a while…'); try { await send('POST', 'embed', { all: true }); toast('Your library is indexed.'); } catch (e) { toast('Could not index: ' + e.message); } },
-  cfgaddp: () => { const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
+  cfgaddp: () => { if (!$('#newp').value) return toast('Choose a service first.'); const [name, url] = PRESETS[+$('#newp').value]; cfg.providers.push({ id: 'p' + Date.now().toString(36), name: name === 'Other' ? 'My service' : name, url, key: '', hasKey: false }); render(); },
   cfgrmp: el => { const [p] = cfg.providers.splice(+el.dataset.i, 1); for (const k of ['chain', 'vision']) cfg[k] = cfg[k].filter(e => e.p !== p.id); render(); },
   cfgtest: async () => { // asks the saved models, in order, for a one-word reply and says, in place, whether it worked
     const say = (msg, color) => { const el = $('#cfgstate'); if (el) { el.textContent = msg; el.style.color = color; } }, t = Date.now();
